@@ -1,0 +1,134 @@
+using PyCall
+
+const LaneletID = Int64
+
+struct Pos
+    x::Float64
+    y::Float64
+end
+
+struct Adjacent
+    exists::Bool
+    adjacent_id::LaneletID
+    same_direction::Bool
+
+    function Adjacent(id::Nothing, dir::Nothing)
+        return new(false, -1, false)
+    end
+
+    function Adjacent(id::Number, dir::Bool)
+        return new(true, id, dir)
+    end
+end
+
+@enum LineMarking begin
+    LM_Dashed
+    LM_Solid
+    LM_BroadDashed
+    LM_BroadSolid
+    LM_Unknown
+    LM_NoMarking
+end
+
+@enum LaneletType begin
+    LT_Urban
+    LT_Country
+    LT_Highway
+    LT_DriveWay
+    LT_MainCarriageWay
+    LT_AccessRamp
+    LT_Shoulder
+    LT_BusLane
+    LT_BusStop
+    LT_BicycleLane
+    LT_Sidewalk
+    LT_Crosswalk
+    LT_Interstate
+    LT_Intersection
+    LT_Border
+    LT_Parking
+    LT_Restricted
+    LT_Unknown
+end
+
+struct StopLine
+    start::Pos
+    stop::Pos
+    line_marking::LineMarking
+    traffic_sign_ref
+    traffic_light_ref
+end
+
+@enum RoadUser begin
+    RU_Vehicle
+    RU_Car
+    RU_Truck
+    RU_Bus
+    RU_PriorityVehicle
+    RU_Motorcycle
+    RU_Bicycle
+    RU_Pedestrian
+    RU_Train
+    RU_Taxi
+end
+
+struct Lanelet 
+    left_vertices::Vector{Pos}
+    center_vertices::Vector{Pos}
+    right_vertices::Vector{Pos}
+    id::LaneletID
+    predecessors::Vector{LaneletID} # vector of predecessor lanelets' indexes
+    successors::Vector{LaneletID} # vector of successor lanelets' indexes
+    adj_left::Adjacent
+    adj_right::Adjacent
+    line_marking_left_vertices::LineMarking
+    line_marking_right_vertices::LineMarking
+    # stop_line::StopLine
+    lanelet_type::LaneletType
+    # user_one_way::Vector{RoadUser}
+    # user_bidirectional::Vector{RoadUser}
+    # traffic_signes
+    # traffic_lights
+end
+
+
+struct LaneletNetwork
+    lanelets::Dict{LaneletID, Lanelet}
+    # TODO add additional fields
+end
+
+function read_lanelet_network(path::String) # read_lanelet_network("/home/florian/git/ScenarioSynthesis.jl/example_files/USA_US101-10_5_T-1.xml")
+    py"""
+    from commonroad.common.file_reader import CommonRoadFileReader
+    def open_scenario(x):
+        scenario, planning_problem = CommonRoadFileReader(x).open()
+        return scenario
+    """
+    lanelet_network_py = py"open_scenario"(path)._lanelet_network
+    
+    lanelets = map(
+        lanelet -> Lanelet(
+            [Pos(x, y) for (x,y) in eachrow(lanelet.left_vertices)], # left_vertices::Vector{Pos}
+            [Pos(x, y) for (x,y) in eachrow(lanelet.center_vertices)], # center_vertices::Vector{Pos}
+            [Pos(x, y) for (x,y) in eachrow(lanelet.right_vertices)], #right_vertices::Vector{Pos}
+            lanelet.lanelet_id, # lanelet_id::LaneletID
+            Vector{LaneletID}(lanelet.predecessor), # predecessor::Vector{LaneletID} # vector of predecessor lanelets' indexes
+            Vector{LaneletID}(lanelet.successor), # successor::Vector{LaneletID} # vector of successor lanelets' indexes
+            Adjacent(lanelet.adj_left, lanelet.adj_left_same_direction), # adjacent_left::Adjacent
+            Adjacent(lanelet.adj_right, lanelet.adj_right_same_direction), # adjacent_right::Adjacent
+            LM_Dashed, # line_marking_left_vertices::LineMarking
+            LM_Dashed, # line_marking_right_vertices::LineMarking
+            # StopLine, # #stop_line::StopLine
+            LT_Interstate, # lanelet_type::LaneletType
+            # user_one_way::Vector{RoadUser}
+            # user_bidirectional::Vector{RoadUser}
+            # traffic_signes
+            # traffic_lig
+        ), 
+        lanelet_network_py.lanelets
+    )
+    
+    lanelets_dict = Dict([(lanelet.id, lanelet) for lanelet in lanelets])
+
+    return LaneletNetwork(lanelets_dict)
+end
