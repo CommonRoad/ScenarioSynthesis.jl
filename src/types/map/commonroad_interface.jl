@@ -1,16 +1,15 @@
 using PyCall
 
-const LaneletID = Int64
-
-struct Pos
-    x::Float64
-    y::Float64
-end
+const LaneletID = Int64 # type alias
 
 struct Adjacent
     exists::Bool
     adjacent_id::LaneletID
     same_direction::Bool
+
+    function Adjacent()
+        return new(false, -1, false)
+    end
 
     function Adjacent(id::Nothing, dir::Nothing)
         return new(false, -1, false)
@@ -52,8 +51,8 @@ end
 end
 
 struct StopLine
-    start::Pos
-    stop::Pos
+    start::Pos{FCart} # TODO is this correct? or Vetor{Pos{FCart}}?
+    stop::Pos{FCart} # TODO is this correct? or Vetor{Pos{FCart}}?
     line_marking::LineMarking
     traffic_sign_ref
     traffic_light_ref
@@ -73,9 +72,10 @@ end
 end
 
 struct Lanelet 
-    left_vertices::Vector{Pos}
-    center_vertices::Vector{Pos}
-    right_vertices::Vector{Pos}
+    # TODO enable conversion of ALL attributes
+    left_vertices::Vector{Pos{FCart}}
+    center_vertices::Vector{Pos{FCart}}
+    right_vertices::Vector{Pos{FCart}}
     id::LaneletID
     predecessors::Vector{LaneletID} # vector of predecessor lanelets' indexes
     successors::Vector{LaneletID} # vector of successor lanelets' indexes
@@ -89,6 +89,55 @@ struct Lanelet
     # user_bidirectional::Vector{RoadUser}
     # traffic_signes
     # traffic_lights
+
+    function Lanelet()
+        return new(
+            Vector{Pos{FCart}}(),
+            Vector{Pos{FCart}}(),
+            Vector{Pos{FCart}}(),
+            -1,
+            Vector{LaneletID}(),
+            Vector{LaneletID}(),
+            Adjacent(),
+            Adjacent(),
+            LM_Unknown,
+            LM_Unknown,
+            LT_Unknown
+        )
+    end
+
+    function Lanelet(
+        left_vertices::Vector{Pos{FCart}},
+        center_vertices::Vector{Pos{FCart}},
+        right_vertices::Vector{Pos{FCart}},
+        id::LaneletID,
+        predecessors::Vector{LaneletID}, # vector of predecessor lanelets' indexes
+        successors::Vector{LaneletID}, # vector of successor lanelets' indexes
+        adj_left::Adjacent,
+        adj_right::Adjacent,
+        line_marking_left_vertices::LineMarking,
+        line_marking_right_vertices::LineMarking,
+        # stop_line::StopLine
+        lanelet_type::LaneletType
+        # user_one_way::Vector{RoadUser}
+        # user_bidirectional::Vector{RoadUser}
+        # traffic_signes
+        # traffic_lights
+    )
+        return new(
+            left_vertices,
+            center_vertices,
+            right_vertices,
+            id,
+            predecessors,
+            successors,
+            adj_left,
+            adj_right,
+            line_marking_left_vertices,
+            line_marking_right_vertices,
+            lanelet_type
+        )
+    end
 end
 
 
@@ -108,9 +157,9 @@ function read_lanelet_network(path::String) # read_lanelet_network("/home/floria
     
     lanelets = map(
         lanelet -> Lanelet(
-            [Pos(x, y) for (x,y) in eachrow(lanelet.left_vertices)], # left_vertices::Vector{Pos}
-            [Pos(x, y) for (x,y) in eachrow(lanelet.center_vertices)], # center_vertices::Vector{Pos}
-            [Pos(x, y) for (x,y) in eachrow(lanelet.right_vertices)], #right_vertices::Vector{Pos}
+            [Pos(FCart, x, y) for (x,y) in eachrow(lanelet.left_vertices)], # left_vertices::Vector{Pos{FCart}}
+            [Pos(FCart, x, y) for (x,y) in eachrow(lanelet.center_vertices)], # center_vertices::Vector{Pos{FCart}}
+            [Pos(FCart, x, y) for (x,y) in eachrow(lanelet.right_vertices)], #right_vertices::Vector{Pos{FCart}}
             lanelet.lanelet_id, # lanelet_id::LaneletID
             Vector{LaneletID}(lanelet.predecessor), # predecessor::Vector{LaneletID} # vector of predecessor lanelets' indexes
             Vector{LaneletID}(lanelet.successor), # successor::Vector{LaneletID} # vector of successor lanelets' indexes
