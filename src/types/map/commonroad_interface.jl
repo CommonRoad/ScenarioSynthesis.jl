@@ -1,6 +1,12 @@
 using PyCall
 
 const LaneletID = Int64 # type alias
+const SectionID = Int64
+
+struct LaneID
+    lon::SectionID
+    lat::Int64
+end
 
 struct Adjacent
     exists::Bool
@@ -146,6 +152,7 @@ struct LaneletNetwork
     # TODO add additional fields
 end
 
+#=
 function read_lanelet_network(path::String) # read_lanelet_network("/home/florian/git/ScenarioSynthesis.jl/example_files/USA_US101-10_5_T-1.xml")
     py"""
     from commonroad.common.file_reader import CommonRoadFileReader
@@ -180,4 +187,56 @@ function read_lanelet_network(path::String) # read_lanelet_network("/home/floria
     lanelets_dict = Dict([(lanelet.id, lanelet) for lanelet in lanelets])
 
     return LaneletNetwork(lanelets_dict)
+end
+=#
+
+struct Lane
+    lane_id::LaneID
+    lanelet_ids::Vector{Int64}
+    successors::Set{Int64}
+    predecessors::Set{Inf64}
+    is_main_lane::Bool
+    merging_lane_ids::Set{LaneID}
+    lanelet::Vector{Lanelet}
+    center_line::Vector{Pos{FCart}}
+    # cosy::CurvlinCosy # TODO add CurvlinCosy ??
+    s_range::Tuple{Float64,Float64}
+end
+
+struct LaneSection
+
+end
+
+struct LaneSectionNetwork
+    sections::Dict{SectionID,LaneSection}
+    lanelet2section_map::Dict{Int64,LaneSection} # TODO suitable representation?
+    lanelet_network::LaneletNetwork
+    lanelets::Vector{Lanelet}
+    params # TODO add type for this
+end
+
+function LaneSectionNetwork(path::String)
+    py"""
+    from commonroad.common.file_reader import CommonRoadFileReader
+    import sys
+    
+    sys.path.append("/home/florian/git/ScenarioSynthesis.jl/")
+    
+    from src.types.map.python.lanes import LaneSectionNetwork
+    from src.types.map.python.scenario_parameters import ScenarioParamsBase
+    
+    def open_as_lsn(path):
+        scenario, planning_problem = CommonRoadFileReader(path).open()
+        lsn = LaneSectionNetwork.create_from_lanelet_network(scenario.lanelet_network, ScenarioParamsBase())
+        return lsn
+    """
+    lsn_py = py"open_as_lsn"(path)
+    
+    isa(lsn_py, LaneSectionNetwork) || @warn "wrong return type!" # TODO type wrapper 
+    
+    return lsn_py
+end
+
+struct Route
+    # TODO content
 end

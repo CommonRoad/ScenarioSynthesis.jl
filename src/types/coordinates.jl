@@ -1,4 +1,3 @@
-using StaticArrays
 using LinearAlgebra
 
 abstract type Position end

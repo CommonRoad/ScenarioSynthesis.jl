@@ -9,7 +9,7 @@ include("scenarios/Scenarios.jl")
 include("synthesis/Synthesis.jl")
 include("visualization/Visualization.jl")
 
-export Pos, FCart, FCurv, StateLon, StateLat, StateCurve, Lanelet, LaneletNetwork # types
+export Pos, FCart, FCurv, StateLon, StateLat, StateCurve, Lanelet, LaneletNetwork, LaneSectionNetwork # types
 
 export Actor, Vehicle # actors
 
