@@ -1,12 +1,30 @@
-using PyCall
-
 const LaneletID = Int64 # type alias
 const SectionID = Int64
 
 struct LaneID
+    id::String
     lon::SectionID
     lat::Int64
 end
+
+function pyconvert_lane_id(
+    S::Type{LaneID},
+    lane_id::Py
+)
+    a = LaneID(
+        pyconvert(String, lane_id.id),
+        pyconvert(SectionID, lane_id.section.id),
+        pyconvert(Int64, lane_id.lat)
+    )
+    return PythonCall.pyconvert_return(a)
+end
+
+PythonCall.pyconvert_add_rule(
+    "src.types.map.python.lanes:LaneID",
+    LaneID,
+    ScenarioSynthesis.pyconvert_lane_id,
+    PythonCall.PYCONVERT_PRIORITY_NORMAL
+)
 
 struct Adjacent
     exists::Bool
@@ -152,6 +170,44 @@ struct LaneletNetwork
     # TODO add additional fields
 end
 
+function pyconvert_lanelet_network(
+    type::Type{LaneletNetwork},
+    py_lanelet_network::Py
+)
+    lanelets = map(
+        lanelet -> Lanelet(
+            [Pos(FCart, pyconvert(Float64, x), pyconvert(Float64, y)) for (x,y) in lanelet.left_vertices], # left_vertices::Vector{Pos{FCart}}
+            [Pos(FCart, pyconvert(Float64, x), pyconvert(Float64, y)) for (x,y) in lanelet.center_vertices], # center_vertices::Vector{Pos{FCart}}
+            [Pos(FCart, pyconvert(Float64, x), pyconvert(Float64, y)) for (x,y) in lanelet.right_vertices], #right_vertices::Vector{Pos{FCart}}
+            pyconvert(LaneletID, lanelet.lanelet_id), # lanelet_id::LaneletID
+            [pyconvert(Int64, x.id) for x in lanelet.predecessor], # predecessor::Vector{LaneletID} # vector of predecessor lanelets' indexes
+            [pyconvert(Int64, x.id) for x in lanelet.successor], # successor::Vector{LaneletID} # vector of successor lanelets' indexes
+            Adjacent(pyconvert(Int64, lanelet.adj_left.id), pyconvert(Bool, lanelet.adj_left_same_direction)), # adjacent_left::Adjacent
+            Adjacent(pyconvert(Int64, lanelet.adj_right.id), pyconvert(Bool, lanelet.adj_right_same_direction)), # adjacent_right::Adjacent
+            LM_Dashed, # line_marking_left_vertices::LineMarking
+            LM_Dashed, # line_marking_right_vertices::LineMarking
+            # StopLine, # #stop_line::StopLine
+            LT_Interstate, # lanelet_type::LaneletType
+            # user_one_way::Vector{RoadUser}
+            # user_bidirectional::Vector{RoadUser}
+            # traffic_signes
+            # traffic_lig
+        ), 
+        py_lanelet_network.lanelets
+    )
+
+    lanelets_dict = Dict([(lanelet.id, lanelet) for lanelet in lanelets])
+
+    return LaneletNetwork(lanelets_dict)
+end
+
+PythonCall.pyconvert_add_rule(
+    "commonroad.scenario.lanelet:LaneletNetwork", 
+    ScenarioSynthesis.LaneletNetwork, 
+    ScenarioSynthesis.pyconvert_lanelet_network, 
+    PythonCall.PYCONVERT_PRIORITY_NORMAL
+)
+
 #=
 function read_lanelet_network(path::String) # read_lanelet_network("/home/florian/git/ScenarioSynthesis.jl/example_files/USA_US101-10_5_T-1.xml")
     py"""
@@ -216,7 +272,7 @@ struct LaneSectionNetwork
 end
 
 function LaneSectionNetwork(path::String)
-    py"""
+    @pyexec path => """
     from commonroad.common.file_reader import CommonRoadFileReader
     import sys
     
@@ -225,16 +281,28 @@ function LaneSectionNetwork(path::String)
     from src.types.map.python.lanes import LaneSectionNetwork
     from src.types.map.python.scenario_parameters import ScenarioParamsBase
     
-    def open_as_lsn(path):
-        scenario, planning_problem = CommonRoadFileReader(path).open()
-        lsn = LaneSectionNetwork.create_from_lanelet_network(scenario.lanelet_network, ScenarioParamsBase())
-        return lsn
-    """
-    lsn_py = py"open_as_lsn"(path)
-    
-    isa(lsn_py, LaneSectionNetwork) || @warn "wrong return type!" # TODO type wrapper 
-    
-    return lsn_py
+    scenario, planning_problem = CommonRoadFileReader(path).open()
+    lsn = LaneSectionNetwork.create_from_lanelet_network(scenario.lanelet_network, ScenarioParamsBase())
+    """ => lsn
+
+    #=
+    sections = [((pyconvert(SectionID,k.id), LaneSection()) for (k,v) in lsn.sections.items()] # TODO specfiy and apply LaneSection type
+    lanelet2section_map = [(pyconvert(Int64,k), LaneSection()) for (k,v) in lsn.lanelet2section_map.items()] # TODO specfiy and apply LaneSection type
+    laneletnetwork = 
+
+    lsn_jl = LaneSectionNetwork(
+        Dict(sections),
+        Dict(lanelet2section_map), # TODO suitable representation?
+        lanelet_network::LaneletNetwork
+        lanelets::Vector{Lanelet}
+        params # TODO add type for this
+    )
+    =#
+
+    # ln = pyconvert(LaneletNetwork, lsn.lanelet_network)
+
+    isa(lsn, LaneSectionNetwork) || @warn "wrong return type!" # TODO type wrapper 
+    return lsn
 end
 
 struct Route

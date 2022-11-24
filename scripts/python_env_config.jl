@@ -1,3 +1,5 @@
+@warn "outdated approach - PyCall has been replaced by PythonCall"
+
 using ScenarioSynthesis
 
 using Conda

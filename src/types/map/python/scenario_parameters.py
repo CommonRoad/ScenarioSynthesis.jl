@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class ScenarioParamsBase:
+class ScenarioParamsBase: # TODO clean up
     # paths = [(47240,47246)]  # DEU_Gar-1_1_T-1
     ### paths = [(34782, 34782), (34784, 34784)]  # DEU_Muc-4_1_T-1/ # TODO uncomment if necessary
     # paths = [(718,723),(708,723)] # ZAM_merge
