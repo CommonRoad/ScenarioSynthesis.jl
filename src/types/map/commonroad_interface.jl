@@ -19,6 +19,8 @@ function pyconvert_lane_id(
     return PythonCall.pyconvert_return(a)
 end
 
+@info "this code is executed during import!"
+
 PythonCall.pyconvert_add_rule(
     "src.types.map.python.lanes:LaneID",
     LaneID,

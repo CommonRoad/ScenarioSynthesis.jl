@@ -4,6 +4,7 @@ module ScenarioSynthesis
 
 @info "pythoncall exe set to: $(ENV["JULIA_PYTHONCALL_EXE"])"
 
+using DataStructures
 using PythonCall
 using StaticArrays
 
@@ -17,7 +18,7 @@ include("scenarios/Scenarios.jl")
 include("synthesis/Synthesis.jl")
 include("visualization/Visualization.jl")
 
-export Pos, FCart, FCurv, StateLon, StateLat, StateCurve, Lanelet, LaneletNetwork, LaneSectionNetwork # types
+export Pos, FCart, FCurv, StateLon, StateLat, StateCurve, LaneSectionID, LaneSection, LaneSectionNetwork, lsn_from_path # types
 
 export Actor, Vehicle # actors
 
@@ -28,5 +29,4 @@ export Scenario, Scene # scenarios
 # export # synthesis
 
 # export # visualization
-
 end

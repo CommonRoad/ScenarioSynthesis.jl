@@ -8,7 +8,7 @@ abstract type Specification <: Predicate end # specifications are special types 
 struct IsBehind <: AtomicPredicate end
 struct IsNextTo <: AtomicPredicate end
 struct IsInFront <: AtomicPredicate end
-struct IsOnLanelet <: AtomicPredicate end
+struct IsOnLaneSection <: AtomicPredicate end
 
 ## Traffic Rule
 struct SpeedLimit <: TrafficRule end
@@ -20,7 +20,7 @@ struct SafeDistance <: TrafficRule end
 struct Relation{T}
     v1::Vehicle
     v2::Vehicle
-    l::Lanelet
+    l::LaneSection
 
     """
         Relation
@@ -28,7 +28,7 @@ struct Relation{T}
     Default constructor for relation between two vehicles.
     """
     function Relation(::Type{T}, v1::Vehicle, v2::Vehicle) where {T<:Union{IsBehind, IsNextTo, IsInFront, SafeDistance}}
-        l = Lanelet()
+        l = LaneSection()
         return new{T}(v1, v2, l)
     end
 
@@ -37,7 +37,7 @@ struct Relation{T}
 
     Default constructor for relation between a vehicle and a lanelet.
     """
-    function Relation(::Type{T}, v1::Vehicle, l::Lanelet) where {T<:Union{IsOnLanelet, SpeedLimit}}
+    function Relation(::Type{T}, v1::Vehicle, l::LaneSection) where {T<:Union{IsOnLaneSection, SpeedLimit}}
         v2 = Vehicle(-1)
         return new{T}(v1, v2, l)
     end
