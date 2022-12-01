@@ -24,22 +24,24 @@ struct LaneSection
     speedMin::Float64
     speedAdv::Float64
     stopLine::Float64
+    frame::TransFrame
 
     # standrad constructor with speed values check
     function LaneSection(
         vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine
     )
         @assert speedMin < min(speedAdv, speedMax) < Inf
+        transFrame = TransFrame(vertCntr)
 
         return new(
-            true, vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine
+            true, vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine, transFrame
         )
     end
 
     # null constructor
     function LaneSection()
         return new(
-            false, Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Set{LaneSectionID}(), Set{LaneSectionID}(), false, false, LT_Unknown, LM_Unknown, Inf64, 0.0, Inf64, Inf64
+            false, Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Set{LaneSectionID}(), Set{LaneSectionID}(), false, false, LT_Unknown, LM_Unknown, Inf64, 0.0, Inf64, Inf64, TransFrame()
         )
     end
 end

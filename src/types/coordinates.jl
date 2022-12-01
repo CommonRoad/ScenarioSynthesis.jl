@@ -55,6 +55,10 @@ struct TransFrame
         pushfirst!(cum_dst, 0.0)
         return new(ref_pos, cum_dst)
     end
+
+    function TransFrame()
+        return new(Vector{Pos{FCart,Float64}}(), Vector{Float64}())
+    end
 end
 
 function transform(pos::Pos{FCurv, T}, frame::TransFrame) where {T<:Number}
