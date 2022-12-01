@@ -4,7 +4,7 @@ export CoordFrame, FCart, FCurv, Pos, Vec, distance, TransFrame, transform
 
 include("lane_section_network.jl")
 
-export LaneSectionID, LaneSection, LaneSectionNetwork, lsn_from_path
+export LaneSectionID, LaneSection, LaneSectionNetwork, lsn_from_path, Route
 
 include("state.jl")
 

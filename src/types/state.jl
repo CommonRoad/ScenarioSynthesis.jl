@@ -1,3 +1,5 @@
+import StaticArrays.FieldVector
+
 abstract type State end
 
 """
@@ -5,7 +7,7 @@ abstract type State end
 
 Longitudinal state, consisting of position `s`, velocity `v`, and acceleration `a`.
 """
-struct StateLon <: State
+struct StateLon <: FieldVector{3, Float64}
     s::Float64
     v::Float64
     a::Float64
@@ -16,7 +18,7 @@ end
 
 Lateral state, consisting of position `d`, velocity `ḋ`, and acceleration `d̈`.
 """
-struct StateLat <: State
+struct StateLat <: FieldVector{3, Float64}
     d::Float64
     ḋ::Float64
     d̈::Float64
@@ -33,5 +35,5 @@ struct StateCurve <: State
 end
 
 function Pos(sc::StateCurve)
-    return Pos{Curv}(sc.lon.s, sc.lat.d)
+    return Pos(FCurv, sc.lon.s, sc.lat.d)
 end

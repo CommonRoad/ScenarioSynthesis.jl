@@ -1,3 +1,5 @@
+import DataStructures.DefaultDict
+
 const LaneletPyID = Int64
 
 struct LaneSectionID
@@ -16,7 +18,7 @@ struct LaneSection
     vertCntr::Vector{Pos{FCart}}
     prec::Set{LaneSectionID}
     succ::Set{LaneSectionID}
-    adjLeft::Bool # same driving direction on adjecent left lane? 
+    adjLeft::Bool # same driving direction on adjecent left lane? whether the lane exists is implicitly defined by LaneSectionNetwork laneSections data structure
     adjRght::Bool
     laneType::LaneType
     lineMarkingType::LineMarkingType
@@ -24,24 +26,27 @@ struct LaneSection
     speedMin::Float64
     speedAdv::Float64
     stopLine::Float64
-    frame::TransFrame
+    merging_with::Set{LaneSectionID}
+    diverging_with::Set{LaneSectionID}
+    intersecting_with::Set{LaneSectionID}
+    frame::TransFrame 
 
     # standrad constructor with speed values check
     function LaneSection(
-        vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine
+        vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine, merging_with, diverging_with, intersecting_with
     )
         @assert speedMin < min(speedAdv, speedMax) < Inf
         transFrame = TransFrame(vertCntr)
 
         return new(
-            true, vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine, transFrame
+            true, vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine, merging_with, diverging_with, intersecting_with, transFrame
         )
     end
 
     # null constructor
     function LaneSection()
         return new(
-            false, Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Set{LaneSectionID}(), Set{LaneSectionID}(), false, false, LT_Unknown, LM_Unknown, Inf64, 0.0, Inf64, Inf64, TransFrame()
+            false, Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Set{LaneSectionID}(), Set{LaneSectionID}(), false, false, LT_Unknown, LM_Unknown, Inf64, 0.0, Inf64, Inf64, Set{LaneSectionID}(), Set{LaneSectionID}(), Set{LaneSectionID}(), TransFrame()
         )
     end
 end
@@ -49,19 +54,22 @@ end
 function LaneSection(
     lanelet_network::Py, 
     mapping::Dict{LaneSectionID, LaneletPyID}, 
-    lanelet_id::Integer
+    lanelet_id::Integer,
+    merging_with::DefaultDict{LaneSectionID, Set{LaneSectionID}},
+    diverging_with::DefaultDict{LaneSectionID, Set{LaneSectionID}},
+    intersecting_with::DefaultDict{LaneSectionID, Set{LaneSectionID}}
 )
     # @warn "interface not complete" # TODO complete interface
     lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
 
-    inv_mapping = Dict((v, k) for (k, v) in mapping)
+    mapping_inv = Dict{LaneletPyID, LaneSectionID}((v, k) for (k, v) in mapping)
 
     vertLeft = [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lanelet.left_vertices))]
     vertRght = [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lanelet.right_vertices))]
     vertCntr = [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lanelet.center_vertices))]
 
-    prec = Set(map(id -> inv_mapping[id], pyconvert(Vector{Int64}, lanelet.predecessor)))
-    succ = Set(map(id -> inv_mapping[id], pyconvert(Vector{Int64}, lanelet.successor)))
+    prec = Set(map(id -> mapping_inv[id], pyconvert(Vector{Int64}, lanelet.predecessor)))
+    succ = Set(map(id -> mapping_inv[id], pyconvert(Vector{Int64}, lanelet.successor)))
 
     adjLeft = try
         pyconvert(Bool, lanelet.adj_right_same_direction)
@@ -74,6 +82,11 @@ function LaneSection(
         false
     end
 
+    merg = merging_with[mapping_inv[lanelet_id]]
+    dive = diverging_with[mapping_inv[lanelet_id]]
+    inte = intersecting_with[mapping_inv[lanelet_id]]
+
+    # TODO remove hardcoded values!
     laneType = LT_Unknown
     lineMarkingType = LM_Unknown
 
@@ -83,7 +96,7 @@ function LaneSection(
     stopLine = Inf64
 
     return LaneSection(
-        vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine
+        vertLeft, vertRght, vertCntr, prec, succ, adjLeft, adjRght, laneType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine, merg, dive, inte
     )
 end
 
@@ -144,12 +157,69 @@ function lsn_from_path(path::String)
         mapping[LaneSectionID(pyconvert(Int64, v[0]), pyconvert(Int64, v[1]))] = pyconvert(Int64, k)
     end
 
+    mapping_inv = Dict{LaneletPyID, LaneSectionID}((v, k) for (k, v) in mapping)
+
+    # checking for merging LaneSections
+    merging_with_py = DefaultDict{LaneletPyID, Set{LaneletPyID}}(Set{LaneletPyID}())
+    for lanelet in lanelet_network.lanelets
+        ltid = pyconvert(Int64, lanelet.lanelet_id)
+        predecessors = pyconvert(Vector{Int64}, lanelet.predecessor)
+        for pred in predecessors
+            union!(merging_with_py[pred], predecessors) # add all "preceeding neighbors" as merging lanes
+            delete!(merging_with_py[pred], pred) # remove itself from merging lanes
+        end
+    end
+
+    merging_with = DefaultDict{LaneSectionID, Set{LaneSectionID}}(Set{LaneSectionID}())
+    for (k,v) in merging_with_py
+        merging_with[mapping_inv[k]] = Set{LaneSectionID}([mapping_inv[ind] for ind in v])
+    end
+
+    # checking for diverging LaneSections
+    diverging_with_py = DefaultDict{LaneletPyID, Set{LaneletPyID}}(Set{LaneletPyID}())
+    for lanelet in lanelet_network.lanelets
+        ltid = pyconvert(Int64, lanelet.lanelet_id)
+        successors = pyconvert(Vector{Int64}, lanelet.successor)
+        for succ in successors
+            union!(diverging_with_py[succ], successors) # add all "succeeding neighbors" as merging lanes
+            delete!(diverging_with_py[succ], succ) # remove itself from diverging lanes
+        end
+    end
+
+    diverging_with = DefaultDict{LaneSectionID, Set{LaneSectionID}}(Set{LaneSectionID}())
+    for (k,v) in diverging_with_py
+        diverging_with[mapping_inv[k]] = Set{LaneSectionID}([mapping_inv[ind] for ind in v])
+    end
+
+    # checking for intersecting LaneSections
+    # TODO add code here
+    intersecting_with = DefaultDict{LaneSectionID, Set{LaneSectionID}}(Set{LaneSectionID}()) # TODO remove this placeholder
+
     laneSections = DefaultDict{LaneSectionID, LaneSection}(LaneSection())
     for (k, v) in mapping
-        laneSections[k] = LaneSection(lanelet_network, mapping, v)
+        laneSections[k] = LaneSection(lanelet_network, mapping, v, merging_with, diverging_with, intersecting_with)
     end
 
     lsn = LaneSectionNetwork(laneSections, mapping)
 
     return lsn
+end
+
+struct Route
+    route::Vector{LaneSectionID}
+    frame::TransFrame
+
+    function Route(route::Vector{LaneSectionID}, lsn::LaneSectionNetwork)
+        length(route) ≥ 2 || throw(error("Route must travel at least two LaneSections."))
+        for i=1:length(route)-1
+            in(route[i+1], lsn.laneSections[route[i]].succ) || throw(error("LaneSections of Route must be connected."))
+        end
+
+        merged_center_line = Vector{Pos{FCart, Float64}}(vcat([lsn.laneSections[lsid].vertCntr for lsid in route]...))
+
+        # TODO add algorithms for line smoothing!
+        frame = TransFrame(merged_center_line)
+
+        return new(route, frame)
+    end
 end

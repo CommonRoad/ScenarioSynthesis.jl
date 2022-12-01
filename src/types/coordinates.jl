@@ -1,4 +1,5 @@
 import LinearAlgebra.norm, LinearAlgebra.dot
+import StaticArrays.SVector, StaticArrays.FieldVector
 
 #abstract type Position end
 abstract type CoordFrame end
@@ -36,11 +37,11 @@ end
 Vec(::Type{F}, Δc1::T1, Δc2::T2) where {F<:CoordFrame, T1<:Number, T2<:Number} = Vec{F, promote_type(T1, T2)}(Δc1, Δc2)
 Vec(::Type{F}, sv::SVector{2, T}) where {F<:CoordFrame, T<:Number} = Vec{F, T}(sv[1], sv[2])
 
-function Base.:-(p1::Pos{F}, p2::Pos{F}) where {F<:CoordFrame}
+function Base.:-(p1::Pos{F}, p2::Pos{F}) where {F<:FCart}
     return Vec(F, p1.c1 - p2.c1, p1.c2 - p2.c2)
 end
 
-function distance(p1::Pos{F}, p2::Pos{F}) where {F<:CoordFrame} # TODO does this definiton make sense for FCurv? idea: convert to FCart first, then calculate distance
+function distance(p1::Pos{F}, p2::Pos{F}) where {F<:FCart}
     vec = p2 - p1
     return norm(vec)
 end
@@ -49,7 +50,7 @@ struct TransFrame
     ref_pos::Vector{Pos{FCart,Float64}} # reference points, which build the "skeleton" of the curvilinear CoordFrame
     cum_dst::Vector{Float64} # cumulative distance between reference points
 
-    function TransFrame(ref_pos::Vector{Pos{FCart,T}}) where {T<:Number}
+    function TransFrame(ref_pos::Vector{Pos{FCart, T}}) where {T<:Number}
         @assert length(ref_pos) ≥ 2
         cum_dst = cumsum(norm.(diff(ref_pos)))
         pushfirst!(cum_dst, 0.0)
@@ -57,7 +58,7 @@ struct TransFrame
     end
 
     function TransFrame()
-        return new(Vector{Pos{FCart,Float64}}(), Vector{Float64}())
+        return new(Vector{Pos{FCart, Float64}}(), Vector{Float64}())
     end
 end
 
@@ -67,7 +68,7 @@ function transform(pos::Pos{FCurv, T}, frame::TransFrame) where {T<:Number}
     p_pre = frame.ref_pos[ind]
     p_suc = frame.ref_pos[ind+1]
     t_normalized = (p_suc - p_pre) / distance(p_pre, p_suc) # tangetial
-    n_normalized = SMatrix{2,2,Float64,4}(0, -1, 1, 0) * t_normalized # normal, 90° counter clock-wise
+    n_normalized = SMatrix{2, 2, Float64, 4}(0, -1, 1, 0) * t_normalized # normal, 90° counter clock-wise
     return p_pre + (pos.c1-frame.cum_dst[ind])*t_normalized + (pos.c2)*n_normalized
 end
 
@@ -100,7 +101,7 @@ function transform(pos::Pos{FCart, T}, frame::TransFrame) where {T<:Number}
     end
 
     t_normalized = vec_ref_pos_normalized[id]
-    n_normalized = SMatrix{2,2,Float64,4}(0, -1, 1, 0) * t_normalized
+    n_normalized = SMatrix{2, 2, Float64, 4}(0, -1, 1, 0) * t_normalized
     d = dot(vec_to_pos[id], n_normalized)
 
     return Pos(FCurv, s, d)
