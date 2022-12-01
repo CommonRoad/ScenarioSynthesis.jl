@@ -1,4 +1,3 @@
-ENV["JULIA_PYTHONCALL_EXE"] = "/home/florian/anaconda3/envs/pycall/bin/python3.10"
 using ScenarioSynthesis
 
 scene01 = Scene(1, 4.0, 8.0)
