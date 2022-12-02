@@ -20,7 +20,7 @@ struct SafeDistance <: TrafficRule end
 struct Relation{T}
     v1::Vehicle
     v2::Vehicle
-    l::LaneSection
+    l::Lanelet
 
     """
         Relation
@@ -28,7 +28,7 @@ struct Relation{T}
     Default constructor for relation between two vehicles.
     """
     function Relation(::Type{T}, v1::Vehicle, v2::Vehicle) where {T<:Union{IsBehind, IsNextTo, IsInFront, SafeDistance}}
-        l = LaneSection()
+        l = Lanelet()
         return new{T}(v1, v2, l)
     end
 
@@ -37,7 +37,7 @@ struct Relation{T}
 
     Default constructor for relation between a vehicle and a lanelet.
     """
-    function Relation(::Type{T}, v1::Vehicle, l::LaneSection) where {T<:Union{IsOnLaneSection, SpeedLimit}}
+    function Relation(::Type{T}, v1::Vehicle, l::Lanelet) where {T<:Union{IsOnLaneSection, SpeedLimit}}
         v2 = Vehicle(-1)
         return new{T}(v1, v2, l)
     end

@@ -6,7 +6,7 @@ Scenario is defined by its `actors`, and `scenes`. TODO update
 struct Scenario{T}
     actors::Vector{T}
     scenes::Vector{Scene}
-    lsn::LaneSectionNetwork
+    ln::LaneletNetwork
 
     function Scenario() # TODO ist this dummy constructor useful? -> remove
         return new{Vehicle}(Vector{Vehicle}(), Vector{Scene}())
