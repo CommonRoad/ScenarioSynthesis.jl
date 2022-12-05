@@ -40,14 +40,21 @@ function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction
     return p
 end
 
-function plot_lanelet_network(ln::LaneletNetwork; overwrite_backend::Bool=true, draw_direction::Bool=true)
+function plot_lanelet_network(ln::LaneletNetwork; overwrite_backend::Bool=true, draw_direction::Bool=true, annotate_id::Bool=false)
     overwrite_backend && backend()
 
     p = plot()
 
     for (id, lt) in ln.lanelets
-        plot!(p, plot_lanelet(lt, id, p; draw_direction=draw_direction, annotate_id=false))
+        plot!(p, plot_lanelet(lt, id, p; draw_direction=draw_direction, annotate_id=annotate_id))
     end
 
     return p 
+end
+
+function plot_polygon(poly::Polygon{F}) where {F<:CoordFrame}
+    vertNorth = map(v -> v.c2, poly.vertices)
+    vertEast = map(v -> v.c1, poly.vertices)
+    p = plot([vertEast..., vertEast[1]], [vertNorth..., vertNorth[1]]; label=false, aspect_ratio=:equal)
+    return p
 end

@@ -95,53 +95,6 @@ struct Lanelet
     end
 end
 
-#=
-function Lanelet(
-    lanelet_network::Py, 
-    mapping::Dict{LaneletID, LaneletPyID}, 
-    lanelet_id::Integer,
-    merging_with::DefaultDict{LaneletID, Set{LaneletID}},
-    diverging_with::DefaultDict{LaneletID, Set{LaneletID}},
-    intersecting_with::DefaultDict{LaneletID, Set{LaneletID}}
-)
-    # @warn "interface not complete" # TODO complete interface
-    lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
-
-    mapping_inv = Dict{LaneletPyID, LaneletID}((v, k) for (k, v) in mapping)
-
-    vertLeft = [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lanelet.left_vertices))]
-    vertRght = [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lanelet.right_vertices))]
-    vertCntr = [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lanelet.center_vertices))]
-
-    pred = Set(map(id -> mapping_inv[id], pyconvert(Vector{Int64}, lanelet.predecessor)))
-    succ = Set(map(id -> mapping_inv[id], pyconvert(Vector{Int64}, lanelet.successor)))
-
-    adjLeft = try
-        pyconvert(Bool, lanelet.adj_right_same_direction)
-    catch e
-        false
-    end
-    adjRght = try
-        pyconvert(Bool, lanelet.adj_left_same_direction)
-    catch
-        false
-    end
-
-    merg = merging_with[mapping_inv[lanelet_id]]
-    dive = diverging_with[mapping_inv[lanelet_id]]
-    inte = intersecting_with[mapping_inv[lanelet_id]]
-
-    # TODO remove hardcoded values!
-    laneletType = LT_Unknown
-    lineMarkingType = LM_Unknown
-
-    speedMax = 28.0
-    speedMin = -5.0
-    speedAdv = Inf64
-    stopLine = Inf64
-
-    return Lanelet(
-        vertLeft, vertRght, vertCntr, pred, succ, adjLeft, adjRght, laneletType, lineMarkingType, speedMax, speedMin, speedAdv, stopLine, merg, dive, inte
-    )
+function Polygon(lt::Lanelet)
+    return Polygon([lt.boundRght.vertices..., reverse(lt.boundLeft.vertices)...])
 end
-=#

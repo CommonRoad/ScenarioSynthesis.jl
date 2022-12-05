@@ -1,6 +1,9 @@
 include("coordinates.jl")
 export CoordFrame, FCart, FCurv, Pos, Vec, distance, TransFrame, transform
 
+include("geometry.jl")
+export Polygon, LineSection, is_intersect
+
 include("traffic_light.jl")
 export TrafficLight, TrafficLightID
 
