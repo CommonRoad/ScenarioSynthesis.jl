@@ -12,8 +12,8 @@ struct FCurv <: CoordFrame end
 Generic position in coordinate frame `F`.
 """
 struct Pos{F<:CoordFrame} <: FieldVector{2, Float64}
-    c1::Float64 # x in case of FCart; s in case of FCurv
-    c2::Float64 # y in case of Fcart; d in case of FCurv
+    c1::Float64 # x / east in case of FCart; s in case of FCurv
+    c2::Float64 # y / north in case of Fcart; d in case of FCurv
 end
 
 Pos(::Type{F}, c1::T1, c2::T2) where {F<:CoordFrame, T1<:Number, T2<:Number} = Pos{F}(c1, c2)
