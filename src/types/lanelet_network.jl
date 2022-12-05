@@ -1,4 +1,5 @@
 import PythonCall.@pyexec, PythonCall.Py, PythonCall.pyconvert
+import DataStructures.DefaultDict
 
 struct LaneletNetwork
     lanelets::Dict{LaneletID, Lanelet}
@@ -56,15 +57,37 @@ function ln_from_path(path::String)
             lanelet2section_id[lanelet.lanelet_id] = (sec_id, lane_id)
     """ => (lanelet2section_id, lanelet_network)
 
+    # return lanelet_network
     return py2jl_lanelet_network(lanelet_network)
 end
 
 function py2jl_lanelet_network(
     ln::Py
 )
+    colliding = DefaultDict{LaneletID, Set{LaneletID}}(Set{LaneletID})
+    for intersection in ln.intersections
+        collision_candidates = Set{LaneletID}()
+        for incoming in intersection.incomings
+            union!(collision_candidates, pyconvert(Set, incoming.successors_left))
+            union!(collision_candidates, pyconvert(Set, incoming.successors_right))
+            union!(collision_candidates, pyconvert(Set, incoming.successors_straight))
+        end
+
+        for i in collision_candidates
+            poly_i = py2jl_lanelet_id_to_poly(i, ln)
+            for j in collision_candidates
+                poly_j = py2jl_lanelet_id_to_poly(j, ln)
+
+                is_intersect(poly_i, poly_j) && union!(colliding[i], j)
+            end
+        end
+    end
+
+    print(colliding)
+
     lanelets = Dict{LaneletID, Lanelet}()
     for lt in ln.lanelets
-        lanelets[pyconvert(LaneletID, lt.lanelet_id)] = py2jl_lanelet(lt, ln) # TODO interection checking will probably require additional argument ln.intersections
+        lanelets[pyconvert(LaneletID, lt.lanelet_id)] = py2jl_lanelet(lt, ln, colliding) # TODO interection checking will probably require additional argument ln.intersections
     end
 
     trafficSigns = Dict{TrafficSignID, TrafficSign}()
@@ -78,6 +101,16 @@ function py2jl_lanelet_network(
     end
 
     return LaneletNetwork(lanelets, trafficSigns, trafficLights)
+end
+
+function py2jl_lanelet_id_to_poly(
+    id::LaneletID,
+    ln::Py
+)
+    lt = ln.find_lanelet_by_id(id)
+    vertices = pyconvert(Vector{Vector{Float64}}, lt.right_vertices)
+    append!(vertices, reverse(pyconvert(Vector{Vector{Float64}}, lt.left_vertices)))
+    return Polygon(FCart, vertices)
 end
 
 function py2jl_traffic_sign(ts::Py)
@@ -131,7 +164,7 @@ function py2jl_traffic_light(tl::Py)
     )
 end
 
-function py2jl_lanelet(lt::Py, ln::Py)
+function py2jl_lanelet(lt::Py, ln::Py, colliding::DefaultDict{LaneletID, Set{LaneletID}})
     ltid = pyconvert(LaneletID, lt.lanelet_id)
     boundLeft = Bound(Left, [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lt.left_vertices))], LM_Unknown) # TODO add conversion for LineMarking
     boundRght = Bound(Right, [Pos(FCart, x, y) for (x, y) in eachrow(pyconvert(Array, lt.right_vertices))], LM_Unknown)
@@ -171,7 +204,9 @@ function py2jl_lanelet(lt::Py, ln::Py)
     end
     delete!(diverging_with, ltid)
 
-    intersecting_with = Set{LaneletID}()
+    intersecting_with = colliding[ltid]
+    delete!(intersecting_with, merging_with)
+    delete!(intersecting_with, diverging_with)
 
     return Lanelet(
         boundLeft,
@@ -191,5 +226,4 @@ function py2jl_lanelet(lt::Py, ln::Py)
         diverging_with,
         intersecting_with
     )
-
 end

@@ -14,16 +14,6 @@ ln = ln_from_path("/home/florian/git/ScenarioSynthesis.jl/example_files/DEU_Colo
 route = Route(LaneletID.([23, 108, 66, 146, 7]), ln)
 route.frame.cum_dst[end]
 
-lt = ln.lanelets[120]
-
-lt.boundLeft.vertices
-
-plot_lanelet(lt, 120)
-plot_polygon(Polygon(lt))
+ln.lanelets[122].intersecting_with
 
 plot_lanelet_network(ln; annotate_id=true)
-
-p120 = Polygon(ln.lanelets[110])
-p121 = Polygon(ln.lanelets[121])
-
-is_intersect(p122, p121)

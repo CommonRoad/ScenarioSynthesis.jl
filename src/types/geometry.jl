@@ -42,6 +42,15 @@ struct Polygon{F}
 
         return new{F}(vector)
     end
+
+    function Polygon(::Type{F}, vector::AbstractVector{<:AbstractVector}) where {F<:CoordFrame}
+        n = length(vector)
+        n ≥ 3 || throw(error("Polygon must consist of at least 3 vertices."))
+
+        vec = map(x -> (@assert length(x)==2; Pos(FCart, x...)), vector) 
+
+        return new{F}(vec)
+    end
 end
 
 # TODO remove by more advanced implementation 
