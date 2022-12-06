@@ -6,8 +6,8 @@ abstract type ActorType end # TODO replace with RoadUser type? @enum instead of 
 struct Vehicle <: ActorType end # TODO is this even useful? 
 
 struct Actor # TODO add type as label or element? 
-    route::Route
-    state::StateCurv
+    route::Route # TODO maybe detach route from actor and infer rout based on scenes instead? => more freedom for optimizer
+    state::StateCurv # initial state? 
     len::Float64 # m 
     wid::Float64 # m
     v_min::Float64 # m/s
@@ -37,12 +37,12 @@ struct Actor # TODO add type as label or element?
     end
 end
 
-LaneletID(actor::Actor) = LaneletID(actor.route, actor.state.lon.s)
+# LaneletID(actor::Actor) = LaneletID(actor.route, actor.state.lon.s) # TODO only possible for initial state? no lateral checks yet!
 
-struct ActorDict
+struct ActorsDict
     actors::OrderedDict{ActorID, Actor}
 
-    function ActorDict(actors::AbstractVector{Actor})
-        return new(OrderedDict{Actor, ActorID}(zip(1:length(actors), actors)))
+    function ActorsDict(actors::AbstractVector{Actor})
+        return new(OrderedDict{ActorID, Actor}(zip(1:length(actors), actors)))
     end
 end

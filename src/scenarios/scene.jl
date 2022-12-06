@@ -5,7 +5,7 @@ const SceneID = Int64
 struct Scene
     δ_min::Float64
     δ_max::Float64
-    relations::Set{Relation}
+    relations::Vector{Relation} # TODO change to set? 
 
     function Scene(δ_min::Number, δ_max::Number, relations::AbstractVector{Relation})
         @assert 0 < δ_min ≤ δ_max < Inf

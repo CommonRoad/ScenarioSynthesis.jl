@@ -1,3 +1,3 @@
 include("actor.jl")
 
-export Actor, Vehicle
+export Actor, Vehicle, ActorsDict
