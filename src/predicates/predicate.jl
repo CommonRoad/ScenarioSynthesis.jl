@@ -30,7 +30,7 @@ struct Relation{T}
 
     Default constructor for relation between two vehicles.
     """
-    function Relation(::Type{T}, v1::Actor, v2::Actor) where {T<:Union{IsBehind, IsNextTo, IsInFront, SafeDistance}}
+    function Relation(::Type{T}, v1::ActorID, v2::ActorID) where {T<:Union{IsBehind, IsNextTo, IsInFront, SafeDistance, IsRoutesTouch, IsRoutesIntersect}}
         return new{T}(v1, v2, -1)
     end
 
@@ -39,11 +39,7 @@ struct Relation{T}
 
     Default constructor for relation between a vehicle and a lanelet.
     """
-    function Relation(::Type{T}, v1::Actor, l::LaneletID) where {T<:Union{IsOnLanelet, SpeedLimit}}
+    function Relation(::Type{T}, v1::ActorID, l::LaneletID) where {T<:Union{IsOnLanelet, SpeedLimit}}
         return new{T}(v1, -1, l)
     end
-end
-
-function is_valid(rel::Relation{IsOnLanelet})
-    return LaneletID(rel.v1) == rel.l
 end

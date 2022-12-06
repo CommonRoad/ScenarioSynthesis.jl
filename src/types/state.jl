@@ -37,3 +37,13 @@ end
 function Pos(sc::StateCurv)
     return Pos(FCurv, sc.lon.s, sc.lat.d)
 end
+
+struct AccInput <: FieldVector{2, Float64}
+    lon::Float64
+    lat::Float64
+end
+
+struct JerkInput <: FieldVector{2, Float64}
+    lon::Float64
+    lat::Float64
+end

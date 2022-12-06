@@ -20,4 +20,4 @@ include("route.jl")
 export Route, ref_pos_of_conflicting_routes
 
 include("state.jl")
-export StateLon, StateLat, StateCurv
+export StateLon, StateLat, StateCurv, JerkInput, AccInput

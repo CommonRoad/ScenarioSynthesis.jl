@@ -19,19 +19,25 @@ route2 = Route(LaneletID.([8, 92, 11]), ln)
 route3 = Route(LaneletID.([66, 147, 63]), ln)
 route4 = Route(LaneletID.([25, 112, 66, 146]), ln)
 
-actor1 = Actor(route1, StateCurv(StateLon(20.0, 10.0, 1.0), StateLat(0.8, -0.2, 0.0)))
-actor2 = Actor(route2, StateCurv(StateLon(20.0, 10.0, 1.0), StateLat(0.2, 0.1, 0.0)); a_min=-2.0)
-actor3 = Actor(route3, StateCurv(StateLon(20.0, 10.0, 1.0), StateLat(0.8, -0.2, 0.0)))
-actor4 = Actor(route4, StateCurv(StateLon(20.0, 10.0, 1.0), StateLat(0.8, -0.2, 0.0)))
+actor1 = Actor(route1)
+actor2 = Actor(route2; a_min=-2.0)
+actor3 = Actor(route3)
+actor4 = Actor(route4)
 
 actors = ActorsDict([actor1, actor2, actor3, actor4])
 
 ### define scenes
-scene1 = Scene(4.0, 8.0, Vector{Relation}())
-scene2 = Scene(4.0, 8.0, Vector{Relation}())
-scene3 = Scene(4.0, 8.0, Vector{Relation}())
-scene4 = Scene(4.0, 8.0, Vector{Relation}())
-scene5 = Scene(4.0, 8.0, Vector{Relation}())
+rel1 = [Relation(IsOnLanelet, 1, 64), Relation(IsOnLanelet, 2, 8), Relation(IsOnLanelet, 3, 66), Relation(IsBehind, 4, 3)]
+rel2 = [Relation(IsBehind, 4, 3)]
+rel3 = [Relation(IsBehind, 4, 3)]
+rel4 = [Relation(IsBehind, 4, 3)]
+rel5 = [Relation(IsBehind, 4, 3)]
+
+scene1 = Scene(4.0, 8.0, rel1)
+scene2 = Scene(4.0, 8.0, rel2)
+scene3 = Scene(4.0, 8.0, rel3)
+scene4 = Scene(4.0, 8.0, rel4)
+scene5 = Scene(4.0, 8.0, rel5)
 
 scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5])
 
@@ -39,3 +45,16 @@ scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5])
 scenario = Scenario(actors, scenes, ln)
 
 ### synthesis
+
+st = StateCurv(StateLon(0.0, 0.0, 0.0), StateLat(0.0, 0.0, 0.0))
+st = run_timestep(
+    st,
+    JerkInput(3.0, 0.0),
+    1.0
+)
+
+st = run_timestep(
+    st, 
+    AccInput(3.0, 0.0), 
+    1.0
+)

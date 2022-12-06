@@ -1,4 +1,5 @@
 import DataStructures.OrderedDict
+import StaticArrays.SMatrix, StaticArrays.SVector
 
 const ActorID = Int64
 
@@ -7,7 +8,6 @@ struct Vehicle <: ActorType end # TODO is this even useful?
 
 struct Actor # TODO add type as label or element? 
     route::Route # TODO maybe detach route from actor and infer rout based on scenes instead? => more freedom for optimizer
-    state::StateCurv # initial state? 
     len::Float64 # m 
     wid::Float64 # m
     v_min::Float64 # m/s
@@ -16,8 +16,7 @@ struct Actor # TODO add type as label or element?
     a_max::Float64 # m/s²
 
     function Actor(
-        route::Route,
-        state::StateCurv; 
+        route::Route;
         len::Number=5.0,
         wid::Number=2.2,
         v_min::Number=-4.0,
@@ -31,13 +30,10 @@ struct Actor # TODO add type as label or element?
         @assert v_max > 0 # forward
         @assert a_min < 0 # breaking 
         @assert a_max > 0 # accelerating
-        @assert route.frame.cum_dst[1] ≤ state.lon.s < route.frame.cum_dst[end]
 
-        return new(route, state, len, wid, v_min, v_max, a_min, a_max)
+        return new(route, len, wid, v_min, v_max, a_min, a_max)
     end
 end
-
-# LaneletID(actor::Actor) = LaneletID(actor.route, actor.state.lon.s) # TODO only possible for initial state? no lateral checks yet!
 
 struct ActorsDict
     actors::OrderedDict{ActorID, Actor}
@@ -45,4 +41,32 @@ struct ActorsDict
     function ActorsDict(actors::AbstractVector{Actor})
         return new(OrderedDict{ActorID, Actor}(zip(1:length(actors), actors)))
     end
+end
+
+function run_timestep(
+    state::StateCurv,
+    input::JerkInput, # constant over time Δt
+    Δt::Number
+)
+    system = SMatrix{3, 3, Float64, 9}(1, 0, 0, Δt, 1, 0, 1/2*Δt^2, Δt, 1)
+    excitation = SVector{3, Float64}(1/6*Δt^3, 1/2*Δt^2, Δt)
+    
+    lon = system * state.lon + excitation * input.lon
+    lat = system * state.lat + excitation * input.lat
+
+    return StateCurv(lon, lat) 
+end
+
+function run_timestep(
+    state::StateCurv,
+    input::AccInput,
+    Δt::Number
+)
+    system = SMatrix{3, 3, Float64, 9}(1, 0, 0, Δt, 1, 0, 0, 0, 0)
+    excitation = SVector{3, Float64}(1/2*Δt^2, Δt, 1)
+
+    lon = system * state.lon + excitation * input.lon
+    lat = system * state.lat + excitation * input.lat
+
+    return StateCurv(lon, lat)
 end
