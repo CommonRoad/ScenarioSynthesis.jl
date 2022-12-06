@@ -1,3 +1,3 @@
 include("predicate.jl")
 
-export Predicate, Relation, TrafficRule, IsBehind, IsNextTo, IsInFront, IsOnLanelet, IsOnLane, SpeedLimit, SafeDistance
+export Predicate, Relation, TrafficRule, IsBehind, IsNextTo, IsInFront, IsOnLanelet, IsOnLane, SpeedLimit, SafeDistance, is_valid

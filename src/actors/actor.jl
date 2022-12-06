@@ -1,9 +1,11 @@
-abstract type Actor end
+import DataStructures.OrderedDict
 
-LaneletID(actor::Actor) = LaneletID(actor.route, actor.state.lon.s)
+const ActorID = Int64
 
-struct Vehicle <: Actor
-    id::Int64
+abstract type ActorType end # TODO replace with RoadUser type? @enum instead of sttucts? 
+struct Vehicle <: ActorType end # TODO is this even useful? 
+
+struct Actor # TODO add type as label or element? 
     route::Route
     state::StateCurv
     len::Float64 # m 
@@ -13,16 +15,15 @@ struct Vehicle <: Actor
     a_min::Float64 # m/s²
     a_max::Float64 # m/s²
 
-    function Vehicle(
-        id::Int,
+    function Actor(
         route::Route,
         state::StateCurv; 
-        len::Float64=5.0,
-        wid::Float64=2.2,
-        v_min::Float64=-4.0,
-        v_max::Float64=40.0,
-        a_min::Float64=-7.0,
-        a_max::Float64=3.0
+        len::Number=5.0,
+        wid::Number=2.2,
+        v_min::Number=-4.0,
+        v_max::Number=40.0,
+        a_min::Number=-7.0,
+        a_max::Number=3.0
     )
         @assert len > 0
         @assert wid > 0
@@ -32,7 +33,16 @@ struct Vehicle <: Actor
         @assert a_max > 0 # accelerating
         @assert route.frame.cum_dst[1] ≤ state.lon.s < route.frame.cum_dst[end]
 
-        return new(id, route, state, len, wid, v_min, v_max, a_min, a_max)
+        return new(route, state, len, wid, v_min, v_max, a_min, a_max)
     end
 end
 
+LaneletID(actor::Actor) = LaneletID(actor.route, actor.state.lon.s)
+
+struct ActorDict
+    actors::OrderedDict{ActorID, Actor}
+
+    function ActorDict(actors::AbstractVector{Actor})
+        return new(OrderedDict{Actor, ActorID}(zip(1:length(actors), actors)))
+    end
+end
