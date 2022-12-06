@@ -87,6 +87,14 @@ function transform(pos::Pos{FCart}, frame::TransFrame)
     scalar_prod = map(x -> dot(x[1], x[2])/x[3], zip(vec_ref_pos_normalized, vec_to_pos[1:end-1], vec_ref_length))
     
     candidates = findall(x -> 0 < x < 1, scalar_prod) # 0 and 1 are covered by reference points evaluation
+    if length(candidates) < 1
+        id = closest_ref_pos[2]
+        s = frame.cum_dst[id]
+        t_normalized = vec_ref_pos_normalized[id]
+        n_normalized = SMatrix{2, 2, Float64, 4}(0, -1, 1, 0) * t_normalized
+        d = dot(vec_to_pos[id], n_normalized)
+        return Pos(FCurv, s, d)
+    end
 
     dst_to_streches = map(x -> distance(pos, frame.ref_pos[x] + scalar_prod[x]*vec_ref_pos[x]), candidates)
     closest_strech = findmin(dst_to_streches)
@@ -98,6 +106,7 @@ function transform(pos::Pos{FCart}, frame::TransFrame)
         s = frame.cum_dst[id] + scalar_prod[id] * vec_ref_length[id]
     else
         id = closest_ref_pos[2]
+        s = frame.cum_dst[id]
     end
 
     t_normalized = vec_ref_pos_normalized[id]

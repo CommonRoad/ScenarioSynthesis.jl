@@ -29,11 +29,11 @@ end
 
 Curvlinear state, consisting of longitudinal state `lon`, and lateral state `lat`.
 """
-struct StateCurve <: State
+struct StateCurv <: State
     lon::StateLon
     lat::StateLat
 end
 
-function Pos(sc::StateCurve)
+function Pos(sc::StateCurv)
     return Pos(FCurv, sc.lon.s, sc.lat.d)
 end

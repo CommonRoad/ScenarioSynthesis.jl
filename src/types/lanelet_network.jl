@@ -18,7 +18,7 @@ function ln_from_path(path::String)
     lanelet_network = scenario._lanelet_network
 
     ##############################################################
-    # TODO every python code below could be removed              #
+    # TODO python code below unused and could be removed         #
     ##############################################################
 
     # additional inits

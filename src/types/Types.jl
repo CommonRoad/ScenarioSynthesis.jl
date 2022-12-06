@@ -2,7 +2,7 @@ include("coordinates.jl")
 export CoordFrame, FCart, FCurv, Pos, Vec, distance, TransFrame, transform
 
 include("geometry.jl")
-export Polygon, LineSection, is_intersect
+export Polygon, LineSection, is_intersect, pos_intersect
 
 include("traffic_light.jl")
 export TrafficLight, TrafficLightID
@@ -17,7 +17,7 @@ include("lanelet_network.jl")
 export LaneletNetwork, ln_from_path
 
 include("route.jl")
-export Route
+export Route, ref_pos_of_conflicting_routes
 
 include("state.jl")
-export StateLon, StateLat, StateCurve
+export StateLon, StateLat, StateCurv
