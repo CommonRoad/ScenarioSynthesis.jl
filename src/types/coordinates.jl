@@ -63,7 +63,7 @@ struct TransFrame
 end
 
 function transform(pos::Pos{FCurv}, frame::TransFrame)
-    0 ≤ pos.c1 < frame.cum_dst[end] || throw(eror("out of bounds"))
+    0 ≤ pos.c1 < frame.cum_dst[end] || throw(error("out of bounds"))
     ind = findlast(dst -> dst ≤ pos.c1, frame.cum_dst) # index of preceding reference point--
     p_pre = frame.ref_pos[ind]
     p_suc = frame.ref_pos[ind+1]

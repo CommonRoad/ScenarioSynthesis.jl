@@ -7,7 +7,7 @@ struct LaneletNetwork
     trafficLights::Dict{TrafficLightID, TrafficLight}
 end
 
-function ln_from_path(path::String)
+function ln_from_path(path::String) # TODO get rid of python and parse xml file directly? 
     @pyexec path => """
     # import 
     from commonroad.common.file_reader import CommonRoadFileReader
@@ -82,8 +82,6 @@ function py2jl_lanelet_network(
             end
         end
     end
-
-    print(colliding)
 
     lanelets = Dict{LaneletID, Lanelet}()
     for lt in ln.lanelets

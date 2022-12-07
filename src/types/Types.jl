@@ -16,8 +16,14 @@ export Lanelet, LaneletID
 include("lanelet_network.jl")
 export LaneletNetwork, ln_from_path
 
-include("route.jl")
-export Route, ref_pos_of_conflicting_routes
-
 include("state.jl")
 export StateLon, StateLat, StateCurv, JerkInput, AccInput
+
+include("route.jl")
+export Route, ref_pos_of_conflicting_routes, lon_distance
+
+include("actor.jl")
+export Actor, Vehicle, ActorsDict, run_timestep
+
+include("predicate.jl")
+export Predicate, Relation, TrafficRule, IsBehind, IsNextTo, IsInFront, IsOnLanelet, IsOnSameLaneSection, SpeedLimit, SafeDistance, IsRoutesMerge, IsRoutesIntersect, IsFaster

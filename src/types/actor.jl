@@ -70,3 +70,40 @@ function run_timestep(
 
     return StateCurv(lon, lat)
 end
+
+"""
+    lon_distance
+
+Longitudinal distance of `lon1` in CoordFrame of `actor1` and `lon2`in CoordFrame of `actor2`. 
+Positive: `lon1` ahead of `lon2`
+Negative: vice versa
+Inf: routes of `actor1`and `actor2` do not merge at any point.
+"""
+function lon_distance(
+    actor1::Actor,
+    lon1::Number,
+    actor2::Actor,
+    lon2::Number,
+    ln::LaneletNetwork
+)
+    ref_pos, does_exist = ref_pos_of_merging_routes(actor1.route, actor2.route, ln) # TODO also enable for neighboring and intersecting lanes? 
+    
+    return (does_exist ? (lon1 - lon2 - transform(ref_pos, actor1.route.frame).c1 + transform(ref_pos, actor2.route.frame).c1, true) : (Inf64, false))
+end
+
+function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
+    0 ≤ state.lon.s < actor.route.transition_points[end] || throw(error("out of bounds."))
+    trid = findlast(x -> x ≤ state.lon.s, actor.route.transition_points)
+    ltid = actor.route.route[trid]
+    lt = ln.lanelets[ltid]
+
+    # check whether lateral position is within bounds # TODO linear interpolation of distances before and after actual position would be even more accurate
+    s_lt = state.lon.s - actor.route.transition_points[trid] # longitudial coordinate in lanelet frame
+    trid_lt = findlast(x -> x ≤ s_lt, lt.frame.cum_dst) # last center support point before longitudinal pos
+    d_rght = distance(lt.vertCntr[trid_lt], lt.boundRght.vertices[trid_lt]) # distance to right boundary
+    d_left = distance(lt.vertCntr[trid_lt], lt.boundLeft.vertices[trid_lt])
+
+    -d_rght ≤ state.lat.d ≤ d_left || throw(error("could not determine LaneletID."))
+
+    return ltid
+end

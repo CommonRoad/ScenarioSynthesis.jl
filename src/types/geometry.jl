@@ -104,7 +104,7 @@ struct Polygon{F}
     end
 end
 
-# TODO remove by more advanced implementation 
+# TODO replace by more advanced implementation 
 function is_intersect(
     p1::Polygon{F},
     p2::Polygon{F}

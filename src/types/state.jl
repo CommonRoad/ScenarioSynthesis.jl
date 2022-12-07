@@ -32,6 +32,20 @@ Curvlinear state, consisting of longitudinal state `lon`, and lateral state `lat
 struct StateCurv <: State
     lon::StateLon
     lat::StateLat
+
+    function StateCurv(lon::StateLon, lat::StateLat)
+        return new(lon, lat)
+    end
+
+    function StateCurv(lon::AbstractVector, lat::AbstractVector)
+        length(lon) == length(lat) == 3 || throw(error("wrong length of input."))
+        return new(lon, lat)
+    end
+
+    function StateCurv(a::Number, b::Number, c::Number, d::Number, e::Number, f::Number)
+        return new([a, b, c], [d, e, f])
+    end
+
 end
 
 function Pos(sc::StateCurv)
