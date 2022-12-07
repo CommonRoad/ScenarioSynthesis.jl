@@ -25,64 +25,110 @@ struct Route
 
         ### calculating conflicting areas
         conflicting_areas = Vector{Interval}()
+        n_iter = 20
         for i in 1:length(route) # TODO move to LaneletNetwork construction? -- smoothed line could cause problems!
             rele = route[i]
             lanelet = ln.lanelets[rele]
             s_conflicting = Inf64
             e_conflicting = Inf64
             for merg in ln.lanelets[rele].merging_with
+                s_conflicting == 0.0 && break
                 poly_merg = Polygon(ln.lanelets[merg])
 
+                # handling edge cases
+                !is_intersect(Polygon(lanelet), poly_merg) && continue
                 is_intersect(Polygon_cut_from_start(lanelet, 0.01), poly_merg) && (s_conflicting = 0.0; break)
-                # increase polygon size starting from front end of lanlet
-                s_prev = 0.01
-                s = 1.0
-                while s_conflicting > 0.0 && s < lanelet.frame.cum_dst[end] && !is_intersect(Polygon_cut_from_start(lanelet, s), poly_merg)
-                    s_prev = s
-                    s += 1.0 # TODO maybe add more refinements or iterative procedure
+                
+                # bisection
+                s_low = 0.0
+                s_upp = lanelet.frame.cum_dst[end]
+
+                for iter in 1:n_iter
+                    s = (s_low + s_upp)/2
+                    
+                    if is_intersect(Polygon_cut_from_start(lanelet, s), poly_merg)
+                        s_upp = s
+                    else
+                        s_low = s
+                    end
                 end
-                s_conflicting = min(s_conflicting, s_prev)
+                s_conflicting = min(s_conflicting, s_low)
                 e_conflicting = 0.0
             end
 
             for dive in ln.lanelets[rele].diverging_with
+                e_conflicting == 0.0 && break
                 poly_dive = Polygon(ln.lanelets[dive])
 
+                # handling edge cases
+                !is_intersect(Polygon(lanelet), poly_dive) && continue
                 is_intersect(Polygon_cut_from_end(lanelet, 0.01), poly_dive) && (e_conflicting = 0.0; break)
-                # increase polygon size starting from rear end of lanelet
-                e_prev = 0.01
-                e = 1.0
-                while e_conflicting > 0.0 && e < lanelet.frame.cum_dst[end] && !is_intersect(Polygon_cut_from_end(lanelet, e), poly_dive)
-                    e_prev = e
-                    e += 1.0
+
+                # bisection
+                e_low = 0.0
+                e_upp = lanelet.frame.cum_dst[end]
+
+                for iter in 1:n_iter
+                    e = (e_low + e_upp)/2
+
+                    if is_intersect(Polygon_cut_from_end(lanelet, e), poly_dive)
+                        e_upp = e
+                    else
+                        e_low = e
+                    end
                 end
                 s_conflicting = 0.0
-                e_conflicting = min(e_conflicting, e_prev)
+                e_conflicting = min(e_conflicting, e_low)
             end
 
             for intr in ln.lanelets[rele].intersecting_with 
+                s_conflicting == 0.0 && break
                 poly_intr = Polygon(ln.lanelets[intr])
 
+                # handling edge cases
+                !is_intersect(Polygon(lanelet), poly_intr) && continue
                 is_intersect(Polygon_cut_from_start(lanelet, 0.01), poly_intr) && (s_conflicting = 0.0; break)
-                # increase polygon size starting from front end of lanlet
-                s_prev = 0.01
-                s = 1.0
-                while s_conflicting > 0.0 && s < lanelet.frame.cum_dst[end] && !is_intersect(Polygon_cut_from_start(lanelet, s), poly_intr)
-                    s_prev = s
-                    s += 1.0
-                end
-                s_conflicting = min(s_conflicting, s_prev)
+                
+                # bisection
+                s_low = 0.0
+                s_upp = lanelet.frame.cum_dst[end]
 
-                is_intersect(Polygon_cut_from_end(lanelet, 0.01), poly_intr) && (e_conflicting = 0.0; break)
-                # increase polygon size starting from rear end of lanelet
-                e_prev = 0.01
-                e = 1.0
-                while e_conflicting > 0.0 && e < lanelet.frame.cum_dst[end] && !is_intersect(Polygon_cut_from_end(lanelet, e), poly_intr)
-                    e_prev = e
-                    e += 1.0
+                for iter in 1:n_iter
+                    s = (s_low + s_upp)/2
+                    
+                    if is_intersect(Polygon_cut_from_start(lanelet, s), poly_intr)
+                        s_upp = s
+                    else
+                        s_low = s
+                    end
                 end
-                e_conflicting = min(e_conflicting, e_prev)
+                s_conflicting = min(s_conflicting, s_low)
             end
+
+            for intr in ln.lanelets[rele].intersecting_with
+                e_conflicting == 0.0 && break
+                poly_intr = Polygon(ln.lanelets[intr])
+
+                # handling edge cases
+                !is_intersect(Polygon(lanelet), poly_intr) && continue
+                is_intersect(Polygon_cut_from_end(lanelet, 0.01), poly_intr) && (e_conflicting = 0.0; break)
+
+                # bisection
+                e_low = 0.0
+                e_upp = lanelet.frame.cum_dst[end]
+
+                for iter in 1:n_iter
+                    e = (e_low + e_upp)/2
+
+                    if is_intersect(Polygon_cut_from_end(lanelet, e), poly_intr)
+                        e_upp = e
+                    else
+                        e_low = e
+                    end
+                end
+                e_conflicting = min(e_conflicting, e_low)
+            end
+
             if s_conflicting < lanelet.frame.cum_dst[end] - e_conflicting
                 push!(conflicting_areas, Interval(transition_points[i] + s_conflicting, transition_points[i+1] - e_conflicting))
             end
@@ -90,13 +136,6 @@ struct Route
 
         return new(route, frame, transition_points, conflicting_areas)
     end
-end
-
-function LaneletID(route::Route, state::StateCurv)
-    # unsafe: does not check for lateral position yet
-    state.lon.s < route.frame.cum_dst[end] || throw(error("Out of bounds."))
-    ind = findlast(x -> x ≤ state.lon.s, route.transition_points)
-    return route.route[ind]
 end
 
 """

@@ -10,7 +10,7 @@ import Plotly.plot
 
 ### load LaneletNetwork
 ln = ln_from_path("/home/florian/git/ScenarioSynthesis.jl/example_files/DEU_Cologne-9_6_I-1.cr.xml");
-plot_lanelet_network(ln; annotate_id=true)
+# plot_lanelet_network(ln; annotate_id=true)
 
 
 ### define Actors
