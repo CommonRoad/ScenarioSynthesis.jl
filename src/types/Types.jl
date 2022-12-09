@@ -10,6 +10,9 @@ export TrafficLight, TrafficLightID
 include("traffic_sign.jl")
 export TrafficSign, TrafficSignID
 
+include("intersection.jl")
+export Intersection, IntersectionID
+
 include("lanelet.jl")
 export Lanelet, LaneletID
 

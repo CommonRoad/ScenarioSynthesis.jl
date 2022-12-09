@@ -5,6 +5,7 @@ struct LaneletNetwork
     lanelets::Dict{LaneletID, Lanelet}
     trafficSigns::Dict{TrafficSignID, TrafficSign}
     trafficLights::Dict{TrafficLightID, TrafficLight}
+    conflicting_area::Dict{IntersectionID, Intersection} # get information based on intersection data from Py 
 end
 
 function ln_from_path(path::String) # TODO get rid of python and parse xml file directly? 
@@ -98,7 +99,9 @@ function py2jl_lanelet_network(
         trafficLights[pyconvert(TrafficLightID, tl.id)] = py2jl_traffic_light(tl)
     end
 
-    return LaneletNetwork(lanelets, trafficSigns, trafficLights)
+    intersections = Dict{IntersectionID, Intersection}()
+
+    return LaneletNetwork(lanelets, trafficSigns, trafficLights, intersections)
 end
 
 function py2jl_lanelet_id_to_poly(
@@ -118,7 +121,7 @@ function py2jl_traffic_sign(ts::Py)
         try 
             push!(elements, py2jl_traffic_sign_element(tse))
         catch e
-            @warn "traffic sign element could not be converted. skipping."
+            @warn "cannot convert traffic sign element. skipping: $tse"
         end
     end
     
@@ -133,9 +136,9 @@ function py2jl_traffic_sign(ts::Py)
 end
 
 function py2jl_traffic_sign_element(tse::Py)
-    tseid = parse(Int64, pyconvert(String, tse.traffic_sign_element_id))
-    add_val = pyconvert(Vector{Float64}, tse.additional_values)
-    
+    tseid = parse(Int64, pyconvert(String, tse.traffic_sign_element_id.value))
+    add_val = parse.(Float64, pyconvert(Vector, tse.additional_values))
+
     return TrafficSignElement(
         tseid, 
         add_val

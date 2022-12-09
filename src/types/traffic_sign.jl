@@ -1,17 +1,41 @@
+import Match.Match, Match.@match
+
 const TrafficSignID = Int64
+const TrafficSignTypeID = Int64
 
-abstract type TrafficSignElementType end
+# abstract type TrafficSignType end
 
-struct TS_Right_before_left <: TrafficSignElementType end # "Achtung, rechts vor links"
-struct TS_Yield <: TrafficSignElementType end # "Vorfahrt gewähren"
+# struct TS_Right_before_left <: TrafficSignElementType end # "Achtung, rechts vor links"
+# struct TS_Yield <: TrafficSignElementType end # "Vorfahrt gewähren"
+
+@enum TrafficSignType begin
+    TS_Yield # 205
+    TS_Stop # 206
+    TS_Prio_of_oncoming_traffic # 208
+    TS_Max_speed # 274
+    TS_Min_speed # 275
+    TS_Unknown # else
+end
+
+function type_from_type_id(type_id::TrafficSignTypeID)
+    @match type_id begin
+        205 => TS_Yield
+        206 => TS_Stop
+        208 => TS_Prio_of_oncoming_traffic
+        274 => TS_Max_speed
+        275 => TS_Min_speed
+        _ => TS_Unknown
+    end
+end
 
 # TODO convert to more refined type system 
-struct TrafficSignElement
-    type::Int64
+struct TrafficSignElement{T}
     aditional_values::Vector{Float64}
 
-    function TrafficSignElement(type, additional_values)
-        return new(type, additional_values)
+    function TrafficSignElement(type_id, additional_values)
+        type = type_from_type_id(type_id)
+        @assert typeof(type) <: TrafficSignType
+        return new{type}(additional_values)
     end
 
 end

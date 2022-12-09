@@ -88,5 +88,5 @@ end
 is_valid(rel::Relation{IsFaster}, scenario::Scenario, state1::StateCurv, state2::StateCurv) = state1.lon.v > state2.lon.v # TODO remove unnecessary arguments? 
 
 function is_valid(rel::Relation{IsBeforeConflictingArea}, scenario::Scenario, state::StateCurv)
-    
+    return rand(Bool)
 end
