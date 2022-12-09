@@ -1,4 +1,5 @@
 import IntervalArithmetic.Interval
+import LinearAlgebra.norm
 
 struct Route
     route::Vector{LaneletID}
@@ -13,7 +14,82 @@ struct Route
             in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected."))
         end
 
-        merged_center_line = Vector{Pos{FCart}}(vcat([ln.lanelets[lsid].vertCntr for lsid in route]...))
+        # merged_center_line = Vector{Pos{FCart}}(vcat([ln.lanelets[lsid].vertCntr for lsid in route]...))
+        merged_center_line = Vector{Pos{FCart}}()
+        for i in 1:length(route)-1
+            if in(route[i+1], ln.lanelets[route[i].successors])
+                append!(merged_center_line, ln.lanelets[route[i]].frame.ref_pos)
+            elseif route[i+1] == ln.lanelets[route[i]].adjRght.lanelet_id
+                # handle lane change right
+                lt1 = ln.lanelets[route[i]]
+
+                # first quarter
+                trid = findlast(x -> x ≤ 0.25 * lt1.frame.cum_dst[end], lt1.frame.cum_dst)
+                append!(merged_center_line, lt1.frame.ref_pos[1:trid])
+
+                # first quarter support point
+                s_remain = 0.25 * lt1.frame.cum_dst[end] - lt1.frame.cum_dst[trid]
+                vec_to_next = lt1.frame.ref_pos[trid+1] - lt1.frame.ref_pos[trid]
+                support_point = lt1.frame.ref_pos[trid] + vec_to_next * (s_remain / norm(vec_to_next))
+                push!(merged_center_line, support_point)
+
+                # second quarter support point
+                cum_dst_rght_bound = cumsum(norm.(diff(lt1.boundRght.vertices)))
+                trid = findlast(x -> x ≤ 0.5 * cum_dst_rght_bound[end], lt1.cum_dst_rght_bound)
+                s_remain = 0.5 * cum_dst_rght_bound[end] - cum_dst_rght_bound[trid]
+                vec_to_next = lt1.boundRght.vertices[trid+1] - lt1.boundRght.vertices[trid]
+                support_point = lt1.boundRght.vertices[trid] + vec_to_next * (s_remain / norm(vec_to_next))
+                push!(merged_center_line, support_point)
+
+                # third quarter support_point
+                lt2 = ln.lanelets[route[i+1]]
+                trid = findlast(x -> x ≤ 0.75 * lt2.frame.cum_dst[end], lt2.frame.cum_dst)
+                s_remain = 0.75 * lt2.frame.cum_dst[end] - lt2.frame.cum_dst[trid]
+                vec_to_next = lt2.frame.ref_pos[trid+1] - lt2.frame.ref_pos[trid]
+                support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / nomr(vec_to_next))
+                push!(merged_center_line, support_point)
+
+                # remainder
+                append!(merged_center_line, lt2.frame.ref_pos[trid+1:end])
+
+            elseif route[i+1] == ln.lanelets[route[i]].adjLeft.lanelet_id
+                # handle lane change left
+                lt1 = ln.lanelets[route[i]]
+
+                # first quarter
+                trid = findlast(x -> x ≤ 0.25 * lt1.frame.cum_dst[end], lt1.frame.cum_dst)
+                append!(merged_center_line, lt1.frame.ref_pos[1:trid])
+
+                # first quarter support point
+                s_remain = 0.25 * lt1.frame.cum_dst[end] - lt1.frame.cum_dst[trid]
+                vec_to_next = lt1.frame.ref_pos[trid+1] - lt1.frame.ref_pos[trid]
+                support_point = lt1.frame.ref_pos[trid] + vec_to_next * (s_remain / norm(vec_to_next))
+                push!(merged_center_line, support_point)
+
+                # second quarter support point
+                cum_dst_left_bound = cumsum(norm.(diff(lt1.boundLeft.vertices)))
+                trid = findlast(x -> x ≤ 0.5 * cum_dst_left_bound[end], lt1.cum_dst_left_bound)
+                s_remain = 0.5 * cum_dst_left_bound[end] - cum_dst_left_bound[trid]
+                vec_to_next = lt1.boundLeft.vertices[trid+1] - lt1.boundLeft.vertices[trid]
+                support_point = lt1.boundLeft.vertices[trid] + vec_to_next * (s_remain / norm(vec_to_next))
+                push!(merged_center_line, support_point)
+
+                # third quarter support_point
+                lt2 = ln.lanelets[route[i+1]]
+                trid = findlast(x -> x ≤ 0.75 * lt2.frame.cum_dst[end], lt2.frame.cum_dst)
+                s_remain = 0.75 * lt2.frame.cum_dst[end] - lt2.frame.cum_dst[trid]
+                vec_to_next = lt2.frame.ref_pos[trid+1] - lt2.frame.ref_pos[trid]
+                support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / nomr(vec_to_next))
+                push!(merged_center_line, support_point)
+
+                # remainder
+                append!(merged_center_line, lt2.frame.ref_pos[trid+1:end])
+            else
+                throw(error("You should have never reached this part."))
+            end
+
+        end
+        
         # TODO add algorithms for line smoothing! -> neccessary for lane changes
 
         ### creation of TransFrame 

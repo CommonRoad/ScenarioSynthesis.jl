@@ -57,7 +57,7 @@ struct Lanelet
     is_lanelet::Bool # true, except if constructed by null constructor. Simpliefies working with DataStructures.DefaultDicts
     boundLeft::Bound{Left}
     boundRght::Bound{Right}
-    vertCntr::Vector{Pos{FCart}}
+    # vertCntr::Vector{Pos{FCart}} -> equal to frame.ref_pos
     pred::Set{LaneletID}
     succ::Set{LaneletID}
     adjLeft::Adjacent{Left} # same driving direction on adjecent left lane? whether the lane exists is implicitly defined by LaneletNetwork.lanelets data structure
@@ -86,16 +86,18 @@ struct Lanelet
         length(vertCntr) == length(boundRght.vertices) == length(boundLeft.vertices) || throw(error("different number of support points for lanelet."))
 
         return new(
-            true, boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with, transFrame
+            true, boundLeft, boundRght, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with, transFrame
         )
     end
 
     # null constructor
+    #=
     function Lanelet()
         return new(
             false, Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Set{LaneletID}(), Set{LaneletID}(), false, false, LT_Unknown, LM_Unknown, Inf64, 0.0, Inf64, Inf64, Set{LaneletID}(), Set{LaneletID}(), Set{LaneletID}(), TransFrame()
         )
     end
+    =#
 end
 
 function Polygon(lt::Lanelet)
