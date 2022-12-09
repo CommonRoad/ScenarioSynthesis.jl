@@ -184,3 +184,49 @@ function ref_pos_of_intersecting_routes(route1::Route, route2::Route, ln::Lanele
     end
     return Pos(FCart, Inf64, Inf64), false 
 end
+
+"""
+
+
+Return ref_pos for route1 and route2.
+"""
+function ref_position_of_neighboring_routes(route1::Route, route2::Route, ln::LaneletNetwork)
+    for ltid in route1.route
+        in(ltid, route2.route) && return ln.lanelets[ltid].vertCntr[end], true # identical to merge
+
+        ltid_iter = ltid
+        # iterate to right
+        while ln.lanelets[ltid_iter].adjRght.is_exist
+            ltid_iter = ln.lanelets[ltid_iter].adjRght.lanelet_id
+            if in(ltid_iter, route2.route)
+                route2_ltid = route2.route[findfirst(x -> x==ltid_iter, route2.route)]
+                return ln.lanelets[ltid_iter].vertCntr[end], ln.lanelets[route2_ltid].vertCntr[end], true
+            end
+        end
+
+        ltid_iter = ltid
+        # iterate to left
+        while ln.lanelets[ltid_iter].adjLeft.is_exist
+            ltid_iter = ln.lanelets[ltid_iter].adjLeft.lanelet_id
+            if in(ltid_iter, route2.route)
+                route2_ltid = route2.route[findfirst(x -> x==ltid_iter, route2.route)]
+                return ln.lanelets[ltid_iter].vertCntr[end], ln.lanelets[route2_ltid].vertCntr[end], true
+            end
+        end
+
+        return Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false
+    end
+end
+
+# TODO those routes that are neigboring and conflicting or that are conflicting multiple times can lead to errors! -> validity check based on StateCurv? 
+function ref_pos_general(route1::Route, route2::Route, ln::LaneletNetwork)
+    # check for neigboring routes
+    pos1, pos2, does_exist = ref_position_of_neighboring_routes(route1, route2, ln)
+    does_exist && return pos1, pos2, does_exist
+
+    # check for conflicting routes
+    pos1, does_exist = ref_pos_of_conflicting_routes(route1, rout2, ln)
+    does_exist && return pos1, pos1, does_exist
+
+    return Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false
+end
