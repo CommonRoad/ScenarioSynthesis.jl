@@ -10,7 +10,7 @@ function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction
     vertEast = map(v -> v.c1, lt.boundRght.vertices)
     append!(vertEast, map(v -> v.c1, reverse(lt.boundLeft.vertices)))
 
-    cntr = lt.vertCntr[floor(Int64, length(lt.vertCntr)/2)]
+    cntr = lt.frame.ref_pos[floor(Int64, length(lt.frame.ref_pos)/2)]
 
     # driving direction viz
     if draw_direction

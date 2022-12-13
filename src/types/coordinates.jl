@@ -81,6 +81,7 @@ function transform(pos::Pos{FCart}, frame::TransFrame)
 
     # evaluate strech in between reference points
     vec_ref_pos = diff(frame.ref_pos)
+    # push!(vec_ref_pos, vec_ref_pos[end]) # last vector is duplicated -- necessary to calculate d at last reference point
     vec_ref_length = map(v -> norm(v), vec_ref_pos)
     vec_ref_pos_normalized = vec_ref_pos ./ vec_ref_length
     

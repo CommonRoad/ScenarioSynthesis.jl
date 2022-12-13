@@ -13,6 +13,7 @@ plot_lanelet_network(ln; annotate_id=true)
 
 
 ### define Actors
+route0 = Route(LaneletID.([64]), ln)
 route1 = Route(LaneletID.([64, 143, 11]), ln)
 route2 = Route(LaneletID.([8, 92, 11]), ln)
 route3 = Route(LaneletID.([66, 147, 63]), ln)

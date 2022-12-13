@@ -9,15 +9,14 @@ struct Route
 
     function Route(route::Vector{LaneletID}, ln::LaneletNetwork)
         ### validity checks
-        length(route) ≥ 2 || throw(error("Route must travel at least two LaneSections."))
+        length(route) ≥ 1 || throw(error("Route must travel at least one LaneSection."))
         for i=1:length(route)-1
             in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected."))
         end
 
-        # merged_center_line = Vector{Pos{FCart}}(vcat([ln.lanelets[lsid].vertCntr for lsid in route]...))
         merged_center_line = Vector{Pos{FCart}}()
         for i in 1:length(route)-1
-            if in(route[i+1], ln.lanelets[route[i].successors])
+            if in(route[i+1], ln.lanelets[route[i]].succ)
                 append!(merged_center_line, ln.lanelets[route[i]].frame.ref_pos)
             elseif route[i+1] == ln.lanelets[route[i]].adjRght.lanelet_id
                 # handle lane change right
@@ -87,16 +86,17 @@ struct Route
             else
                 throw(error("You should have never reached this part."))
             end
-
         end
+
+        (length(route) == 1 || in(route[end], ln.lanelets[route[end-1]].succ)) && append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos)
         
         # TODO add algorithms for line smoothing! -> neccessary for lane changes
 
         ### creation of TransFrame 
         frame = TransFrame(merged_center_line)
 
-        ### storing transition points form one lanelet to another - TODO has to be adapted if line smoothing is implemented
-        transition_points = map(ltid -> transform(ln.lanelets[ltid].vertCntr[1], frame).c1, route)
+        ### storing transition points form one lanelet to another - TODO has to be adapted if line smoothing is implemented?
+        transition_points = map(ltid -> transform(ln.lanelets[ltid].frame.ref_pos[1], frame).c1, route)
         push!(transition_points, frame.cum_dst[end])
 
         ### calculating conflicting areas
@@ -223,16 +223,16 @@ function ref_pos_of_conflicting_routes(route1::Route, route2::Route, ln::Lanelet
     # iterate over lanelets of route1
     for ltid in route1.route
         # check for same route, e.g. if second vehicle starts further down the road
-        in(ltid, route2.route) && return ln.lanelets[ltid].vertCntr[end], true
+        in(ltid, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true
 
         # check for merging
         for merg in ln.lanelets[ltid].merging_with
-            in(merg, route2.route) && return ln.lanelets[ltid].vertCntr[end], true # return last center vertices pos of merging lanelets
+            in(merg, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true # return last center vertices pos of merging lanelets
         end
 
         # check for intersecting
         for intr in ln.lanelets[ltid].intersecting_with
-            in(intr, route2.route) && return pos_intersect(LineStrech(ln.lanelets[ltid].vertCntr), LineStrech(ln.lanelets[intr].vertCntr))
+            in(intr, route2.route) && return pos_intersect(LineStrech(ln.lanelets[ltid].frame.ref_pos), LineStrech(ln.lanelets[intr].frame.ref_pos))
         end
     end
     return Pos(FCart, Inf64, Inf64), false
@@ -241,11 +241,11 @@ end
 function ref_pos_of_merging_routes(route1::Route, route2::Route, ln::LaneletNetwork)
     for ltid in route1.route
         # check for same route, e.g. if second vehicle starts further down the road
-        in(ltid, route2.route) && return ln.lanelets[ltid].vertCntr[end], true
+        in(ltid, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true
 
         # check for merging
         for merg in ln.lanelets[ltid].merging_with
-            in(merg, route2.route) && return ln.lanelets[ltid].vertCntr[end], true # return last center vertices pos of merging lanelets
+            in(merg, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true # return last center vertices pos of merging lanelets
         end
     end
     return Pos(FCart, Inf64, Inf64), false
@@ -255,7 +255,7 @@ function ref_pos_of_intersecting_routes(route1::Route, route2::Route, ln::Lanele
     for ltid in route1.route
         # check for intersecting
         for intr in ln.lanelets[ltid].intersecting_with
-            in(intr, route2.route) && return pos_intersect(LineStrech(ln.lanelets[ltid].vertCntr), LineStrech(ln.lanelets[intr].vertCntr))
+            in(intr, route2.route) && return pos_intersect(LineStrech(ln.lanelets[ltid].frame.ref_pos), LineStrech(ln.lanelets[intr].frame.ref_pos))
         end
     end
     return Pos(FCart, Inf64, Inf64), false 
@@ -268,7 +268,7 @@ Return ref_pos for route1 and route2.
 """
 function ref_position_of_neighboring_routes(route1::Route, route2::Route, ln::LaneletNetwork)
     for ltid in route1.route
-        in(ltid, route2.route) && return ln.lanelets[ltid].vertCntr[end], true # identical to merge
+        in(ltid, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true # identical to merge
 
         ltid_iter = ltid
         # iterate to right
@@ -276,7 +276,7 @@ function ref_position_of_neighboring_routes(route1::Route, route2::Route, ln::La
             ltid_iter = ln.lanelets[ltid_iter].adjRght.lanelet_id
             if in(ltid_iter, route2.route)
                 route2_ltid = route2.route[findfirst(x -> x==ltid_iter, route2.route)]
-                return ln.lanelets[ltid_iter].vertCntr[end], ln.lanelets[route2_ltid].vertCntr[end], true
+                return ln.lanelets[ltid_iter].frame.ref_pos[end], ln.lanelets[route2_ltid].frame.ref_pos[end], true
             end
         end
 
@@ -286,7 +286,7 @@ function ref_position_of_neighboring_routes(route1::Route, route2::Route, ln::La
             ltid_iter = ln.lanelets[ltid_iter].adjLeft.lanelet_id
             if in(ltid_iter, route2.route)
                 route2_ltid = route2.route[findfirst(x -> x==ltid_iter, route2.route)]
-                return ln.lanelets[ltid_iter].vertCntr[end], ln.lanelets[route2_ltid].vertCntr[end], true
+                return ln.lanelets[ltid_iter].frame.ref_pos[end], ln.lanelets[route2_ltid].frame.ref_pos[end], true
             end
         end
 

@@ -100,8 +100,8 @@ function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
     # check whether lateral position is within bounds # TODO linear interpolation of distances before and after actual position would be even more accurate
     s_lt = state.lon.s - actor.route.transition_points[trid] # longitudial coordinate in lanelet frame
     trid_lt = findlast(x -> x ≤ s_lt, lt.frame.cum_dst) # last center support point before longitudinal pos
-    d_rght = distance(lt.vertCntr[trid_lt], lt.boundRght.vertices[trid_lt]) # distance to right boundary
-    d_left = distance(lt.vertCntr[trid_lt], lt.boundLeft.vertices[trid_lt])
+    d_rght = distance(lt.frame.ref_pos[trid_lt], lt.boundRght.vertices[trid_lt]) # distance to right boundary
+    d_left = distance(lt.frame.ref_pos[trid_lt], lt.boundLeft.vertices[trid_lt])
 
     -d_rght ≤ state.lat.d ≤ d_left || throw(error("could not determine LaneletID."))
 
