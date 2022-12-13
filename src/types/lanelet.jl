@@ -2,6 +2,7 @@ import LinearAlgebra.norm
 import Match.Match, Match.@match
 
 const LaneletID = Int64
+const ConflictSectionID = Int64
 
 @enum LineMarkingType LM_Dashed LM_Solid LM_BroadDashed LM_BroadSolid LM_Unknown LM_NoMarking
 @enum LaneletType LT_Urban LT_Country LT_Highway LT_DriveWay LT_MainCarriageWay LT_AccessRamp LT_ExitRamp LT_Shoulder LT_BusLane LT_BusStop LT_BicycleLane LT_Sidewalk LT_Crosswalk LT_Interstate LT_Intersection LT_Border LT_Parking LT_Restricted LT_Unknown
@@ -89,18 +90,17 @@ struct Adjacent{S}
     end
 end
 
-struct StopLine
+struct StopLine{L}
     is_active::Bool
     has_pos::Bool
     pos1::Pos{FCart}
     pos2::Pos{FCart}
-    lineMarking::LineMarkingType
     is_ref_to_traffic_sign::Bool
     ref_to_traffic_sign::TrafficSignID
     is_ref_to_traffic_light::Bool
     ref_to_traffic_light::TrafficLightID
 
-    function StopLine(lineMarking::LineMarkingType; pos1::Union{Pos{FCart}, Nothing}=Nothing, pos2::Union{Pos{FCart}, Nothing}=Nothing, ref_to_traffic_sign::Union{TrafficSignID, Nothing}=Nothing, ref_to_traffic_light::Union{TrafficLightID, Nothing}=Nothing)
+    function StopLine(::Type{L}, pos1::Union{Pos{FCart}, Nothing}=Nothing, pos2::Union{Pos{FCart}, Nothing}=Nothing, ref_to_traffic_sign::Union{TrafficSignID, Nothing}=Nothing, ref_to_traffic_light::Union{TrafficLightID, Nothing}=Nothing) where {L<:LineMarkingType}
         has_pos = isa(pos1, Pos{FCart}) && isa(pos2, Pos{FCart})
         is_ref_to_traffic_sign = isa(ref_to_traffic_sign, TrafficSignID)
         is_ref_to_traffic_light = isa(ref_to_traffic_light, TrafficLightID)
@@ -112,7 +112,11 @@ struct StopLine
 
         is_active = has_pos || is_ref_to_traffic_sign || is_ref_to_traffic_light
 
-        return new(is_active, has_pos, pos1, pos2, lineMarking, is_ref_to_traffic_sign, ref_to_traffic_sign, is_ref_to_traffic_light, ref_to_traffic_light)
+        return new{L}(is_active, has_pos, pos1, pos2, is_ref_to_traffic_sign, ref_to_traffic_sign, is_ref_to_traffic_light, ref_to_traffic_light)
+    end
+
+    function StopLine()
+        return new{LM_Unknown}(false, false, Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false, -1, false, -1)
     end
 end
 
@@ -133,10 +137,11 @@ struct Lanelet
     merging_with::Set{LaneletID}
     diverging_with::Set{LaneletID}
     intersecting_with::Set{LaneletID}
+    conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}}
     frame::TransFrame 
 
     function Lanelet(
-        boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with
+        boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight
     )
         length(laneletType) ≥ 1 || throw(error("lanelet type not specified.")) # TODO relax by setting laneletType = LT_Unknown ? 
 
@@ -145,7 +150,7 @@ struct Lanelet
         length(vertCntr) == length(boundRght.vertices) == length(boundLeft.vertices) || throw(error("different number of support points for lanelet."))
 
         return new(
-            true, boundLeft, boundRght, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with, transFrame
+            true, boundLeft, boundRght, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, Set{LaneletID}(), Set{LaneletID}(), Set{LaneletID}(), Dict{ConflictSectionID, Tuple{Float64, Float64}}(), transFrame
         )
     end
 end

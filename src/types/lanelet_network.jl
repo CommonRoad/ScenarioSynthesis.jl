@@ -1,11 +1,24 @@
 import LightXML.parse_file, LightXML.root, LightXML.free, LightXML.XMLElement, LightXML.attribute, LightXML.name, LightXML.content
 import DataStructures.DefaultDict
 
+#=
+struct ConflictSectionManager
+    csm::Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}
+
+    function ConflictSectionManager()
+        return new(Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}())
+    end
+end
+
+next_conflict_section_id(csm::ConflictSectionManager) = isempty(csm.csm) ? 1 : maximum(keys(csm.csm)) + 1
+=#
+
 struct LaneletNetwork
     lanelets::Dict{LaneletID, Lanelet}
     trafficSigns::Dict{TrafficSignID, TrafficSign}
     trafficLights::Dict{TrafficLightID, TrafficLight}
     intersections::Dict{IntersectionID, Intersection}
+    conflict_sections::Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}
 end
 
 function ln_from_xml(path::String) # path either asolute or relative
@@ -27,6 +40,7 @@ function ln_from_xml(path::String) # path either asolute or relative
     trafficSigns = Dict{TrafficSignID, TrafficSign}()
     trafficLights = Dict{TrafficLightID, TrafficLight}()
     intersections = Dict{IntersectionID, Intersection}()
+    conflict_sections = Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}()
 
     for lt in xml_lanelet
         lanelets[parse(LaneletID, attribute(lt, "id"))] = Lanelet(lt)
@@ -42,7 +56,7 @@ function ln_from_xml(path::String) # path either asolute or relative
     end
 
     free(xmlfile)
-    return LaneletNetwork(lanelets, trafficSigns, trafficLights, intersections)
+    return LaneletNetwork(lanelets, trafficSigns, trafficLights, intersections, conflict_sections)
 end
 
 function Lanelet(lt::XMLElement)
@@ -61,12 +75,9 @@ function Lanelet(lt::XMLElement)
     userBidirectional = RoadUserTypes(lt["userBidirectional"])
     trafficSign = Set(map(x -> parse(TrafficSignID, x), lt["trafficSign"]))
     trafficLight = Set(map(x -> parse(TrafficSignID, x), lt["trafficLight"]))
-    merging_with = Set{LaneletID}()
-    diverging_with = Set{LaneletID}()
-    intersecting_with = Set{LaneletID}()
 
     return Lanelet(
-        boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with
+        boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight
     )
 end
 
@@ -95,7 +106,7 @@ function Adjacent(::Type{S}, adj::Vector{XMLElement}) where {S<:Side}
 end
 
 function StopLine(stopline::Vector{XMLElement})
-    length(stopline) ≤ 0 && return StopLine(LM_Unknown)
+    length(stopline) ≤ 0 && return StopLine()
     if length(stopline) == 1
         lm = linemarking_typer(content(stopline[1]["lineMarking"][1]))
         pos1 = try
@@ -122,7 +133,8 @@ function StopLine(stopline::Vector{XMLElement})
             @warn e
             Nothing
         end
-        return StopLine(lm; pos1=pos1, pos2=pos2, ref_to_traffic_sign=ref_to_traffic_sign, ref_to_traffic_light=ref_to_traffic_light)
+        return StopLine(lm, pos1, pos2, ref_to_traffic_sign, ref_to_traffic_light)
+    end
     length(stopline > 1) && throw(error("failure in xml file."))
 end
 
@@ -235,4 +247,10 @@ function process(ln::LaneletNetwork)
             end
         end
     end
+
+    # conflict sections
+    # TODO implementation
+    # determine collision candidates
+    # calculate intersecting sections (curvilinear CoordFrame)
+    # update data for ln and both lanelets
 end
