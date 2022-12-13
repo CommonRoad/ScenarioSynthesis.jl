@@ -19,7 +19,6 @@
 image: "julia"
 
 before_script:
-  - echo $(julia --version)
   - julia --version 
 
 stages:          # List of stages for jobs, and their order of execution
@@ -30,7 +29,7 @@ stages:          # List of stages for jobs, and their order of execution
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
-    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("ScenarioSynthesis"); Pkg.test("ScenarioSynthesis"; coverage = true)'
+    - julia -e 'using Pkg; Pkg.build("ScenarioSynthesis"); Pkg.test("ScenarioSynthesis"; coverage = true)'
     - julia -e 'using Pkg; Pkg.add("Coverage");
       import ScenarioSynthesis; cd(joinpath(dirname(pathof(ScenarioSynthesis)), ".."));
       using Coverage; cl, tl = get_summary(process_folder());
