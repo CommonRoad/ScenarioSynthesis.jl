@@ -10,14 +10,14 @@ export TrafficLight, TrafficLightID
 include("traffic_sign.jl")
 export TrafficSign, TrafficSignID
 
-include("intersection.jl")
-export Intersection, IntersectionID
-
 include("lanelet.jl")
 export Lanelet, LaneletID
 
+include("intersection.jl")
+export Intersection, IntersectionID
+
 include("lanelet_network.jl")
-export LaneletNetwork, ln_from_path
+export LaneletNetwork, ln_from_path, ln_from_xml, process
 
 include("state.jl")
 export StateLon, StateLat, StateCurv, JerkInput, AccInput

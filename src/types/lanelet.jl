@@ -1,25 +1,76 @@
 import LinearAlgebra.norm
+import Match.Match, Match.@match
 
 const LaneletID = Int64
 
 @enum LineMarkingType LM_Dashed LM_Solid LM_BroadDashed LM_BroadSolid LM_Unknown LM_NoMarking
-@enum LaneletType LT_Urban LT_Country LT_Highway LT_DriveWay LT_MainCarriageWay LT_AccessRamp LT_Shoulder LT_BusLane LT_BusStop LT_BicycleLane LT_Sidewalk LT_Crosswalk LT_Interstate LT_Intersection LT_Border LT_Parking LT_Restricted LT_Unknown
+@enum LaneletType LT_Urban LT_Country LT_Highway LT_DriveWay LT_MainCarriageWay LT_AccessRamp LT_ExitRamp LT_Shoulder LT_BusLane LT_BusStop LT_BicycleLane LT_Sidewalk LT_Crosswalk LT_Interstate LT_Intersection LT_Border LT_Parking LT_Restricted LT_Unknown
 @enum RoadUserType RU_Vehicle RU_Car RU_Truck RU_Bus RU_PriorityVehicle RU_Motorcycle RU_Bicycle RU_Pedestrian RU_Train RU_Taxi
+
+function linemarking_typer(str::String)
+    return @match str begin
+        "dashed" => LM_Dashed
+        "solid" => LM_Solid
+        "broad_dashed" => LM_BroadDashed
+        "borad_solid" => LM_BroadSolid
+        "no_marking" => LM_NoMarking
+        "unknown" => LM_Unknown
+        _ => throw(error("not defined: $str"))
+    end
+end
+
+function lanelet_typer(str::String)
+    return @match str begin
+        "urban" => LT_Urban
+        "country" => LT_Country
+        "highway" => LT_Highway
+        "driveWay" => LT_DriveWay
+        "mainCarriageWay" => LT_MainCarriageWay
+        "accessRamp" => LT_AccessRamp
+        "exitRamp" => LT_ExitRamp
+        "shoulder" => LT_Shoulder
+        "busLane" => LT_BusLane
+        "busStop" => LT_BusStop
+        "bicycleLane" => LT_BicycleLane
+        "sidewalk" => LT_Sidewalk
+        "crosswalk" => LT_Crosswalk
+        "interstate" => LT_Interstate
+        "unknown" => LT_Unknown
+        _ => throw(error("not defined: $str"))
+    end
+end
+
+function roaduser_typer(str::String)
+    return @match str begin
+        "vehicle" => RU_Vehicle
+        "car" => RU_Car
+        "truck" => RU_Truck
+        "bus" => RU_Bus
+        "priorityVehicle" => RU_PriorityVehicle
+        "motorcycle" => RU_Motorcycle
+        "bicycle" => RU_Bicycle
+        "pedestrian" => RU_Pedestrian
+        "train" => RU_Train
+        "taxi" => RU_Taxi
+        _ => throw(error("not defined: $str"))
+    end
+end
 
 abstract type Side end
 struct Right <: Side end
 struct Left <: Side end
+
 struct Bound{S}
     vertices::Vector{Pos{FCart}}
     lineMarking::LineMarkingType
 
     function Bound(::Type{S}, vertices::Vector{Pos{FCart}}) where {S<:Side}
-        length(vertices) ≥ 2 || throw(error("At least two vertices needed for a Bound."))
+        length(vertices) ≥ 2 || throw(error("At least two vertices needed for a boundary."))
         return new{S}(vertices, LM_Unknown)
     end
 
     function Bound(::Type{S}, vertices::Vector{Pos{FCart}}, lineMarking::LineMarkingType) where {S<:Side}
-        length(vertices) ≥ 2 || throw(error("At least two vertices needed for a Bound."))
+        length(vertices) ≥ 2 || throw(error("At least two vertices needed for a boundary."))
         return new{S}(vertices, lineMarking)
     end
 end
@@ -57,7 +108,6 @@ struct Lanelet
     is_lanelet::Bool # true, except if constructed by null constructor. Simpliefies working with DataStructures.DefaultDicts
     boundLeft::Bound{Left}
     boundRght::Bound{Right}
-    # vertCntr::Vector{Pos{FCart}} -> equal to frame.ref_pos
     pred::Set{LaneletID}
     succ::Set{LaneletID}
     adjLeft::Adjacent{Left} # same driving direction on adjecent left lane? whether the lane exists is implicitly defined by LaneletNetwork.lanelets data structure
@@ -73,9 +123,6 @@ struct Lanelet
     intersecting_with::Set{LaneletID}
     frame::TransFrame 
 
-    # TODO speed lims? max, min, adv
-
-    # standrad constructor with speed values check
     function Lanelet(
         boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with
     )
@@ -89,15 +136,6 @@ struct Lanelet
             true, boundLeft, boundRght, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, merging_with, diverging_with, intersecting_with, transFrame
         )
     end
-
-    # null constructor
-    #=
-    function Lanelet()
-        return new(
-            false, Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Vector{Pos{FCart}}(), Set{LaneletID}(), Set{LaneletID}(), false, false, LT_Unknown, LM_Unknown, Inf64, 0.0, Inf64, Inf64, Set{LaneletID}(), Set{LaneletID}(), Set{LaneletID}(), TransFrame()
-        )
-    end
-    =#
 end
 
 function Polygon(lt::Lanelet)

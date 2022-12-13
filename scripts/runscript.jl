@@ -8,7 +8,8 @@ using ScenarioSynthesis
 # 5. synthesis
 
 ### load LaneletNetwork
-ln = ln_from_path("/home/florian/git/ScenarioSynthesis.jl/example_files/DEU_Cologne-9_6_I-1.cr.xml");
+ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
+process(ln)
 plot_lanelet_network(ln; annotate_id=true)
 
 
@@ -71,17 +72,17 @@ st = run_timestep(
     1.0
 )
 
+
+ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml")
+
 ###
 using LightXML
 
-file = parse_file("example_files/DEU_Cologne-9_6_I-1.cr.xml");
+file = parse_file("example_files/DEU_Cologne-9_6_I-1.cr.xml")
+xmlroot = root(file)
+xml_lanelet = xmlroot["lanelet"]
+lt = xml_lanelet[1]
 
-###
-using IntervalArithmetic
+xml_intersection = xmlroot["intersection"]
 
-a = Interval(1, 4)
-
-b = Interval(5, 7)
-
-intersect(a, b)
-union(a, b)
+content(lt["leftBound"][1]["point"][1]["x"][1]) #["x"][1]
