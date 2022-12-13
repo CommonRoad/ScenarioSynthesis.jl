@@ -92,15 +92,27 @@ end
 struct StopLine
     is_active::Bool
     has_pos::Bool
-    pos1::Pos{FCurv}
-    pos2::Pos{FCurv}
-    is_ref_to_traffic_light::Bool
-    ref_traffic_light::TrafficLightID
+    pos1::Pos{FCart}
+    pos2::Pos{FCart}
+    lineMarking::LineMarkingType
     is_ref_to_traffic_sign::Bool
     ref_to_traffic_sign::TrafficSignID
+    is_ref_to_traffic_light::Bool
+    ref_to_traffic_light::TrafficLightID
 
-    function StopLine()
-        return new(false, false, Pos(FCurv, 0.0, 0.0), Pos(FCurv, 0.0, 0.0), false, -1, false, -1)
+    function StopLine(lineMarking::LineMarkingType; pos1::Union{Pos{FCart}, Nothing}=Nothing, pos2::Union{Pos{FCart}, Nothing}=Nothing, ref_to_traffic_sign::Union{TrafficSignID, Nothing}=Nothing, ref_to_traffic_light::Union{TrafficLightID, Nothing}=Nothing)
+        has_pos = isa(pos1, Pos{FCart}) && isa(pos2, Pos{FCart})
+        is_ref_to_traffic_sign = isa(ref_to_traffic_sign, TrafficSignID)
+        is_ref_to_traffic_light = isa(ref_to_traffic_light, TrafficLightID)
+
+        isa(pos1, Pos{FCart}) ? nothing : pos1 = Pos(FCart, Inf64, Inf64)
+        isa(pos2, Pos{FCart}) ? nothing : pos2 = Pos(FCart, Inf64, Inf64)
+        isa(ref_to_traffic_sign, TrafficSignID) ? nothing : ref_to_traffic_sign = -1
+        isa(ref_to_traffic_light, TrafficLightID) ? nothing : ref_to_traffic_light = -1
+
+        is_active = has_pos || is_ref_to_traffic_sign || is_ref_to_traffic_light
+
+        return new(is_active, has_pos, pos1, pos2, lineMarking, is_ref_to_traffic_sign, ref_to_traffic_sign, is_ref_to_traffic_light, ref_to_traffic_light)
     end
 end
 

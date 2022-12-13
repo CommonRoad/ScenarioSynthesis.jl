@@ -95,8 +95,34 @@ function Adjacent(::Type{S}, adj::Vector{XMLElement}) where {S<:Side}
 end
 
 function StopLine(stopline::Vector{XMLElement})
-    length(stopline) ≤ 0 && return StopLine()
-    length(stopline) == 1 && throw(error("not implemented yet."))
+    length(stopline) ≤ 0 && return StopLine(LM_Unknown)
+    if length(stopline) == 1
+        lm = linemarking_typer(content(stopline[1]["lineMarking"][1]))
+        pos1 = try
+            Pos(stopline[1]["point"][1])
+        catch e
+            @warn e
+            Nothing
+        end
+        pos2 = try
+            Pos(stopline[1]["point"][2])
+        catch e
+            @warn e
+            Nothing
+        end
+        ref_to_traffic_sign = try
+            parse(TrafficSignID, content(stopline[1]["trafficSignRef"][1]))
+        catch e
+            @warn e
+            Nothing
+        end
+        ref_to_traffic_light = try
+            parse(TrafficSignID, content(stopline[1]["trafficLightRef"][1]))
+        catch e
+            @warn e
+            Nothing
+        end
+        return StopLine(lm; pos1=pos1, pos2=pos2, ref_to_traffic_sign=ref_to_traffic_sign, ref_to_traffic_light=ref_to_traffic_light)
     length(stopline > 1) && throw(error("failure in xml file."))
 end
 
