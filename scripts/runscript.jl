@@ -9,7 +9,7 @@ using ScenarioSynthesis
 
 ### load LaneletNetwork
 ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
-process(ln)
+process!(ln)
 plot_lanelet_network(ln; annotate_id=true)
 
 
@@ -81,8 +81,8 @@ using LightXML
 file = parse_file("example_files/DEU_Cologne-9_6_I-1.cr.xml")
 xmlroot = root(file)
 xml_lanelet = xmlroot["lanelet"]
-lt = xml_lanelet[1]
 
-xml_intersection = xmlroot["intersection"]
+
+xmlintersection = xmlroot["intersection"]
 
 content(lt["leftBound"][1]["point"][1]["x"][1]) #["x"][1]

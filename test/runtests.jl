@@ -1,3 +1,4 @@
 include("runtest_coordinates.jl")
 include("runtest_geometry.jl")
+include("runtest_lanelet_network.jl")
 include("runtest_route.jl")

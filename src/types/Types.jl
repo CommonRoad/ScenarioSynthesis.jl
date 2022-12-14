@@ -14,10 +14,10 @@ include("lanelet.jl")
 export Lanelet, LaneletID
 
 include("intersection.jl")
-export Intersection, IntersectionID
+export Intersection, IntersectionID, Incoming, IncomingID, left_neighbor_func, opposite_neighbor_func
 
 include("lanelet_network.jl")
-export LaneletNetwork, ln_from_path, ln_from_xml, process
+export LaneletNetwork, ln_from_path, ln_from_xml, process!
 
 include("state.jl")
 export StateLon, StateLat, StateCurv, JerkInput, AccInput

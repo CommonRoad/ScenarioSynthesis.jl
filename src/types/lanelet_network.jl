@@ -199,16 +199,17 @@ function Incoming(incom::XMLElement)
     succStraight = Set(parse.(LaneletID, attribute.(incom["successorsStraight"], "ref")))
     succLeft = Set(parse.(LaneletID, attribute.(incom["successorsLeft"], "ref")))
     is_left_of = -1
-    try 
-        is_left_of = parse.(IncomingID, attribute.(incom["isLeftOd"], "ref"))[1]
-    catch e
-        isa(e, BoundsError) ? nothing : throw(e)
+    has_left_neighbor = false
+    length(incom["isLeftOf"]) == 0 || length(incom["isLeftOf"]) == 1 || throw(error("wrong size. failure in imported xml file."))
+    if length(incom["isLeftOf"]) == 1
+        is_left_of = parse.(IncomingID, attribute.(incom["isLeftOf"], "ref"))[1]
+        has_left_neighbor = true
     end
     
-    return Incoming(incomingLanelets, succRight, succStraight, succLeft, is_left_of)
+    return Incoming(incomingLanelets, succRight, succStraight, succLeft, is_left_of, has_left_neighbor)
 end
 
-function process(ln::LaneletNetwork)
+function process!(ln::LaneletNetwork)
     # merging with
     for ltid in keys(ln.lanelets)
         for pred in ln.lanelets[ltid].pred
@@ -229,24 +230,41 @@ function process(ln::LaneletNetwork)
         end
     end
 
-    # intersecting with
+    # intersecting with -- logic based
     for (k, intersection) in ln.intersections
-        collision_candidates = Set{LaneletID}()
         for (k, incoming) in intersection.incomings
-            union!(collision_candidates, incoming.succLeft)
-            union!(collision_candidates, incoming.succRight)
-            union!(collision_candidates, incoming.succStraight)
-        end
-
-        for i in collision_candidates
-            poly_i = Polygon(ln.lanelets[i])
-            for j in collision_candidates
-                poly_j = Polygon(ln.lanelets[j])
-
-                is_intersect(poly_i, poly_j) && (push!(ln.lanelets[i].intersecting_with, j); push!(ln.lanelets[j].intersecting_with, i))
+            if incoming.has_right_neighbor
+                for in_str in incoming.succStraight
+                    union!(ln.lanelets[in_str].intersecting_with, intersection.incomings[incoming.right_neighbor].succStraight)
+                    union!(ln.lanelets[in_str].intersecting_with, intersection.incomings[incoming.right_neighbor].succLeft)
+                end
+                for in_left in incoming.succLeft
+                    union!(ln.lanelets[in_left].intersecting_with, intersection.incomings[incoming.right_neighbor].succLeft)
+                end
+            end
+            left_neighbor, has_left_neighbor = left_neighbor_func(k, intersection)
+            if has_left_neighbor
+                for in_str in incoming.succStraight
+                    union!(ln.lanelets[in_str].intersecting_with, intersection.incomings[left_neighbor].succStraight)
+                end
+                for in_left in incoming.succLeft
+                    union!(ln.lanelets[in_left].intersecting_with, intersection.incomings[left_neighbor].succStraight)
+                    union!(ln.lanelets[in_left].intersecting_with, intersection.incomings[left_neighbor].succLeft)
+                end
+            end
+            opposite_incoming, has_opposite_incoming = opposite_neighbor_func(k, intersection)
+            if has_opposite_incoming
+                for in_str in incoming.succStraight
+                    union!(ln.lanelets[in_str].intersecting_with, intersection.incomings[opposite_incoming].succLeft)
+                end
+                for in_left in incoming.succLeft
+                    union!(ln.lanelets[in_left].intersecting_with, intersection.incomings[opposite_incoming].succStraight)
+                end
             end
         end
     end
+
+                
 
     # conflict sections
     # TODO implementation
