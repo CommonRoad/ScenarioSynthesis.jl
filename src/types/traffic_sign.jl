@@ -12,11 +12,6 @@ const TrafficSignTypeID = Int64
     TS_Unknown # else
 end
 
-function type_from_type_id(type_id::TrafficSignTypeID) # TODO remove this wrapper
-    @warn "function depricated. use trafficSign_typer instead."
-    return trafficSign_typer(type_id)
-end
-
 function trafficSign_typer(type_id::TrafficSignTypeID)
     return @match type_id begin
         205 => TS_Yield

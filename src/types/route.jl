@@ -127,95 +127,44 @@ struct Route
     end
 end
 
-"""
-    ref_pos_of_conflicting_routes
+function reference_pos(r1::Route, r2::Route, ln::LaneletNetwork)
 
-Conflicting: merging or intersecting
-"""
-function ref_pos_of_conflicting_routes(route1::Route, route2::Route, ln::LaneletNetwork)
-    # iterate over lanelets of route1
-    for ltid in route1.route
-        # check for same route, e.g. if second vehicle starts further down the road
-        in(ltid, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true
-
-        # check for merging
-        for merg in ln.lanelets[ltid].merging_with
-            in(merg, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true # return last center vertices pos of merging lanelets
-        end
-
-        # check for intersecting
-        for intr in ln.lanelets[ltid].intersecting_with
-            in(intr, route2.route) && return pos_intersect(LineStrech(ln.lanelets[ltid].frame.ref_pos), LineStrech(ln.lanelets[intr].frame.ref_pos))
-        end
+    # diverge at first segment? 
+    for dive in ln.lanelets[r1.route[1]].diverging_with
+        in(dive, r2.route) && return ln.lanelets[dive].frame.ref_pos[1], ln.lanelets[dive].frame.ref_pos[1], true
     end
-    return Pos(FCart, Inf64, Inf64), false
-end
 
-function ref_pos_of_merging_routes(route1::Route, route2::Route, ln::LaneletNetwork)
-    for ltid in route1.route
-        # check for same route, e.g. if second vehicle starts further down the road
-        in(ltid, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true
+    # iterate over route1
+    for ltid in r1.route
 
-        # check for merging
-        for merg in ln.lanelets[ltid].merging_with
-            in(merg, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true # return last center vertices pos of merging lanelets
-        end
-    end
-    return Pos(FCart, Inf64, Inf64), false
-end
-
-function ref_pos_of_intersecting_routes(route1::Route, route2::Route, ln::LaneletNetwork)
-    for ltid in route1.route
-        # check for intersecting
-        for intr in ln.lanelets[ltid].intersecting_with
-            in(intr, route2.route) && return pos_intersect(LineStrech(ln.lanelets[ltid].frame.ref_pos), LineStrech(ln.lanelets[intr].frame.ref_pos))
-        end
-    end
-    return Pos(FCart, Inf64, Inf64), false 
-end
-
-"""
-
-
-Return ref_pos for route1 and route2.
-"""
-function ref_position_of_neighboring_routes(route1::Route, route2::Route, ln::LaneletNetwork)
-    for ltid in route1.route
-        in(ltid, route2.route) && return ln.lanelets[ltid].frame.ref_pos[end], true # identical to merge
-
+        # lt is part of the route2?
+        in(ltid, r2.route) && return ln.lanelets[ltid].frame.ref_pos[end], ln.lanelets[ltid].frame.ref_pos[end], true
+    
+        # lt is neighbor to route2?
         ltid_iter = ltid
-        # iterate to right
-        while ln.lanelets[ltid_iter].adjRght.is_exist
+        while ln.lanelets[ltid_iter].adjRght.is_exist && ln.lanelets[ltid_iter].adjRght.is_same_direction
             ltid_iter = ln.lanelets[ltid_iter].adjRght.lanelet_id
-            if in(ltid_iter, route2.route)
-                route2_ltid = route2.route[findfirst(x -> x==ltid_iter, route2.route)]
-                return ln.lanelets[ltid_iter].frame.ref_pos[end], ln.lanelets[route2_ltid].frame.ref_pos[end], true
-            end
+            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[end], ln.lanelets[ltid_iter].ref_pos[end], true
         end
 
         ltid_iter = ltid
-        # iterate to left
-        while ln.lanelets[ltid_iter].adjLeft.is_exist
+        while ln.lanelets[ltid_iter].adjLeft.is_exist && ln.lanelets[ltid_iter].adjLeft.is_same_direction
             ltid_iter = ln.lanelets[ltid_iter].adjLeft.lanelet_id
-            if in(ltid_iter, route2.route)
-                route2_ltid = route2.route[findfirst(x -> x==ltid_iter, route2.route)]
-                return ln.lanelets[ltid_iter].frame.ref_pos[end], ln.lanelets[route2_ltid].frame.ref_pos[end], true
-            end
+            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[end], ln.lanelets[ltid_iter].ref_pos[end], true
         end
 
-        return Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false
+        # lt does collide with route2?
+        for intr in ln.lanelets[ltid].intersecting_with
+            if in(intr, r2.route)
+                pos, does_intersect = pos_intersect(LineStrech(ln.lanelets[ltid].frame.ref_pos), LineStrech(ln.lanelets[intr].frame.ref_pos))
+                does_intersect && return pos, pos, true 
+            end
+        end
     end
-end
 
-# TODO those routes that are neigboring and conflicting or that are conflicting multiple times can lead to errors! -> validity check based on StateCurv? 
-function ref_pos_general(route1::Route, route2::Route, ln::LaneletNetwork)
-    # check for neigboring routes
-    pos1, pos2, does_exist = ref_position_of_neighboring_routes(route1, route2, ln)
-    does_exist && return pos1, pos2, does_exist
-
-    # check for conflicting routes
-    pos1, does_exist = ref_pos_of_conflicting_routes(route1, rout2, ln)
-    does_exist && return pos1, pos1, does_exist
+    for merg in ln.lanelets[r1.route[end]].merging_with
+        in(merg, r2.route) && return ln.lanelets[merg].frame.ref_pos[end], ln.lanelets[merg].frame.ref_pos[end], true
+    end
 
     return Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false
 end

@@ -26,10 +26,10 @@ include("state.jl")
 export StateLon, StateLat, StateCurv, JerkInput, AccInput
 
 include("route.jl")
-export Route, ref_pos_of_conflicting_routes, lon_distance
+export Route, reference_pos
 
 include("actor.jl")
-export Actor, Vehicle, ActorsDict, run_timestep
+export Actor, Vehicle, ActorsDict, run_timestep, lon_distance
 
 include("predicate.jl")
 export Predicate, Relation, TrafficRule, IsBehind, IsNextTo, IsInFront, IsOnLanelet, IsOnSameLaneSection, SpeedLimit, SafeDistance, IsRoutesMerge, IsRoutesIntersect, IsFaster

@@ -86,9 +86,9 @@ function lon_distance(
     lon2::Number,
     ln::LaneletNetwork
 )
-    ref_pos, does_exist = ref_pos_of_merging_routes(actor1.route, actor2.route, ln) # TODO also enable for neighboring and intersecting lanes? 
+    ref_pos1, ref_pos2, does_exist = reference_pos(actor1.route, actor2.route, ln)
     
-    return (does_exist ? (lon1 - lon2 - transform(ref_pos, actor1.route.frame).c1 + transform(ref_pos, actor2.route.frame).c1, true) : (Inf64, false))
+    return (does_exist ? (lon1 - lon2 - transform(ref_pos1, actor1.route.frame).c1 + transform(ref_pos2, actor2.route.frame).c1, true) : (Inf64, false))
 end
 
 function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
