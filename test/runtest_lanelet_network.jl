@@ -24,7 +24,7 @@ end
     section92 = ln.lanelets[92].conflict_sections[conflict_id]
     section144 = ln.lanelets[144].conflict_sections[conflict_id]
     @test isapprox(section92[1], 9.167297889448239)
-    @test isapprox(section92[2], 13.827340983251094)
+    @test isapprox(section92[2], 13.826340983251095)
     @test isapprox(section144[1], 5.926364934429366)
-    @test isapprox(section144[2], 10.535759883429986)
+    @test isapprox(section144[2], 10.534759883429986)
 end
