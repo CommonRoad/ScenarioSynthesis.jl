@@ -28,20 +28,21 @@ stages:          # List of stages for jobs, and their order of execution
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
-    - julia -e 'using Pkg; Pkg.add(path=pwd()); Pkg.build("ScenarioSynthesis")'
-
-unit-test-job:   # This job runs in the test stage.
-  stage: test    # It only starts when the job in the build stage completes successfully.
-  script:
-    - julia -e 'using Pkg; Pkg.test("ScenarioSynthesis"; coverage = true)'
+    - julia -e 'using Pkg; Pkg.add(path=pwd()); Pkg.build("ScenarioSynthesis"); Pkg.test("ScenarioSynthesis"; coverage = true)'
     - julia -e 'using Pkg; Pkg.add("Coverage");
       import ScenarioSynthesis; cd(joinpath(dirname(pathof(ScenarioSynthesis)), ".."));
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
 
+unit-test-job:   # This job runs in the test stage.
+  stage: test    # It only starts when the job in the build stage completes successfully.
+  script:
+    - echo "Move unit tests here"
+
+
 lint-test-job:   # This job also runs in the test stage.
   stage: test    # It can run at the same time as unit-test-job (in parallel).
   script:
     - echo "Linting code... This will take about 10 seconds."
-    - sleep 10
+    - sleep 1
     - echo "No lint issues found."
