@@ -10,12 +10,12 @@ struct Route
     function Route(route::Vector{LaneletID}, ln::LaneletNetwork)
         ### validity checks
         length(route) ≥ 1 || throw(error("Route must travel at least one LaneSection."))
-        for i=1:length(route)-1
+        for i=eachindex(route[1:end-1])
             in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected."))
         end
 
         merged_center_line = Vector{Pos{FCart}}()
-        for i in 1:length(route)-1
+        for i in eachindex(route[1:end-1])
             if in(route[i+1], ln.lanelets[route[i]].succ)
                 append!(merged_center_line, ln.lanelets[route[i]].frame.ref_pos)
             elseif route[i+1] == ln.lanelets[route[i]].adjRght.lanelet_id
@@ -102,7 +102,7 @@ struct Route
         ### calculating conflicting areas
         conflicting_areas = Vector{Interval}()
         n_iter = 20
-        for i in 1:length(route) # TODO move to LaneletNetwork construction? -- smoothed line could cause problems!
+        for i in eachindex(route) # TODO move to LaneletNetwork construction? -- smoothed line could cause problems!
             rele = route[i]
             lanelet = ln.lanelets[rele]
             s_conflicting = Inf64

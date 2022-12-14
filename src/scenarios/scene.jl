@@ -17,6 +17,6 @@ struct ScenesDict
     scenes::OrderedDict{SceneID, Scene}
 
     function ScenesDict(scenes::AbstractVector{Scene})
-        return new(OrderedDict{SceneID, Scene}(zip(1:length(scenes), scenes)))
+        return new(OrderedDict{SceneID, Scene}(zip(eachindex(scenes), scenes)))
     end
 end

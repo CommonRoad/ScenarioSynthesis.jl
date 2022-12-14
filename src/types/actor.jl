@@ -39,7 +39,7 @@ struct ActorsDict
     actors::OrderedDict{ActorID, Actor}
 
     function ActorsDict(actors::AbstractVector{Actor})
-        return new(OrderedDict{ActorID, Actor}(zip(1:length(actors), actors)))
+        return new(OrderedDict{ActorID, Actor}(zip(eachindex(actors), actors)))
     end
 end
 

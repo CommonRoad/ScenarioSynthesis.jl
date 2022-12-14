@@ -13,6 +13,9 @@ export TrafficSign, TrafficSignID
 include("lanelet.jl")
 export Lanelet, LaneletID
 
+include("conflict_section.jl")
+export ConflictSectionID, ConflictSectionManager, get_conflict_section_id!
+
 include("intersection.jl")
 export Intersection, IntersectionID, Incoming, IncomingID, left_neighbor_func, opposite_neighbor_func
 

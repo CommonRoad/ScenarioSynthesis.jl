@@ -1,18 +1,6 @@
 import LightXML.parse_file, LightXML.root, LightXML.free, LightXML.XMLElement, LightXML.attribute, LightXML.name, LightXML.content
 import DataStructures.DefaultDict
 
-#=
-struct ConflictSectionManager
-    csm::Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}
-
-    function ConflictSectionManager()
-        return new(Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}())
-    end
-end
-
-next_conflict_section_id(csm::ConflictSectionManager) = isempty(csm.csm) ? 1 : maximum(keys(csm.csm)) + 1
-=#
-
 struct LaneletNetwork
     lanelets::Dict{LaneletID, Lanelet}
     trafficSigns::Dict{TrafficSignID, TrafficSign}
@@ -264,11 +252,110 @@ function process!(ln::LaneletNetwork)
         end
     end
 
-                
-
     # conflict sections
-    # TODO implementation
-    # determine collision candidates
-    # calculate intersecting sections (curvilinear CoordFrame)
-    # update data for ln and both lanelets
+    csm = ConflictSectionManager()
+    for (own, own_lt) in ln.lanelets
+        for obs in own_lt.merging_with
+            conflict_section, does_conflict = conflict_section_merging(ln, own, obs)
+            if does_conflict
+                id = get_conflict_section_id!(csm, own, obs)
+                own_lt.conflict_sections[id] = conflict_section
+            end
+        end
+        for obs in own_lt.diverging_with
+            conflict_section, does_conflict = conflict_section_diverging(ln, own, obs)
+            if does_conflict
+                id = get_conflict_section_id!(csm, own, obs)
+                own_lt.conflict_sections[id] = conflict_section
+            end
+        end
+        for obs in own_lt.intersecting_with
+            conflict_section, does_conflict = conflict_section_intersecting(ln, own, obs)
+            if does_conflict
+                id = get_conflict_section_id!(csm, own, obs)
+                own_lt.conflict_sections[id] = conflict_section
+            end
+        end
+    end
+    
+    for (k, v) in csm.csm
+        ln.conflict_sections[v] = k
+    end
+end
+
+function conflict_section_merging(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)
+    own_lt = ln.lanelets[own]
+    obs_lt = ln.lanelets[obs]
+    
+    # handling edge cases
+    is_intersect(Polygon(own_lt), Polygon(obs_lt)) || return (Inf64, -Inf64), false # no collision
+   
+    # bisection
+    s_low = 0.0
+    s_upp = own_lt.frame.cum_dst[end]
+    for iter in 1:n_iter
+        s = (s_low + s_upp) / 2
+        if is_intersect(Polygon_cut_from_start(own_lt, s), Polygon(obs_lt))
+            s_upp = s
+        else
+            s_low = s
+        end
+    end
+
+    return (s_low, own_lt.frame.cum_dst[end]), true # s_low is safe side
+end
+
+function conflict_section_diverging(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)
+    own_lt = ln.lanelets[own]
+    obs_lt = ln.lanelets[obs]
+    
+    # handling edge cases
+    is_intersect(Polygon(own_lt), Polygon(obs_lt)) || return (Inf64, -Inf64), false # no collision
+
+    # bisection
+    e_low = 0.0
+    e_upp = own_lt.frame.cum_dst[end]
+    for iter in 1:n_iter
+        e = (e_low + e_upp) / 2
+        if is_intersect(Polygon_cut_from_end(own_lt, e), Polygon(obs_lt))
+            e_upp = e
+        else
+            e_low = e
+        end
+    end
+
+    return (0.0, own_lt.frame.cum_dst[end]-e_low), true # e_low is safe side
+end
+
+function conflict_section_intersecting(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)
+    own_lt = ln.lanelets[own]
+    obs_lt = ln.lanelets[obs]
+    
+    # handling edge cases
+    is_intersect(Polygon(own_lt), Polygon(obs_lt)) || return (Inf64, -Inf64), false # no collision
+
+    # bisection
+    s_low = 0.0
+    s_upp = own_lt.frame.cum_dst[end]
+    for iter in 1:n_iter
+        s = (s_low + s_upp) / 2
+        if is_intersect(Polygon_cut_from_start(own_lt, s), Polygon(obs_lt))
+            s_upp = s
+        else
+            s_low = s
+        end
+    end
+
+    e_low = 0.0
+    e_upp = own_lt.frame.cum_dst[end]
+    for iter in 1:n_iter
+        e = (e_low + e_upp) / 2
+        if is_intersect(Polygon_cut_from_end(own_lt, e), Polygon(obs_lt))
+            e_upp = e
+        else
+            e_low = e
+        end
+    end
+    
+    return (s_low, own_lt.frame.cum_dst[end]-e_low), true # both end are on safe side
 end

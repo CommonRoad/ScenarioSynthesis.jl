@@ -185,6 +185,8 @@ end
 
 function Polygon_cut_from_end(lt::Lanelet, e::Number)
     0 < e < lt.frame.cum_dst[end] || throw(error("out of bounds."))
+
+    e = lt.frame.cum_dst[end] - e 
     
     vertices = Vector{Pos{FCart}}()
     
@@ -197,11 +199,11 @@ function Polygon_cut_from_end(lt::Lanelet, e::Number)
 
     vec_to_next_left = lt.boundLeft.vertices[trid-1] - lt.boundLeft.vertices[trid]
 
-    push!(vertices, lt.boundLeft.vertices[trid] + vec_to_next_left * e_remain / norm(vec_to_next_left))
+    push!(vertices, lt.boundLeft.vertices[trid] - vec_to_next_left * e_remain / norm(vec_to_next_left))
 
     vec_to_next_rght = lt.boundRght.vertices[trid-1] - lt.boundRght.vertices[trid]
 
-    push!(vertices, lt.boundRght.vertices[trid] + vec_to_next_rght * e_remain / norm(vec_to_next_rght))
+    push!(vertices, lt.boundRght.vertices[trid] - vec_to_next_rght * e_remain / norm(vec_to_next_rght))
 
     return Polygon(vertices)
 end

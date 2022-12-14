@@ -52,9 +52,9 @@ function is_intersect(
     p1::LineStrech{F},
     p2::LineStrech{F}
 ) where {F<:CoordFrame}
-    @inbounds for i = 1:length(p1.vertices)-1
+    @inbounds for i = eachindex(p1.vertices[1:end-1])
         ls1 = LineSection(p1.vertices[i], p1.vertices[i+1])
-        @inbounds for j = 1:length(p2.vertices)-1
+        @inbounds for j = eachindex(p2.vertices[1:end-1])
             ls2 = LineSection(p2.vertices[j], p2.vertices[j+1])
             is_intersect(ls1, ls2) && return true
         end
@@ -66,9 +66,9 @@ function pos_intersect(
     p1::LineStrech{F},
     p2::LineStrech{F}
 ) where {F<:CoordFrame}
-    @inbounds for i = 1:length(p1.vertices)-1
+    @inbounds for i = eachindex(p1.vertices[1:end-1])
         ls1 = LineSection(p1.vertices[i], p1.vertices[i+1])
-        @inbounds for j = 1:length(p2.vertices)-1
+        @inbounds for j = eachindex(p2.vertices[1:end-1])
             ls2 = LineSection(p2.vertices[j], p2.vertices[j+1])
             is_intersect(ls1, ls2) && return pos_intersect(ls1, ls2)
         end
