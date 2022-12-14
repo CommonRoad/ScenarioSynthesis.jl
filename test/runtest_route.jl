@@ -14,10 +14,11 @@ using Test
 
     @test all(isapprox.(route1.conflict_sections[20], [127.65245723319552, 134.0724903676841])) # csid could change from time to time
 
-    @test reference_pos(route0, route0, ln) == ([56.6951, -24.23635], [56.6951, -24.23635], true) # same lanelet
-    @test reference_pos(route0, route1, ln) == ([56.6951, -24.23635], [56.6951, -24.23635], true) # same lanelet
-    @test reference_pos(route1, route2, ln) == ([111.86265, -27.99525], [111.86265, -27.99525], true)
+    @test reference_pos(route0, route0, ln) == ([-6.1858, -126.32625], [-6.1858, -126.32625], true) # same lanelet
+    @test reference_pos(route0, route1, ln) == ([-6.1858, -126.32625], [-6.1858, -126.32625], true) # same lanelet
+    @test reference_pos(route1, route2, ln) == ([68.68379999999999, -18.79935], [68.68379999999999, -18.79935], true) # merging routes
     @test reference_pos(route1, route2, ln) == reference_pos(route2, route1, ln)
-    @test reference_pos(route1, route3, ln) == ([Inf, Inf], [Inf, Inf], false)
-    @test reference_pos(route2, route3, ln) == ([57.34194907069542, -16.19480523769797], [57.34194907069542, -16.19480523769797], true)
+    @test reference_pos(route1, route3, ln) == ([Inf, Inf], [Inf, Inf], false) # no intersection
+    @test reference_pos(route2, route3, ln) == ([57.34194907069542, -16.19480523769797], [57.34194907069542, -16.19480523769797], true) # intersection
+    # TODO test neighboring lanelets, diverging route
 end

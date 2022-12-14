@@ -22,10 +22,13 @@ route4 = Route(LaneletID.([25, 112, 66, 146]), ln);
 
 reference_pos(route2, route3, ln)
 
-actor1 = Actor(route1)
-actor2 = Actor(route2; a_min=-2.0)
-actor3 = Actor(route3)
-actor4 = Actor(route4)
+ln.lanelets[143].conflict_sections
+route1.conflict_sections
+
+actor1 = Actor(route1);
+actor2 = Actor(route2; a_min=-2.0);
+actor3 = Actor(route3);
+actor4 = Actor(route4);
 
 actors = ActorsDict([actor1, actor2, actor3, actor4]);
 
@@ -44,6 +47,8 @@ scene5 = Scene(4.0, 8.0, rel5)
 
 scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5]);
 
+
+
 ### build scenario
 scenario = Scenario(actors, scenes, ln);
 
@@ -55,6 +60,7 @@ is_valid(Relation(IsRoutesMerge, 1, 2), scenario)
 is_valid(Relation(IsInFront, 1, 2), scenario, StateCurv(120.0, 0, 0, 0, 0, 0), StateCurv(20.0, 0, 0, 0, 0, 0))
 is_valid(Relation(IsOnSameLaneSection, 1, 2), scenario, StateCurv(140.0, 0, 0, 0, 0, 0), StateCurv(190.0, 0, 0, 0, 0, 0))
 is_valid(Relation(IsFaster, 1, 2), scenario, StateCurv(0.0, 20.0, 0, 0, 0, 0), StateCurv(0.0, 18.0, 0, 0, 0, 0))
+is_valid(Relation(IsBeforeConflictSection, 1, 20), scenario, StateCurv(20.0, 0, 0, 10.0, 0, 0))
 
 ### synthesis
 

@@ -138,19 +138,19 @@ function reference_pos(r1::Route, r2::Route, ln::LaneletNetwork)
     for ltid in r1.route
 
         # lt is part of the route2?
-        in(ltid, r2.route) && return ln.lanelets[ltid].frame.ref_pos[end], ln.lanelets[ltid].frame.ref_pos[end], true
+        in(ltid, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid].frame.ref_pos[1], true
     
         # lt is neighbor to route2?
         ltid_iter = ltid
         while ln.lanelets[ltid_iter].adjRght.is_exist && ln.lanelets[ltid_iter].adjRght.is_same_direction
             ltid_iter = ln.lanelets[ltid_iter].adjRght.lanelet_id
-            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[end], ln.lanelets[ltid_iter].ref_pos[end], true
+            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid_iter].ref_pos[1], true
         end
 
         ltid_iter = ltid
         while ln.lanelets[ltid_iter].adjLeft.is_exist && ln.lanelets[ltid_iter].adjLeft.is_same_direction
             ltid_iter = ln.lanelets[ltid_iter].adjLeft.lanelet_id
-            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[end], ln.lanelets[ltid_iter].ref_pos[end], true
+            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid_iter].ref_pos[1], true
         end
 
         # lt does collide with route2?
@@ -163,7 +163,7 @@ function reference_pos(r1::Route, r2::Route, ln::LaneletNetwork)
     end
 
     for merg in ln.lanelets[r1.route[end]].merging_with
-        in(merg, r2.route) && return ln.lanelets[merg].frame.ref_pos[end], ln.lanelets[merg].frame.ref_pos[end], true
+        in(merg, r2.route) && return ln.lanelets[merg].frame.ref_pos[end], ln.lanelets[merg].frame.ref_pos[end], true # TODO end position tricky when transforming coordinates
     end
 
     return Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false
