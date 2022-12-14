@@ -1,19 +1,19 @@
-import IntervalArithmetic.Interval
 import LinearAlgebra.norm
 
 struct Route
     route::Vector{LaneletID}
     frame::TransFrame
-    transition_points::Vector{Float64} # transition points moving from one lanelet to the next one
-    conflicting_areas::Vector{Interval{Float64}} # TODO create own struct for this? 
+    transition_points::Vector{Float64} # transition points at the crossing from one lanelet to the next one
+    conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}} 
 
-    function Route(route::Vector{LaneletID}, ln::LaneletNetwork)
+    function Route(route::Vector{LaneletID}, ln::LaneletNetwork, resampling_dst::Number=2.0)
         ### validity checks
         length(route) ≥ 1 || throw(error("Route must travel at least one LaneSection."))
         for i=eachindex(route[1:end-1])
             in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected."))
         end
 
+        ### merged center line
         merged_center_line = Vector{Pos{FCart}}()
         for i in eachindex(route[1:end-1])
             if in(route[i+1], ln.lanelets[route[i]].succ)
@@ -90,127 +90,40 @@ struct Route
 
         (length(route) == 1 || in(route[end], ln.lanelets[route[end-1]].succ)) && append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos)
         
+        ### resampling center line
+        temp_frame = TransFrame(merged_center_line)
+        resampled_center_line = [merged_center_line[1]]
+
+        for dst in resampling_dst:resampling_dst:temp_frame.cum_dst[end]
+            ind = findlast(s -> s ≤ dst, temp_frame.cum_dst)
+            remain = dst - temp_frame.cum_dst[ind]
+            vec_to_next = temp_frame.ref_pos[ind+1] - temp_frame.ref_pos[ind]
+            push!(resampled_center_line, temp_frame.ref_pos[ind] + remain / norm(vec_to_next) * vec_to_next)
+        end
+        push!(resampled_center_line, temp_frame.ref_pos[end])
+
+        ### line smoothing
         # TODO add algorithms for line smoothing! -> neccessary for lane changes
 
         ### creation of TransFrame 
-        frame = TransFrame(merged_center_line)
+        frame = TransFrame(resampled_center_line)
 
-        ### storing transition points form one lanelet to another - TODO has to be adapted if line smoothing is implemented?
+        ### transition points at the crossing from one lanelet to another -- TODO adapt to allow for lane changes!!
         transition_points = map(ltid -> transform(ln.lanelets[ltid].frame.ref_pos[1], frame).c1, route)
         push!(transition_points, frame.cum_dst[end])
 
-        ### calculating conflicting areas
-        conflicting_areas = Vector{Interval}()
-        n_iter = 20
-        for i in eachindex(route) # TODO move to LaneletNetwork construction? -- smoothed line could cause problems!
-            rele = route[i]
-            lanelet = ln.lanelets[rele]
-            s_conflicting = Inf64
-            e_conflicting = Inf64
-            for merg in ln.lanelets[rele].merging_with
-                s_conflicting == 0.0 && break
-                poly_merg = Polygon(ln.lanelets[merg])
-
-                # handling edge cases
-                !is_intersect(Polygon(lanelet), poly_merg) && continue
-                is_intersect(Polygon_cut_from_start(lanelet, 0.01), poly_merg) && (s_conflicting = 0.0; break)
-                
-                # bisection
-                s_low = 0.0
-                s_upp = lanelet.frame.cum_dst[end]
-
-                for iter in 1:n_iter
-                    s = (s_low + s_upp)/2
-                    
-                    if is_intersect(Polygon_cut_from_start(lanelet, s), poly_merg)
-                        s_upp = s
-                    else
-                        s_low = s
-                    end
-                end
-                s_conflicting = min(s_conflicting, s_low)
-                e_conflicting = 0.0
-            end
-
-            for dive in ln.lanelets[rele].diverging_with
-                e_conflicting == 0.0 && break
-                poly_dive = Polygon(ln.lanelets[dive])
-
-                # handling edge cases
-                !is_intersect(Polygon(lanelet), poly_dive) && continue
-                is_intersect(Polygon_cut_from_end(lanelet, 0.01), poly_dive) && (e_conflicting = 0.0; break)
-
-                # bisection
-                e_low = 0.0
-                e_upp = lanelet.frame.cum_dst[end]
-
-                for iter in 1:n_iter
-                    e = (e_low + e_upp)/2
-
-                    if is_intersect(Polygon_cut_from_end(lanelet, e), poly_dive)
-                        e_upp = e
-                    else
-                        e_low = e
-                    end
-                end
-                s_conflicting = 0.0
-                e_conflicting = min(e_conflicting, e_low)
-            end
-
-            for intr in ln.lanelets[rele].intersecting_with 
-                s_conflicting == 0.0 && break
-                poly_intr = Polygon(ln.lanelets[intr])
-
-                # handling edge cases
-                !is_intersect(Polygon(lanelet), poly_intr) && continue
-                is_intersect(Polygon_cut_from_start(lanelet, 0.01), poly_intr) && (s_conflicting = 0.0; break)
-                
-                # bisection
-                s_low = 0.0
-                s_upp = lanelet.frame.cum_dst[end]
-
-                for iter in 1:n_iter
-                    s = (s_low + s_upp)/2
-                    
-                    if is_intersect(Polygon_cut_from_start(lanelet, s), poly_intr)
-                        s_upp = s
-                    else
-                        s_low = s
-                    end
-                end
-                s_conflicting = min(s_conflicting, s_low)
-            end
-
-            for intr in ln.lanelets[rele].intersecting_with
-                e_conflicting == 0.0 && break
-                poly_intr = Polygon(ln.lanelets[intr])
-
-                # handling edge cases
-                !is_intersect(Polygon(lanelet), poly_intr) && continue
-                is_intersect(Polygon_cut_from_end(lanelet, 0.01), poly_intr) && (e_conflicting = 0.0; break)
-
-                # bisection
-                e_low = 0.0
-                e_upp = lanelet.frame.cum_dst[end]
-
-                for iter in 1:n_iter
-                    e = (e_low + e_upp)/2
-
-                    if is_intersect(Polygon_cut_from_end(lanelet, e), poly_intr)
-                        e_upp = e
-                    else
-                        e_low = e
-                    end
-                end
-                e_conflicting = min(e_conflicting, e_low)
-            end
-
-            if s_conflicting < lanelet.frame.cum_dst[end] - e_conflicting
-                push!(conflicting_areas, Interval(transition_points[i] + s_conflicting, transition_points[i+1] - e_conflicting))
+        ### calculate conflict sections
+        conflict_sections = Dict{ConflictSectionID, Tuple{Float64, Float64}}()
+        for ltid in route
+            for (csid, section) in ln.lanelets[ltid].conflict_sections
+                s_start = transform(transform(Pos(FCurv, section[1], 0.0), ln.lanelets[ltid].frame), frame).c1
+                step1 = transform(Pos(FCurv, section[2], 0.0), ln.lanelets[ltid].frame)
+                s_end = transform(step1, frame).c1
+                conflict_sections[csid] = (s_start, s_end)
             end
         end
 
-        return new(route, frame, transition_points, conflicting_areas)
+        return new(route, frame, transition_points, conflict_sections)
     end
 end
 

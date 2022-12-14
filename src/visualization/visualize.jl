@@ -58,3 +58,8 @@ function plot_polygon(poly::Polygon{F}) where {F<:CoordFrame}
     p = plot([vertEast..., vertEast[1]], [vertNorth..., vertNorth[1]]; label=false, aspect_ratio=:equal)
     return p
 end
+
+function plot_route(route::Route)
+    pos = hcat(route.frame.ref_pos...)'
+    p = plot(pos[:,1], pos[:,2]; label=false, aspect_ratio=:equal)
+end

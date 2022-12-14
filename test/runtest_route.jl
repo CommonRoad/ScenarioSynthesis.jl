@@ -11,6 +11,8 @@ using Test
     route3 = Route(LaneletID.([66, 147, 63]), ln)
     route4 = Route(LaneletID.([25, 112, 66, 146]), ln)
 
+    @test all(isapprox.(route1.conflict_sections[20], [127.65245723319552, 134.0724903676841])) # csid could change from time to time
+
     @test ref_pos_of_conflicting_routes(route1, route2, ln)[2] == true
     @test ref_pos_of_conflicting_routes(route1, route3, ln)[2] == false
     @test ref_pos_of_conflicting_routes(route1, route4, ln)[2] == false

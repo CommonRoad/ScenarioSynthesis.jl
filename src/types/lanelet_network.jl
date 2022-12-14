@@ -302,7 +302,9 @@ function conflict_section_merging(ln::LaneletNetwork, own::LaneletID, obs::Lanel
         end
     end
 
-    return (s_low, own_lt.frame.cum_dst[end]), true # s_low is safe side
+    @assert s_low ≤ own_lt.frame.cum_dst[end]
+
+    return (s_low, own_lt.frame.cum_dst[end] - 1e-3), true # s_low is safe side
 end
 
 function conflict_section_diverging(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)
@@ -324,7 +326,9 @@ function conflict_section_diverging(ln::LaneletNetwork, own::LaneletID, obs::Lan
         end
     end
 
-    return (0.0, own_lt.frame.cum_dst[end]-e_low), true # e_low is safe side
+    @assert 0.0 ≤ own_lt.frame.cum_dst[end] - e_low
+
+    return (0.0, own_lt.frame.cum_dst[end] - e_low - 1e-3), true # e_low is safe side
 end
 
 function conflict_section_intersecting(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)
@@ -356,6 +360,8 @@ function conflict_section_intersecting(ln::LaneletNetwork, own::LaneletID, obs::
             e_low = e
         end
     end
+
+    @assert s_low ≤ own_lt.frame.cum_dst[end] - e_low 
     
-    return (s_low, own_lt.frame.cum_dst[end]-e_low), true # both end are on safe side
+    return (s_low, own_lt.frame.cum_dst[end] - e_low - 1e-3), true # both end are on safe side
 end
