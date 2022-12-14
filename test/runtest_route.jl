@@ -2,7 +2,9 @@ using ScenarioSynthesis
 using Test
 
 @testset "Routes" begin # TODO update tests
-    ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml")
+    path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")
+    @info "path: $path"
+    ln = ln_from_xml(path)
 
     route1 = Route(LaneletID.([64, 143, 11]), ln)
     route2 = Route(LaneletID.([8, 92, 11]), ln)
