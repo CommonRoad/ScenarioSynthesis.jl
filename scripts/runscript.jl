@@ -44,42 +44,8 @@ scene5 = Scene(4.0, 8.0, rel5)
 
 scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5]);
 
-
-
 ### build scenario
 scenario = Scenario(actors, scenes, ln);
 
-
-
 ### synthesis
-
-
-
-### misc
-st = StateCurv(StateLon(0.0, 0.0, 0.0), StateLat(0.0, 0.0, 0.0))
-st = run_timestep(
-    st,
-    JerkInput(3.0, 0.0),
-    1.0
-)
-
-st = run_timestep(
-    st, 
-    AccInput(3.0, 0.0), 
-    1.0
-)
-
-
-ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml")
-
-###
-using LightXML
-
-file = parse_file("example_files/DEU_Cologne-9_6_I-1.cr.xml")
-xmlroot = root(file)
-xml_lanelet = xmlroot["lanelet"]
-
-
-xmlintersection = xmlroot["intersection"]
-
-content(lt["leftBound"][1]["point"][1]["x"][1]) #["x"][1]
+synthesize_milp()
