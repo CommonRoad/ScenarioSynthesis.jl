@@ -32,4 +32,4 @@ include("actor.jl")
 export Actor, Vehicle, ActorsDict, run_timestep, lon_distance
 
 include("predicate.jl")
-export Predicate, Relation, TrafficRule, IsBehind, IsNextTo, IsInFront, IsOnLanelet, IsOnSameLaneSection, SpeedLimit, SafeDistance, IsRoutesMerge, IsRoutesIntersect, IsFaster, IsOnConflictSection, IsBeforeConflictSection, IsBehindConflictSection
+export Predicate, Relation, TrafficRule, IsBehind, IsNextTo, IsInFront, IsOnLanelet, IsOnSameLaneSection, SpeedLimit, SafeDistance, IsFaster, IsSlower, IsSameSpeed, IsStop, IsOnConflictSection, IsBeforeConflictSection, IsBehindConflictSection

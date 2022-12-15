@@ -1,3 +1,3 @@
-include("binary_vehicles.jl")
-include("binary_routes.jl")
-include("binary_conflict_sections.jl")
+include("binary_vehicle.jl")
+include("binary_lanelet_network.jl")
+include("binary_conflict_section.jl")
