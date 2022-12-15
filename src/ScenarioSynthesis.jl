@@ -6,7 +6,7 @@ module ScenarioSynthesis
 
 include("types/Types.jl")
 include("scenarios/Scenarios.jl")
-include("predicate_eval/PredicateEval.jl")
+include("predicates/Predicates.jl")
 include("synthesis/Synthesis.jl")
 include("visualization/Visualization.jl")
 

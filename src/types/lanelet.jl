@@ -144,11 +144,8 @@ struct Lanelet
         boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight
     )
         length(laneletType) ≥ 1 || throw(error("lanelet type not specified.")) # TODO relax by setting laneletType = LT_Unknown ? 
-
         transFrame = TransFrame(vertCntr)
-
         length(vertCntr) == length(boundRght.vertices) == length(boundLeft.vertices) || throw(error("different number of support points for lanelet."))
-
         return new(
             true, boundLeft, boundRght, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, Set{LaneletID}(), Set{LaneletID}(), Set{LaneletID}(), Dict{ConflictSectionID, Tuple{Float64, Float64}}(), transFrame
         )
@@ -163,21 +160,13 @@ function Polygon_cut_from_start(lt::Lanelet, s::Number)
     0 < s < lt.frame.cum_dst[end] || throw(error("out of bounds."))
     
     vertices = Vector{Pos{FCart}}()
-    
     trid = findlast(x -> x ≤ s, lt.frame.cum_dst)
-
     append!(vertices, lt.boundRght.vertices[1:trid])
-
     s_remain = s - lt.frame.cum_dst[trid]
-
     vec_to_next_rght = lt.boundRght.vertices[trid+1] - lt.boundRght.vertices[trid]
-
     push!(vertices, lt.boundRght.vertices[trid] + vec_to_next_rght * s_remain / norm(vec_to_next_rght))
-
     vec_to_next_left = lt.boundLeft.vertices[trid+1] - lt.boundLeft.vertices[trid]
-
     push!(vertices, lt.boundLeft.vertices[trid] + vec_to_next_left * s_remain / norm(vec_to_next_left))
-
     append!(vertices, reverse(lt.boundLeft.vertices[1:trid]))
 
     return Polygon(vertices)
@@ -187,22 +176,14 @@ function Polygon_cut_from_end(lt::Lanelet, e::Number)
     0 < e < lt.frame.cum_dst[end] || throw(error("out of bounds."))
 
     e = lt.frame.cum_dst[end] - e 
-    
     vertices = Vector{Pos{FCart}}()
-    
     trid = findfirst(x -> x > e, lt.frame.cum_dst)
-
     append!(vertices, lt.boundRght.vertices[trid:end])
     append!(vertices, reverse(lt.boundLeft.vertices[trid:end]))
-
     e_remain = e - lt.frame.cum_dst[trid]
-
     vec_to_next_left = lt.boundLeft.vertices[trid-1] - lt.boundLeft.vertices[trid]
-
     push!(vertices, lt.boundLeft.vertices[trid] - vec_to_next_left * e_remain / norm(vec_to_next_left))
-
     vec_to_next_rght = lt.boundRght.vertices[trid-1] - lt.boundRght.vertices[trid]
-
     push!(vertices, lt.boundRght.vertices[trid] - vec_to_next_rght * e_remain / norm(vec_to_next_rght))
 
     return Polygon(vertices)

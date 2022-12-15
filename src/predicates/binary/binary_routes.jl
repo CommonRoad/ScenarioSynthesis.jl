@@ -1,4 +1,4 @@
-function is_valid(rel::Relation{IsOnLanelet}, scenario::Scenario, state::StateCurv)
+function binary(rel::Relation{IsOnLanelet}, scenario::Scenario, state::StateCurv)
     actor = scenario.actors.actors[rel.actor1]
 
     ltid = LaneletID(actor, state, scenario.ln)
@@ -6,7 +6,7 @@ function is_valid(rel::Relation{IsOnLanelet}, scenario::Scenario, state::StateCu
     return rel.lanelet == ltid
 end
 
-function is_valid(rel::Relation{IsRoutesMerge}, scenario::Scenario)
+function binary(rel::Relation{IsRoutesMerge}, scenario::Scenario)
     actor1 = scenario.actors.actors[rel.actor1]
     actor2 = scenario.actors.actors[rel.actor2]
 
@@ -24,7 +24,7 @@ function is_valid(rel::Relation{IsRoutesMerge}, scenario::Scenario)
     return false
 end
 
-function is_valid(rel::Relation{IsOnSameLaneSection}, scenario::Scenario, state1::StateCurv, state2::StateCurv)
+function binary(rel::Relation{IsOnSameLaneSection}, scenario::Scenario, state1::StateCurv, state2::StateCurv)
     actor1 = scenario.actors.actors[rel.actor1]
     actor2 = scenario.actors.actors[rel.actor2]
 

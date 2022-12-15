@@ -92,6 +92,7 @@ function lon_distance(
 end
 
 function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
+    # TODO faulty if lanelet is not accessed from front ("not for lane changes")
     0 ≤ state.lon.s < actor.route.transition_points[end] || throw(error("out of bounds."))
     trid = findlast(x -> x ≤ state.lon.s, actor.route.transition_points)
     ltid = actor.route.route[trid]
@@ -99,6 +100,7 @@ function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
 
     # check whether lateral position is within bounds # TODO linear interpolation of distances before and after actual position would be even more accurate
     s_lt = state.lon.s - actor.route.transition_points[trid] # longitudial coordinate in lanelet frame
+    0 ≤ s_lt < lt.frame.cum_dst[end] || throw(error("bout of bounds."))
     trid_lt = findlast(x -> x ≤ s_lt, lt.frame.cum_dst) # last center support point before longitudinal pos
     d_rght = distance(lt.frame.ref_pos[trid_lt], lt.boundRght.vertices[trid_lt]) # distance to right boundary
     d_left = distance(lt.frame.ref_pos[trid_lt], lt.boundLeft.vertices[trid_lt])

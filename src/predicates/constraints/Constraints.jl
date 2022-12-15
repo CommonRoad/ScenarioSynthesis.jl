@@ -1,0 +1,1 @@
+# Generate constraints from predicates automaticially

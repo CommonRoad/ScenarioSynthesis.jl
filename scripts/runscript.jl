@@ -22,9 +22,6 @@ route4 = Route(LaneletID.([25, 112, 66, 146]), ln);
 
 reference_pos(route2, route3, ln)
 
-ln.lanelets[143].conflict_sections
-route1.conflict_sections
-
 actor1 = Actor(route1);
 actor2 = Actor(route2; a_min=-2.0);
 actor3 = Actor(route3);
@@ -55,12 +52,12 @@ scenario = Scenario(actors, scenes, ln);
 
 ### testing relations
 using BenchmarkTools
-is_valid(rel1[1], scenario, StateCurv(20.0, 0, 0, 1.0, 0, 0))
-is_valid(Relation(IsRoutesMerge, 1, 2), scenario)
-is_valid(Relation(IsInFront, 1, 2), scenario, StateCurv(120.0, 0, 0, 0, 0, 0), StateCurv(20.0, 0, 0, 0, 0, 0))
-is_valid(Relation(IsOnSameLaneSection, 1, 2), scenario, StateCurv(140.0, 0, 0, 0, 0, 0), StateCurv(190.0, 0, 0, 0, 0, 0))
-is_valid(Relation(IsFaster, 1, 2), scenario, StateCurv(0.0, 20.0, 0, 0, 0, 0), StateCurv(0.0, 18.0, 0, 0, 0, 0))
-is_valid(Relation(IsBeforeConflictSection, 1, 20), scenario, StateCurv(20.0, 0, 0, 10.0, 0, 0))
+binary(rel1[1], scenario, StateCurv(20.0, 0, 0, 1.0, 0, 0))
+binary(Relation(IsRoutesMerge, 1, 2), scenario)
+binary(Relation(IsInFront, 1, 2), scenario, StateCurv(120.0, 0, 0, 0, 0, 0), StateCurv(20.0, 0, 0, 0, 0, 0))
+binary(Relation(IsOnSameLaneSection, 1, 2), scenario, StateCurv(140.0, 0, 0, 0, 0, 0), StateCurv(190.0, 0, 0, 0, 0, 0))
+binary(Relation(IsFaster, 1, 2), scenario, StateCurv(0.0, 20.0, 0, 0, 0, 0), StateCurv(0.0, 18.0, 0, 0, 0, 0))
+binary(Relation(IsBeforeConflictSection, 1, 20), scenario, StateCurv(20.0, 0, 0, 10.0, 0, 0))
 
 ### synthesis
 
