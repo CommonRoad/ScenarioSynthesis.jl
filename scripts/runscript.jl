@@ -10,7 +10,7 @@ using ScenarioSynthesis
 ### load LaneletNetwork
 ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
 process!(ln)
-plot_lanelet_network(ln; annotate_id=true)
+#plot_lanelet_network(ln; annotate_id=true)
 
 
 ### define Actors

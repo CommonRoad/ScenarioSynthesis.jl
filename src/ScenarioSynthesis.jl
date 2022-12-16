@@ -1,7 +1,6 @@
 module ScenarioSynthesis
 
 # __precompile__(false)
-
 # @info "pythoncall exe set to: $(ENV["JULIA_PYTHONCALL_EXE"])"
 
 include("types/Types.jl")
