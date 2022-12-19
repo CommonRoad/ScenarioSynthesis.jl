@@ -5,6 +5,7 @@ import Plots.plot
 import StaticArrays.SMatrix, StaticArrays.SVector
 
 const Jerk = Float64
+const bigM = 1e6 # TODO Inf64?
 
 function next_state(state::StateLon, jerk::Jerk, Δt::Number)
     state = SVector{3, Float64}(state)
@@ -51,13 +52,11 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
             @constraint(model, state[i+1,j,3] == state[i,j,3] + jerk[i,j] * Δt)
         end
     end
-    #@constraint(model, state[1, 1, :] .== [3.0, 0.0, 0.0])
-    #@constraint(model, state[201, 1, :] .== [110.0, 1.0, 0.0])
 
     # static and dynamic limits of vehicle
     for i=1:N+1
         for j=1:n_actors
-            @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints
+            @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints?
             @constraint(model, v_low_lims[j] ≤ state[i,j,2] ≤ v_upp_lims[j])
             @constraint(model, a_low_lims[j] ≤ state[i,j,3] ≤ a_upp_lims[j])
         end
@@ -83,13 +82,34 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
         @constraint(model, n_low_lims[j] ≤ sum(scene_active[:,j]) ≤ n_upp_lims[j]) # keep scene durations within limits
     end
 
-    # constraints from predicates
+    # constraints from predicates (scene specific)
+    # constraint_id = 0
+    # constraints_total = sum([length(scene.relations) for (scene_id, scene) in scenario.scenes.scenes])
+    # @variable(model, constraints[1:N+1, 1:constraints_total], Bin)
     for (scene_id, scene) in scenario.scenes.scenes
         for rel in scene.relations
-            # add_constraint!(model, rel, scene_id, scenario)
-            #if typeof(rel) == Relation{IsOnLanelet}
+            # constraint_id += 1
+            
+            #= for i=1:N+1
+                @constraint(model, constraints[i, constraint_id] ≤ scene_active[i, scene_id]) # constraint only counts as fulfilled if its scene is active
+            end =#
 
-            #end
+            # TODO generalize and organize as function add_constraints!(rel, ...)
+            if typeof(rel) == Relation{IsBehind}
+                @info("IsBehind")
+                # @constraint(model, sum(constraints[:, constraint_id]) ≥ 1) # valid for at least one state
+                for i=1:N+1
+                    @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1], state[i, rel.actor2, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
+                end
+            end
+
+            if typeof(rel) == Relation{IsOnLanelet}
+                @info("IsOnLanelet")
+                # @constraint(model, sum(constraints[:, constraint_id]) ≥ 1) # valid for at least one state
+                for i=1:N+1
+                    @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
+                end
+            end
         end
     end
     return model

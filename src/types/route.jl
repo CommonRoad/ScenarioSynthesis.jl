@@ -5,6 +5,7 @@ struct Route
     frame::TransFrame
     transition_points::Vector{Float64} # transition points at the crossing from one lanelet to the next one
     conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}} 
+    # TODO add lanelet_frame_offset::Vector{Float64} and fill with values!
 
     function Route(route::Vector{LaneletID}, ln::LaneletNetwork, resampling_dst::Number=2.0)
         ### validity checks
@@ -167,4 +168,13 @@ function reference_pos(r1::Route, r2::Route, ln::LaneletNetwork)
     end
 
     return Pos(FCart, Inf64, Inf64), Pos(FCart, Inf64, Inf64), false
+end
+
+"""
+    corner_cutting
+
+TODO implement Chaikin's corner cutting algorithm. 
+"""
+function corner_cutting(ls::Vector{Pos{FCart}})
+    return ls
 end

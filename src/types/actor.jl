@@ -81,9 +81,9 @@ Inf: routes of `actor1`and `actor2` do not merge at any point.
 """
 function lon_distance(
     actor1::Actor,
-    lon1::Number,
+    lon1, #::Number,
     actor2::Actor,
-    lon2::Number,
+    lon2, #::Number,
     ln::LaneletNetwork
 )
     ref_pos1, ref_pos2, does_exist = reference_pos(actor1.route, actor2.route, ln)

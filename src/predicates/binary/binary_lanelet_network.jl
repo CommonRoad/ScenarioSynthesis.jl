@@ -1,3 +1,7 @@
+import JuMP.VariableRef, JuMP.value
+
+binary(rel::Relation{IsOnLanelet}, scenario::Scenario, state::VariableRef) = binary(rel, scenario, StateCurv(value(state), 0.0, 0.0, 0.0, 0.0, 0.0))
+
 function binary(rel::Relation{IsOnLanelet}, scenario::Scenario, state::StateCurv)
     actor = scenario.actors.actors[rel.actor1]
 

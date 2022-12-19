@@ -41,3 +41,13 @@ function robustness(rel::Relation{IsOnSameLaneSection}, scenario::Scenario, stat
 
     return -100.0
 end
+
+function robustness(rel::Relation{IsOnLanelet}, scenario::Scenario, lon)
+    route = scenario.actors.actors[rel.actor1].route
+    id = findfirst(x -> x == rel.lanelet, route.route)
+    typeof(id) == Nothing && throw(error("lanelet id not part of route.")) # TODO catch when creating the relation!!
+    start = route.transition_points[id]
+    finish = route.transition_points[id+1]
+
+    return (lon - start) * (finish - lon) # min(abs(start-lon), abs(finish-lon))
+end

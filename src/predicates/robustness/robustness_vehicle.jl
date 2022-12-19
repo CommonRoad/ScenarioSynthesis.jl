@@ -1,4 +1,4 @@
-# TODO use other metric than safety distance for vehicle relations? 
+import JuMP.VariableRef, JuMP.value
 
 function robustness(rel::Relation{IsInFront}, scenario::Scenario, state1::StateCurv, state2::StateCurv)
     actor1 = scenario.actors.actors[rel.actor1]
@@ -34,3 +34,13 @@ robustness(rel::Relation{IsFaster}, scenario::Scenario, state1::StateCurv, state
 robustness(rel::Relation{IsSlower}, scenario::Scenario, state1::StateCurv, state2::StateCurv) = state2.lon.v - state1.lon.v - velocity_tolerance()
 robustness(rel::Relation{IsSameSpeed}, scenario::Scenario, state1::StateCurv, state2::StateCurv) = velocity_tolerance() - abs(state1.lon.v - state2.lon.v)^2  
 robustness(rel::Relation{IsStop}, scenario::Scenario, state::StateCurv) = velocity_tolerance() - state.lon.v
+
+function robustness(rel::Relation{IsBehind}, scenario::Scenario, state1, state2)
+    actor1 = scenario.actors.actors[rel.actor1]
+    actor2 = scenario.actors.actors[rel.actor2]
+
+    lon_dist, does_exist = lon_distance(actor1, state1, actor2, state2, scenario.ln)
+    does_exist || return -1e3
+    
+    return (position_tolerance() + actor1.len/2 + actor2.len/2) - lon_dist
+end

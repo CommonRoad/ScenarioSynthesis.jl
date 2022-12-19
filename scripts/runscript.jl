@@ -23,7 +23,7 @@ route4 = Route(LaneletID.([25, 112, 66, 146]), ln);
 reference_pos(route2, route3, ln)
 
 actor1 = Actor(route1);
-actor2 = Actor(route1; a_min=-2.0);
+actor2 = Actor(route2; a_min=-2.0);
 actor3 = Actor(route3);
 actor4 = Actor(route4);
 
@@ -48,4 +48,16 @@ scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5]);
 scenario = Scenario(actors, scenes, ln);
 
 ### synthesis
-synthesize_milp()
+op = synthesize_optimization_problem(scenario)
+
+### optimization
+import JuMP
+import Plots
+
+JuMP.optimize!(op)
+
+Plots.plot(JuMP.value.(op.obj_dict[:scene_active]))
+Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,1]); xlabel="step [1]", ylabel="s [m]")
+Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,2]); xlabel="step [1]", ylabel="v [m/s]")
+Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,3]); xlabel="step [1]", ylabel="a [m/s²]")
+Plots.plot(JuMP.value.(op.obj_dict[:jerk]); xlabel="step [1]", ylabel="j [m/s³]") 
