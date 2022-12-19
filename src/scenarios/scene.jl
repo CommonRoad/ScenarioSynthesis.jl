@@ -9,6 +9,7 @@ struct Scene
 
     function Scene(δ_min::Number, δ_max::Number, relations::AbstractVector{<:Relation})
         @assert 0 < δ_min ≤ δ_max < Inf
+        # TODO assert that at max 1 OnLanelet predicate
         return new(δ_min, δ_max, relations)
     end
 end
