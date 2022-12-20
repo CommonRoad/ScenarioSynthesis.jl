@@ -4,7 +4,8 @@ import JuMP
 
 @testset "Synthesis" begin
     ### load LaneletNetwork
-    ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
+    path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")
+    ln = ln_from_xml(path)
     process!(ln)
     #plot_lanelet_network(ln; annotate_id=true)
 
