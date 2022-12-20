@@ -7,7 +7,7 @@ abstract type ActorType end # TODO replace with RoadUser type? @enum instead of 
 struct Vehicle <: ActorType end # TODO is this even useful? 
 
 struct Actor # TODO add type as label or element? 
-    route::Route # TODO maybe detach route from actor and infer rout based on scenes instead? => more freedom for optimizer
+    route::Route # TODO maybe detach route from actor and infer route based on scenes instead? => more freedom for optimizer
     len::Float64 # m 
     wid::Float64 # m
     v_min::Float64 # m/s
@@ -92,14 +92,13 @@ function lon_distance(
 end
 
 function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
-    # TODO faulty if lanelet is not accessed from front ("not for lane changes")
     0 ≤ state.lon.s < actor.route.transition_points[end] || throw(error("out of bounds."))
     trid = findlast(x -> x ≤ state.lon.s, actor.route.transition_points)
     ltid = actor.route.route[trid]
     lt = ln.lanelets[ltid]
 
     # check whether lateral position is within bounds # TODO linear interpolation of distances before and after actual position would be even more accurate
-    s_lt = state.lon.s - actor.route.transition_points[trid] # longitudial coordinate in lanelet frame
+    s_lt = state.lon.s - actor.route.transition_points[trid] + actor.route.lanelet_frame_offset[trid] # longitudial coordinate in lanelet frame
     0 ≤ s_lt < lt.frame.cum_dst[end] || throw(error("bout of bounds."))
     trid_lt = findlast(x -> x ≤ s_lt, lt.frame.cum_dst) # last center support point before longitudinal pos
     d_rght = distance(lt.frame.ref_pos[trid_lt], lt.boundRght.vertices[trid_lt]) # distance to right boundary

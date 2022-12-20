@@ -4,24 +4,27 @@ struct Route
     route::Vector{LaneletID}
     frame::TransFrame
     transition_points::Vector{Float64} # transition points at the crossing from one lanelet to the next one
+    lanelet_frame_offset::Vector{Float64}
     conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}} 
-    # TODO add lanelet_frame_offset::Vector{Float64} and fill with values!
 
     function Route(route::Vector{LaneletID}, ln::LaneletNetwork, resampling_dst::Number=2.0)
         ### validity checks
         length(route) ≥ 1 || throw(error("Route must travel at least one LaneSection."))
         for i=eachindex(route[1:end-1])
-            in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected."))
+            in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected.")) # TODO also allow lane changes
         end
 
         ### merged center line
         merged_center_line = Vector{Pos{FCart}}()
+        lanelet_entry_pos = Vector{Pos{FCart}}()
         for i in eachindex(route[1:end-1])
             if in(route[i+1], ln.lanelets[route[i]].succ)
                 append!(merged_center_line, ln.lanelets[route[i]].frame.ref_pos)
+                push!(lanelet_entry_pos, ln.lanelets[route[i]].frame.ref_pos[1])
             elseif route[i+1] == ln.lanelets[route[i]].adjRght.lanelet_id
                 # handle lane change right
                 lt1 = ln.lanelets[route[i]]
+                push!(lanelet_entry_pos, lt1.frame.ref_pos[1])
 
                 # first quarter
                 trid = findlast(x -> x ≤ 0.25 * lt1.frame.cum_dst[end], lt1.frame.cum_dst)
@@ -40,6 +43,7 @@ struct Route
                 vec_to_next = lt1.boundRght.vertices[trid+1] - lt1.boundRght.vertices[trid]
                 support_point = lt1.boundRght.vertices[trid] + vec_to_next * (s_remain / norm(vec_to_next))
                 push!(merged_center_line, support_point)
+                push!(lanelet_entry_pos, support_point)
 
                 # third quarter support_point
                 lt2 = ln.lanelets[route[i+1]]
@@ -55,6 +59,7 @@ struct Route
             elseif route[i+1] == ln.lanelets[route[i]].adjLeft.lanelet_id
                 # handle lane change left
                 lt1 = ln.lanelets[route[i]]
+                push!(lanelet_entry_pos, lt1.frame.ref_pos[1])
 
                 # first quarter
                 trid = findlast(x -> x ≤ 0.25 * lt1.frame.cum_dst[end], lt1.frame.cum_dst)
@@ -73,6 +78,7 @@ struct Route
                 vec_to_next = lt1.boundLeft.vertices[trid+1] - lt1.boundLeft.vertices[trid]
                 support_point = lt1.boundLeft.vertices[trid] + vec_to_next * (s_remain / norm(vec_to_next))
                 push!(merged_center_line, support_point)
+                push!(lanelet_entry_pos, support_point)
 
                 # third quarter support_point
                 lt2 = ln.lanelets[route[i+1]]
@@ -89,7 +95,7 @@ struct Route
             end
         end
 
-        (length(route) == 1 || in(route[end], ln.lanelets[route[end-1]].succ)) && append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos)
+        (length(route) == 1 || in(route[end], ln.lanelets[route[end-1]].succ)) && (append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos); push!(lanelet_entry_pos, ln.lanelets[route[end]].frame.ref_pos[1]))
         
         ### resampling center line
         temp_frame = TransFrame(merged_center_line)
@@ -104,14 +110,17 @@ struct Route
         push!(resampled_center_line, temp_frame.ref_pos[end])
 
         ### line smoothing
-        # TODO add algorithms for line smoothing! -> neccessary for lane changes
+        smoothed_center_line = corner_cutting(resampled_center_line, 1)
 
         ### creation of TransFrame 
-        frame = TransFrame(resampled_center_line)
+        frame = TransFrame(smoothed_center_line)
 
-        ### transition points at the crossing from one lanelet to another -- TODO adapt to allow for lane changes!!
-        transition_points = map(ltid -> transform(ln.lanelets[ltid].frame.ref_pos[1], frame).c1, route)
+        ### transition points at the crossing from one lanelet to another
+        transition_points = map(x -> transform(x, frame).c1, lanelet_entry_pos)
         push!(transition_points, frame.cum_dst[end])
+
+        ### lanelet frame offset
+        lanelet_frame_offset = map(x -> transform(x[1], ln.lanelets[x[2]].frame).c1, zip(lanelet_entry_pos, route))
 
         ### calculate conflict sections
         conflict_sections = Dict{ConflictSectionID, Tuple{Float64, Float64}}()
@@ -124,7 +133,7 @@ struct Route
             end
         end
 
-        return new(route, frame, transition_points, conflict_sections)
+        return new(route, frame, transition_points, lanelet_frame_offset, conflict_sections)
     end
 end
 
@@ -173,8 +182,28 @@ end
 """
     corner_cutting
 
-TODO implement Chaikin's corner cutting algorithm. 
+Chaikin's corner cutting algorithm. 
 """
-function corner_cutting(ls::Vector{Pos{FCart}})
+function corner_cutting(ls::Vector{Pos{FCart}}, n_iter::Integer)
+    for i=1:n_iter
+        ls = corner_cutting_core(ls)
+    end
     return ls
+end
+
+function corner_cutting_core(ls::Vector{T}) where {T<:Pos{FCart}}
+    length(ls) ≥ 3 || return ls # throw(error("at least 3 points necessary for corner cutting."))
+    smooth = Vector{T}(undef, (length(ls)-1)*2)
+    smooth[1] = ls[1]
+    vec_to_next = ls[2] - ls[1]
+    smooth[2] = ls[1] + 0.75 * vec_to_next
+    for i in eachindex(ls[1:end-3])
+        vec_to_next = ls[i+2] - ls[i+1]
+        smooth[2i+1] = ls[i+1] + 0.25 * vec_to_next
+        smooth[2i+2] = ls[i+1] + 0.75 * vec_to_next
+    end
+    vec_to_next = ls[end] - ls[end-1]
+    smooth[end-1] = ls[end-1] + 0.25 * vec_to_next
+    smooth[end] = ls[end]
+    return smooth
 end

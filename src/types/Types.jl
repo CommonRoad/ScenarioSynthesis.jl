@@ -26,7 +26,7 @@ include("state.jl")
 export StateLon, StateLat, StateCurv, JerkInput, AccInput
 
 include("route.jl")
-export Route, reference_pos
+export Route, reference_pos, corner_cutting
 
 include("actor.jl")
 export Actor, Vehicle, ActorsDict, run_timestep, lon_distance

@@ -8,7 +8,7 @@ function robustness(rel::Relation{IsOnConflictSection}, scenario::Scenario, stat
     s = state.lon.s
     s_low = route.conflict_sections[rel.conflict_section][1] 
     s_upp = route.conflict_sections[rel.conflict_section][2] 
-    return - (s - s_low) * (s - s_upp) # TODO does squared make sense? 
+    return (s - s_low) * (s_upp - s) 
 end
 
 function robustness(rel::Relation{IsBehindConflictSection}, scenario::Scenario, state::StateCurv)
