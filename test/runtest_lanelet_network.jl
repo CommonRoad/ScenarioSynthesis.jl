@@ -28,3 +28,12 @@ end
     @test isapprox(section144[1], 5.926364934429366)
     @test isapprox(section144[2], 10.534759883429986)
 end
+
+@testset "ln interstate" begin
+    path = joinpath(@__DIR__, "..", "example_files", "USA_US101-10_5_T-1.xml")
+    ln = ln_from_xml(path)
+
+    process!(ln)
+    @test isa(ln, LaneletNetwork)
+    # TODO add more tests
+end

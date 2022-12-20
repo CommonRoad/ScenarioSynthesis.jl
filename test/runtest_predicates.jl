@@ -108,5 +108,5 @@ end
 @testset "constraints" begin
     @test true
 
-    # TODO ad tests so that every Relation is tested
+    # TODO add tests so that every Relation is tested
 end

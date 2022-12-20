@@ -143,7 +143,9 @@ struct Lanelet
     function Lanelet(
         boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight
     )
-        length(laneletType) ≥ 1 || throw(error("lanelet type not specified.")) # TODO relax by setting laneletType = LT_Unknown ? 
+        if length(laneletType) < 1 
+            laneletType = Set([LT_Unknown]) # throw(error("lanelet type not specified.")) # TODO relax by setting laneletType = LT_Unknown ? 
+        end
         transFrame = TransFrame(vertCntr)
         length(vertCntr) == length(boundRght.vertices) == length(boundLeft.vertices) || throw(error("different number of support points for lanelet."))
         return new(
