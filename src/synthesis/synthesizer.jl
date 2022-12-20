@@ -7,14 +7,6 @@ import StaticArrays.SMatrix, StaticArrays.SVector
 const Jerk = Float64
 const bigM = 1e6 # TODO Inf64?
 
-function next_state(state::StateLon, jerk::Jerk, Δt::Number)
-    state = SVector{3, Float64}(state)
-    system = SMatrix{3, 3, Float64, 9}(1, 0, 0, Δt, 1, 0, 1/2*Δt^2, Δt, 1)
-    excitation = SVector{3, Float64}(1/6*Δt^3, 1/2*Δt^2, Δt)
-
-    return system * state + excitation * jerk
-end
-
 # synthesize longitudinal optimization problem
 function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     model = Model(Gurobi.Optimizer)
@@ -29,11 +21,15 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     @variable(model, state[1:N+1, 1:n_actors, 1:3])
     @variable(model, scene_seen[1:N+1, 1:n_scenes+1], Bin)
     @variable(model, scene_active[1:N+1, 1:n_scenes], Bin)
-    @variable(model, default_true, Bin)
     @variable(model, in_cs[1:N+1, 1:n_conlict_sections], Bin)
+    @variable(model, cost_var[1:N, 1:n_actors])
+
+    for i=1:N
+        @constraint(model, cost_var[i,:] .== jerk[i,:] .* (1 - scene_seen[i, n_scenes+1]))
+    end
   
     ### set up objective function 
-    @objective(model, Min, sum(jerk.^2)) # use acc instead?
+    @objective(model, Min, sum(cost_var.^2)) # use acc instead?
     
     ### set up constraints
     # store lims -- TODO dicts instead of vectors?
@@ -68,8 +64,10 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     @constraint(model, scene_seen[1,:] .== [true, zeros(Bool, n_scenes)...]) # first scene active
 
     for i=1:N
-        for j=1:n_scenes
+        for j=1:n_scenes+1
             @constraint(model, scene_seen[i+1,j] ≥ scene_seen[i,j]) # once a scene has been seen, it cannot be undone
+        end
+        for j=1:n_scenes
             @constraint(model, scene_seen[i+1,j+1] ≤ scene_seen[i+1,j]) # a scene can only be activate, if the previous scene has also been seen 
         end
     end
@@ -95,7 +93,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
             conflict_section_table[cursor, 3] = cs_id
 
             for i=1:N+1
-                @constraint(model, in_cs[i, cursor] ≥ ((state[i, actor_id, 1] - cs[1]) * (cs[2] - state[i, actor_id, 1]) / bigM)) # true for positive values
+                # @constraint(model, in_cs[i, cursor] ≥ ((state[i, actor_id, 1] - cs[1]) * (cs[2] - state[i, actor_id, 1]) / bigM)) # true for positive values
             end
         end
     end
@@ -105,26 +103,18 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     for (cs_id, cs) in scenario.ln.conflict_sections
         conflicting = findall(x -> x == cs_id, conflict_section_table[:,3])
         length(conflicting) ≤ 1 && continue
-        @constraint(model, sum(in_cs[conflicting]) ≤ 1)
+        # @constraint(model, sum(in_cs[conflicting]) ≤ 1)
     end
 
 
     # constraints from predicates (scene specific)
-    # constraint_id = 0
-    # constraints_total = sum([length(scene.relations) for (scene_id, scene) in scenario.scenes.scenes])
-    # @variable(model, constraints[1:N+1, 1:constraints_total], Bin)
     for (scene_id, scene) in scenario.scenes.scenes
         for rel in scene.relations
             # constraint_id += 1
             
-            #= for i=1:N+1
-                @constraint(model, constraints[i, constraint_id] ≤ scene_active[i, scene_id]) # constraint only counts as fulfilled if its scene is active
-            end =#
-
             # TODO generalize and organize as function add_constraints!(rel, ...)
             if typeof(rel) == Relation{IsBehind}
                 @info("IsBehind")
-                # @constraint(model, sum(constraints[:, constraint_id]) ≥ 1) # valid for at least one state
                 for i=1:N+1
                     @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1], state[i, rel.actor2, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
                 end
@@ -132,7 +122,6 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
 
             if typeof(rel) == Relation{IsOnLanelet}
                 @info("IsOnLanelet")
-                # @constraint(model, sum(constraints[:, constraint_id]) ≥ 1) # valid for at least one state
                 for i=1:N+1
                     @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
                 end
