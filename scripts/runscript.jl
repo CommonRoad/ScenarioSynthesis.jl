@@ -54,10 +54,22 @@ op = synthesize_optimization_problem(scenario)
 import JuMP
 import Plots
 
+solve_optimization_problem!(op)
 JuMP.optimize!(op)
 
 Plots.plot(JuMP.value.(op.obj_dict[:scene_active]))
+Plots.plot(JuMP.value.(op.obj_dict[:in_cs]))
 Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,1]); xlabel="step [1]", ylabel="s [m]")
 Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,2]); xlabel="step [1]", ylabel="v [m/s]")
 Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,3]); xlabel="step [1]", ylabel="a [m/s²]")
 Plots.plot(JuMP.value.(op.obj_dict[:jerk]); xlabel="step [1]", ylabel="j [m/s³]") 
+
+### corner cutting
+using BenchmarkTools
+using Plots
+ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
+@benchmark corner_cutting($ls, 1)
+
+ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
+ls = corner_cutting(ls, 1)
+plot(hcat(ls...)'[:,1], hcat(ls...)'[:,2])

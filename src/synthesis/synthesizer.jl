@@ -22,6 +22,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     N = floor(Int64, duration_max/Δt)
     n_actors = length(scenario.actors.actors)
     n_scenes = length(scenario.scenes.scenes)
+    n_conlict_sections = sum([length(actor.route.conflict_sections) for (actor_id, actor) in scenario.actors.actors])
     
     ### set up variables 
     @variable(model, jerk[1:N, 1:n_actors])
@@ -29,7 +30,8 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     @variable(model, scene_seen[1:N+1, 1:n_scenes+1], Bin)
     @variable(model, scene_active[1:N+1, 1:n_scenes], Bin)
     @variable(model, default_true, Bin)
-    
+    @variable(model, in_cs[1:N+1, 1:n_conlict_sections], Bin)
+  
     ### set up objective function 
     @objective(model, Min, sum(jerk.^2)) # use acc instead?
     
@@ -74,13 +76,38 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
 
     for i=1:N+1
         for j=1:n_scenes
-            @constraint(model, scene_active[i,j] == (scene_seen[i,j] - scene_seen[i,j+1])) # calculate active scene
+            @constraint(model, scene_active[i,j] == (scene_seen[i,j] - scene_seen[i,j+1])) # determine active scene
         end
     end
 
     for j=1:n_scenes
         @constraint(model, n_low_lims[j] ≤ sum(scene_active[:,j]) ≤ n_upp_lims[j]) # keep scene durations within limits
     end
+
+    # determine conflict section occupation
+    conflict_section_table = Matrix{Int64}(undef, n_conlict_sections, 3)
+    cursor = 0
+    for actor_id = 1:n_actors
+        for (cs_id, cs) in scenario.actors.actors[actor_id].route.conflict_sections
+            cursor += 1
+            conflict_section_table[cursor, 1] = cursor
+            conflict_section_table[cursor, 2] = actor_id
+            conflict_section_table[cursor, 3] = cs_id
+
+            for i=1:N+1
+                @constraint(model, in_cs[i, cursor] ≥ ((state[i, actor_id, 1] - cs[1]) * (cs[2] - state[i, actor_id, 1]) / bigM)) # true for positive values
+            end
+        end
+    end
+    @assert cursor == n_conlict_sections
+
+    # limit conflict section occupation
+    for (cs_id, cs) in scenario.ln.conflict_sections
+        conflicting = findall(x -> x == cs_id, conflict_section_table[:,3])
+        length(conflicting) ≤ 1 && continue
+        @constraint(model, sum(in_cs[conflicting]) ≤ 1)
+    end
+
 
     # constraints from predicates (scene specific)
     # constraint_id = 0
