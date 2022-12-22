@@ -113,6 +113,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
             # constraint_id += 1
             
             # TODO generalize and organize as function add_constraints!(rel, ...)
+            #=
             if typeof(rel) == Relation{IsBehind}
                 @info("IsBehind")
                 for i=1:N+1
@@ -126,6 +127,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
                     @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
                 end
             end
+            =#
         end
     end
     return model

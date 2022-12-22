@@ -30,9 +30,9 @@ actor4 = Actor(route4);
 actors = ActorsDict([actor1, actor2, actor3, actor4]);
 
 ### define scenes
-rel1 = [Relation(IsOnLanelet, 1, 64), Relation(IsOnLanelet, 2, 8), Relation(IsOnLanelet, 3, 66), Relation(IsBehind, 4, 3)];
-rel2 = [Relation(IsBehind, 4, 3), Relation(IsOnLanelet, 3, 147)];
-rel3 = [Relation(IsBehind, 4, 3), Relation(IsOnLanelet, 1, 11)];
+rel1 = [Predicate(LaneletRel(SameLon), 1, [64, 143])] #, Relation(IsOnLanelet, 2, 8), Relation(IsOnLanelet, 3, 66), Relation(IsBehind, 4, 3)];
+rel2 = [Predicate(ActorRel(Behind), 4, 3), Predicate(ActorRel(Behind), 3, 147)];
+rel3 = [Predicate(ActorRel(Behind), 4, 3), Predicate(LaneletRel(SameLon), 1, [11])];
 
 scene1 = Scene(4.0, 8.0, rel1);
 scene2 = Scene(4.0, 8.0, rel2);

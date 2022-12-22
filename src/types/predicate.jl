@@ -1,77 +1,61 @@
-abstract type Predicate end
-abstract type AtomicPredicate <: Predicate end # atomic predicates are special types of predicates
-abstract type TrafficRule <: Predicate end # traffic rules are special types of predicates
-abstract type Specification <: Predicate end # specifications are special types of preduactes
+# abstract type AbstractPredicate end
 
+### Relations
+# Time ??
 
-## Atomic Predicates
-# Vehicle
-struct IsBehind <: AtomicPredicate end
-struct IsNextTo <: AtomicPredicate end
-struct IsInFront <: AtomicPredicate end
-struct IsFaster <: AtomicPredicate end
-struct IsSlower <: AtomicPredicate end
-struct IsSameSpeed <: AtomicPredicate end
-struct IsStop <: AtomicPredicate end
+# Longitudinal
+abstract type LonRel end
+struct Behind <: LonRel end
+struct SameLon <: LonRel end
+struct InFront <: LonRel end
 
-# LaneletNetwork
-struct IsOnLanelet <: AtomicPredicate end
-struct IsOnSameLaneSection <: AtomicPredicate end
-# struct IsRoutesMerge <: AtomicPredicate end # at least one laneletID of both routes is identical or last one does merge
-# struct IsRoutesIntersect <: AtomicPredicate end 
+# Velocity
+abstract type VelRel end
+struct Slower <: VelRel end
+struct SameVel <: VelRel end
+struct Faster <: VelRel end
 
-# ConflictSection
-struct IsOnConflictSection <: AtomicPredicate end
-struct IsBeforeConflictSection <: AtomicPredicate end
-struct IsBehindConflictSection <: AtomicPredicate end
+abstract type VelAbs end
+struct Stop <: VelAbs end
 
+struct ActorRel{T}
+    function ActorRel(::Type{T}) where {T<:Union{LonRel, VelRel}}
+        return new{T}()
+    end
+end
 
-## Traffic Rule
-struct SpeedLimit <: TrafficRule end
-struct SafeDistance <: TrafficRule end
+struct LaneletRel{T}
+    function LaneletRel(::Type{T}) where {T<:LonRel}
+        return new{T}()
+    end
+end
 
-## Specification
+struct ConflictSectionRel{T}
+    function ConflictSectionRel(::Type{T}) where {T<:LonRel}
+        return new{T}()
+    end
+end
 
-## Relations
-struct Relation{T}
-    actor1::ActorID
-    actor2::ActorID
-    lanelet::LaneletID
-    conflict_section::ConflictSectionID
+### Predicates
+struct Predicate{T} # <: AbstractPredicate
+    ego::ActorID
+    val1::Int64
+    val2::Int64
 
-    """
-        Relation
-
-    Default constructor for relation between two vehicles.
-    """
-    function Relation(::Type{T}, actor1::ActorID, actor2::ActorID) where {T<:Union{IsBehind, IsNextTo, IsInFront, IsFaster, IsSlower, IsSameSpeed, SafeDistance, IsOnSameLaneSection}}
-        return new{T}(actor1, actor2, -1, -1)
+    function Predicate(::T, ego::ActorID, other::ActorID) where {T<:ActorRel}
+        return new{T}(ego, other, -1)
     end
 
-    """
-        Relation 
-
-    Default constructor for relation between a vehicle and a lanelet.
-    """
-    function Relation(::Type{T}, actor::ActorID, lanelet::LaneletID) where {T<:Union{IsOnLanelet, SpeedLimit}}
-        return new{T}(actor, -1, lanelet, -1)
+    function Predicate(::T, ego::ActorID) where {T<:VelAbs}
+        return new{T}(ego, -1, -1)
     end
 
-    """
-        Relation
-
-    Default constructor for conflict section predicates.
-    """
-    function Relation(::Type{T}, actor::ActorID, conflict_section::ConflictSectionID) where {T<:Union{IsBeforeConflictSection, IsBehindConflictSection, IsOnConflictSection}}
-        return new{T}(actor, -1, -1, conflict_section)
+    function Predicate(::T, ego::ActorID, lts::Vector{LaneletID}) where {T<:LaneletRel}
+        @assert length(lts) ≥ 1
+        return new{T}(ego, lts[1], length(lts))
     end
 
-    """
-        Relation
-
-    Default constructor for single vehicle predicate.
-    """
-    function Relation(::Type{T}, actor::ActorID) where {T<:Union{IsStop}}
-        return new{T}(actor, -1, -1, -1)
+    function Predicate(::T, ego::ActorID, cs::ConflictSectionID) where {T<:ConflictSectionRel}
+        return new{T}(ego, cs, -1)
     end
 end

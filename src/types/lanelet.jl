@@ -190,3 +190,11 @@ function Polygon_cut_from_end(lt::Lanelet, e::Number)
 
     return Polygon(vertices)
 end
+
+function orientation(lt::Lanelet, s::Real) # TODO check coordinate defs, write test
+    0.0 ≤ s < lt.frame.cum_dst[end] || throw(error("out of bounds."))
+
+    ind = findlast(x -> x ≤ s, lt.frame.cum_dst)
+    vec_to_next = lt.frame.ref_pos[ind+1] - lt.frame.ref_pos[ind]
+    return tan(vec_to_next[2]/vec_to_next[1])
+end
