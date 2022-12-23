@@ -29,6 +29,14 @@ end
     @test isapprox(section144[2], 10.534759883429986)
 end
 
+@testset "ln functions" begin
+    path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")
+    ln = ln_from_xml(path)
+
+    @test Θ_l(ln.lanelets[25], 12.0) == -0.1177872951478107
+    @test Θ_l(ln.lanelets[26], 12.0) == 2.8511800632458955
+end
+
 @testset "ln interstate" begin
     path = joinpath(@__DIR__, "..", "example_files", "USA_US101-10_5_T-1.xml")
     ln = ln_from_xml(path)

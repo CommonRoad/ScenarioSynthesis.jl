@@ -1,4 +1,4 @@
-import DataStructures.OrderedDict
+import DataStructures.SortedDict
 import StaticArrays.SMatrix, StaticArrays.SVector
 
 const ActorID = Int64
@@ -8,8 +8,7 @@ struct Vehicle <: ActorType end # TODO is this even useful?
 
 struct Actor # TODO add type as label or element? 
     route::Route # TODO maybe detach route from actor and infer route based on scenes instead? => more freedom for optimizer
-    len::Float64 # m 
-    wid::Float64 # m
+    lenwid::SVector{2, Float64} # m 
     v_min::Float64 # m/s
     v_max::Float64 # m/s
     a_min::Float64 # m/s²
@@ -31,15 +30,15 @@ struct Actor # TODO add type as label or element?
         @assert a_min < 0 # breaking 
         @assert a_max > 0 # accelerating
 
-        return new(route, len, wid, v_min, v_max, a_min, a_max)
+        return new(route, SVector{2, Float64}(len, wid), v_min, v_max, a_min, a_max)
     end
 end
 
 struct ActorsDict
-    actors::OrderedDict{ActorID, Actor}
+    actors::SortedDict{ActorID, Actor}
 
     function ActorsDict(actors::AbstractVector{Actor})
-        return new(OrderedDict{ActorID, Actor}(zip(eachindex(actors), actors))) # assign each actor a unique ActorID
+        return new(SortedDict{ActorID, Actor}(zip(eachindex(actors), actors))) # assign each actor a unique ActorID
     end
 end
 
@@ -91,20 +90,112 @@ function lon_distance(
     return (does_exist ? (lon1 - lon2 - transform(ref_pos1, actor1.route.frame).c1 + transform(ref_pos2, actor2.route.frame).c1, true) : (Inf64, false))
 end
 
-function LaneletID(actor::Actor, state::StateCurv, ln::LaneletNetwork)
-    0 ≤ state.lon.s < actor.route.transition_points[end] || throw(error("out of bounds."))
-    trid = findlast(x -> x ≤ state.lon.s, actor.route.transition_points)
-    ltid = actor.route.route[trid]
-    lt = ln.lanelets[ltid]
+function LaneletID(actor::Actor, ln::LaneletNetwork, s_r, d) # ref_lt_safe
+    ref_ltid, s_l = ref_lanelet(actor, s_r)
+    ref_lt = ln.lanelets[ref_ltid]
+    ref_d_max, ref_d_min = lanelet_width(ref_lt, s_l)
 
-    # check whether lateral position is within bounds # TODO linear interpolation of distances before and after actual position would be even more accurate
-    s_lt = state.lon.s - actor.route.transition_points[trid] + actor.route.lanelet_frame_offset[trid] # longitudial coordinate in lanelet frame
-    0 ≤ s_lt < lt.frame.cum_dst[end] || throw(error("bout of bounds."))
-    trid_lt = findlast(x -> x ≤ s_lt, lt.frame.cum_dst) # last center support point before longitudinal pos
-    d_rght = distance(lt.frame.ref_pos[trid_lt], lt.boundRght.vertices[trid_lt]) # distance to right boundary
-    d_left = distance(lt.frame.ref_pos[trid_lt], lt.boundLeft.vertices[trid_lt])
+    ref_d_min ≤ d ≤ ref_d_max || throw(error("could not determine LaneletID."))
 
-    -d_rght ≤ state.lat.d ≤ d_left || throw(error("could not determine LaneletID."))
+    return ref_ltid
+end
 
-    return ltid
+function ref_lanelet(actor::Actor, s_r) # ref_lt_unsafe
+    0.0 ≤ s_r ≤ actor.route.frame.cum_dst[end] || throw(error("out of bounds."))
+    ind = findlast(x -> x ≤ s_r, actor.route.transition_points)
+    ltid = actor.route.route[ind]
+    s_l = s_r - actor.route.transition_points[ind]
+    return ltid, s_l
+end
+
+# returns only those lanelets, which are logicially connected
+# be more accurate by using conflict section information (of lanelets) -- only implemented for on ref lt yet -- should be accurate enough
+function lanelets(actor::Actor, ln::LaneletNetwork, s, v, d, ḋ)
+    Θ_a = atan(ḋ, v)
+    -0.35 ≤ Θ_a ≤ 0.35 || @warn "Θ_a pretty high; please check correctness."
+    ref_lt_id, s_l = ref_lanelet(actor, s)
+    ref_lt = ln.lanelets[ref_lt_id]
+
+    si, co = sincos(Θ_a)
+    # lateral
+    proj_wid = abs(si * actor.lenwid[1] + co * actor.lenwid[2])
+    d_max = d + proj_wid / 2
+    d_min = d - proj_wid / 2
+    ref_lt_d_max, ref_lt_d_min = lanelet_width(ref_lt, s_l)
+
+    # longitudial
+    proj_len = abs(co * actor.lenwid[1] + si * actor.lenwid[2])
+    s_lt_max = s_l + proj_len / 2
+    s_lt_min = s_l - proj_len / 2
+
+    # collect results
+    lts = Set{LaneletID}()
+
+    (d_max - ref_lt_d_max > 3.0 || d_min - ref_lt_d_min < -3.0 || s_lt_min < -5.0 || s_lt_max - ref_lt.frame.cum_dst[end] > 5.0) && @warn "only valid for small deviations from route"
+
+    # first lateral, then longitudial 
+    if ref_lt_d_max ≤ d_max # on adjacent left
+        if s_lt_min ≤ 0.0 # on pred
+            for p_lt_id in ref_lt.pred
+                p_lt = ln.lanelets[p_lt_id]
+                p_lt.adjLeft.is_exist && push!(lts, p_lt.adjLeft.lanelet_id)
+            end
+        end
+        
+        if  0.0 ≤ s_lt_max || s_lt_min ≤ ref_lt.frame.cum_dst[end] # on ref lanelet
+            ref_lt.adjLeft.is_exist && push!(lts, ref_lt.adjLeft.lanelet_id)
+        end
+
+        if ref_lt.frame.cum_dst[end] ≤ s_lt_max # on succ
+            for s_lt_id in ref_lt.succ
+                s_lt = ln.lanelets[s_lt_id]
+                s_lt.adjLeft.is_exist && push!(lts, s_lt.adjLeft.lanelet_id)
+            end
+        end
+    end
+
+    if ref_lt_d_min ≤ d_min ≤ ref_lt_d_max || ref_lt_d_min ≤ d_max ≤ ref_lt_d_max # on ref lanelet
+        if s_lt_min ≤ 0.0 # on pred
+            union!(lts, ref_lt.pred)
+        end
+        
+        if  0.0 ≤ s_lt_max ≤ ref_lt.frame.cum_dst[end] || 0 ≤ s_lt_min ≤ ref_lt.frame.cum_dst[end] # on ref lanelet
+            push!(lts, ref_lt_id)
+            for (csid, cs) in ref_lt.conflict_sections
+                if cs[1] ≤ s_l ≤ cs[2]
+                    id1, id2 = ln.conflict_sections[csid]
+                    id1 == ref_lt_id && push!(lts, id2)
+                    id2 == ref_lt_id && push!(lts, id1)
+                end
+            end
+        end
+
+        if ref_lt.frame.cum_dst[end] ≤ s_lt_max # on succ
+            union!(lts, ref_lt.succ)
+        end
+    end
+
+    if d_min ≤ ref_lt_d_min # on adjacent right
+        if s_lt_min ≤ 0.0 # on pred
+            for p_lt_id in ref_lt.pred
+                p_lt = ln.lanelets[p_lt_id]
+                p_lt.adjRght.is_exist && push!(lts, p_lt.adjRght.lanelet_id)
+            end
+        end
+        
+        if  0.0 ≤ s_lt_max || s_lt_min ≤ ref_lt.frame.cum_dst[end] # on ref lanelet
+            ref_lt.adjRght.is_exist && push!(lts, ref_lt.adjRght.lanelet_id)
+        end
+
+        if ref_lt.frame.cum_dst[end] ≤ s_lt_max # on succ
+            for s_lt_id in ref_lt.succ
+                s_lt = ln.lanelets[s_lt_id]
+                s_lt.adjRght.is_exist && push!(lts, s_lt.adjRght.lanelet_id)
+            end
+        end
+    end
+    
+    !in(ref_lt_id, lts) && @warn "reference lanelet not touched; check for correctness."
+
+    return lts
 end

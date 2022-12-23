@@ -11,7 +11,7 @@ include("traffic_sign.jl")
 export TrafficSign, TrafficSignID
 
 include("lanelet.jl")
-export Lanelet, LaneletID, lanelets
+export Lanelet, LaneletID, lanelets, Θ_l
 
 include("conflict_section.jl")
 export ConflictSectionID, ConflictSectionManager, get_conflict_section_id!

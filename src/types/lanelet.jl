@@ -138,7 +138,7 @@ struct Lanelet
     diverging_with::Set{LaneletID}
     intersecting_with::Set{LaneletID}
     conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}}
-    frame::TransFrame 
+    frame::TransFrame{FLanelet}
 
     function Lanelet(
         boundLeft, boundRght, vertCntr, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight
@@ -191,32 +191,16 @@ function Polygon_cut_from_end(lt::Lanelet, e::Number)
     return Polygon(vertices)
 end
 
-function orientation(lt::Lanelet, s::Real) # TODO check coordinate defs, write test
+function Θ_l(lt::Lanelet, s::Real) # TODO check coordinate defs, write test
     0.0 ≤ s < lt.frame.cum_dst[end] || throw(error("out of bounds."))
 
     ind = findlast(x -> x ≤ s, lt.frame.cum_dst)
     vec_to_next = lt.frame.ref_pos[ind+1] - lt.frame.ref_pos[ind]
-    return tan(vec_to_next[2]/vec_to_next[1])
+    return atan(vec_to_next[2], vec_to_next[1])
 end
 
-# TODO use geometry based approach instead? (4x pos in poly; iterate over all lanelets)
-# TODO get first ltid based on route CoordFrame and subsequently check for neighboring lanelets
-#=
-function lanelets(actor::Actor, s) # s: lon pos in frame of actor
-    r = sqrt(actor.len^2 + actor.wid^2) # TODO not fairly accurate 
-    s_min = s - r
-    s_max = s + r
-    (0 ≤ s_min && s_max ≤ actor.route.frame.cum_dst[end]) || throw(error("out of bounds.")) # TODO other handling
-    ind_low = findlast(x -> x ≤ s_min, actor.route.transition_points)
-    ind_upp = findlast(x -> x ≤ s_max, actor.route.transition_points)
-
-    return actor.route.route[ind_low:ind_upp]
+function lanelet_width(lt::Lanelet, s_l) # s_l: lon dst in FLanelet
+    0.0 ≤ s_l ≤ lt.frame.cum_dst[end] || throw(error("out of bounds."))
+    ind = findlast(x -> x ≤ s_l, lt.frame.cum_dst)
+    return distance(lt.boundLeft.vertices[ind], lt.frame.ref_pos[ind]), -distance(lt.boundRght.vertices[ind], lt.frame.ref_pos[ind])
 end
-
-function lanelets(actor::Actor, ln::LaneletNetwork, s, v, d=0.0, ḋ=0.0)
-    center = transform(Pos(FCurv, s, d), actor.route.frame)
-    Θ_a = atan(ḋ/v)
-    ref_ltid = findlast(x -> x ≤ s, actor.route.transition_points)
-    Θ_l = 0.0
-end
-=#

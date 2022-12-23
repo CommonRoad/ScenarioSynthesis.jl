@@ -1,5 +1,4 @@
-import DataStructures.OrderedDict
-
+import DataStructures.SortedDict
 const SceneID = Int64
 
 struct Scene
@@ -15,9 +14,9 @@ struct Scene
 end
 
 struct ScenesDict
-    scenes::OrderedDict{SceneID, Scene}
+    scenes::SortedDict{SceneID, Scene}
 
     function ScenesDict(scenes::AbstractVector{Scene})
-        return new(OrderedDict{SceneID, Scene}(zip(eachindex(scenes), scenes)))
+        return new(SortedDict{SceneID, Scene}(zip(eachindex(scenes), scenes)))
     end
 end

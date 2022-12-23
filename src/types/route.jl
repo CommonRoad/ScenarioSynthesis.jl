@@ -2,7 +2,7 @@ import LinearAlgebra.norm
 
 struct Route
     route::Vector{LaneletID}
-    frame::TransFrame
+    frame::TransFrame{FRoute}
     transition_points::Vector{Float64} # transition points at the crossing from one lanelet to the next one
     lanelet_frame_offset::Vector{Float64}
     conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}} 

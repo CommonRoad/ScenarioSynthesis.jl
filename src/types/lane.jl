@@ -1,15 +1,15 @@
-import DataStructures.OrderedSet
-
 struct Lane
-    lanelets::OrderedSet{LaneletID}
+    lanelets::Set{LaneletID}
 end
 
-function Lane(lt::LaneletID, ln::LaneletNetwork)
+function Lane(lt::LaneletID, ln::LaneletNetwork, max_iter::Number=Inf)
     # prevent cycles!!
-    lanelets = OrderedSet{LaneletID}()
+    lanelets = Set{LaneletID}()
     queue = Set(lt)
-    while !isempty(queue)
+    iter = 0
+    while !isempty(queue) && iter ≤ max_iter
         expand_lane!(lanelets, queue, ln)
+        iter += 1
     end
     return Lane(lanelets)
 end
@@ -22,8 +22,8 @@ function expand_lane!(lanelets::AbstractSet{LaneletID}, queue::AbstractSet{Lanel
     union!(queue, new)
 end
 
-function lanes(actor::Actor, ln::LaneletNetwork, s) # s: lon pos of actor
-    lanelets = lanelets(actor, s)
+function lanes(actor::Actor, ln::LaneletNetwork, s, v, d, ḋ) # s: lon pos of actor
+    lanelets = lanelets(actor, ln, s, v, d, ḋ)
     lanes = [Lane(lt, ln) for lt in lanelets]
     return lanes
 end
