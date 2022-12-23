@@ -43,7 +43,7 @@ end
 
 struct TrafficLight
     cycle::TL_Cycle
-    position::Pos{FCurv} # only longitudinal coordinate relevant
+    position::Pos{FLanelet} # only longitudinal coordinate relevant
     direction::TL_Direction
     is_active::Bool
 

@@ -52,7 +52,7 @@ function plot_lanelet_network(ln::LaneletNetwork; overwrite_backend::Bool=true, 
     return p 
 end
 
-function plot_polygon(poly::Polygon{F}) where {F<:CoordFrame}
+function plot_polygon(poly::Polygon{F}) where {F<:FCart}
     vertNorth = map(v -> v.c2, poly.vertices)
     vertEast = map(v -> v.c1, poly.vertices)
     p = plot([vertEast..., vertEast[1]], [vertNorth..., vertNorth[1]]; label=false, aspect_ratio=:equal)

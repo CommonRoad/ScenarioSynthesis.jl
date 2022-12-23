@@ -146,7 +146,7 @@ struct Lanelet
         if length(laneletType) < 1 
             laneletType = Set([LT_Unknown]) # throw(error("lanelet type not specified.")) # TODO relax by setting laneletType = LT_Unknown ? 
         end
-        transFrame = TransFrame(vertCntr)
+        transFrame = TransFrame(FLanelet, vertCntr)
         length(vertCntr) == length(boundRght.vertices) == length(boundLeft.vertices) || throw(error("different number of support points for lanelet."))
         return new(
             true, boundLeft, boundRght, pred, succ, adjLeft, adjRght, stopLine, laneletType, userOneWay, userBidirectional, trafficSign, trafficLight, Set{LaneletID}(), Set{LaneletID}(), Set{LaneletID}(), Dict{ConflictSectionID, Tuple{Float64, Float64}}(), transFrame
@@ -198,3 +198,25 @@ function orientation(lt::Lanelet, s::Real) # TODO check coordinate defs, write t
     vec_to_next = lt.frame.ref_pos[ind+1] - lt.frame.ref_pos[ind]
     return tan(vec_to_next[2]/vec_to_next[1])
 end
+
+# TODO use geometry based approach instead? (4x pos in poly; iterate over all lanelets)
+# TODO get first ltid based on route CoordFrame and subsequently check for neighboring lanelets
+#=
+function lanelets(actor::Actor, s) # s: lon pos in frame of actor
+    r = sqrt(actor.len^2 + actor.wid^2) # TODO not fairly accurate 
+    s_min = s - r
+    s_max = s + r
+    (0 ≤ s_min && s_max ≤ actor.route.frame.cum_dst[end]) || throw(error("out of bounds.")) # TODO other handling
+    ind_low = findlast(x -> x ≤ s_min, actor.route.transition_points)
+    ind_upp = findlast(x -> x ≤ s_max, actor.route.transition_points)
+
+    return actor.route.route[ind_low:ind_upp]
+end
+
+function lanelets(actor::Actor, ln::LaneletNetwork, s, v, d=0.0, ḋ=0.0)
+    center = transform(Pos(FCurv, s, d), actor.route.frame)
+    Θ_a = atan(ḋ/v)
+    ref_ltid = findlast(x -> x ≤ s, actor.route.transition_points)
+    Θ_l = 0.0
+end
+=#

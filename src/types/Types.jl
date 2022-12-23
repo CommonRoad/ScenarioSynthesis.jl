@@ -1,5 +1,5 @@
 include("coordinates.jl")
-export CoordFrame, FCart, FCurv, Pos, Vec, distance, TransFrame, transform
+export CoordFrame, FCart, FCurv, FRoute, FLanelet, Pos, Vec, distance, TransFrame, transform
 
 include("geometry.jl")
 export Polygon, LineSection, is_intersect, pos_intersect
@@ -11,7 +11,7 @@ include("traffic_sign.jl")
 export TrafficSign, TrafficSignID
 
 include("lanelet.jl")
-export Lanelet, LaneletID
+export Lanelet, LaneletID, lanelets
 
 include("conflict_section.jl")
 export ConflictSectionID, ConflictSectionManager, get_conflict_section_id!
@@ -34,4 +34,5 @@ export Actor, Vehicle, ActorsDict, run_timestep, lon_distance
 include("predicate.jl")
 export Predicate, ActorRel, LaneletRel, ConflictSectionRel, Behind, SameLon, InFront, Slower, SameVel, Faster
 
-# include("predicate_new.jl")
+include("lane.jl")
+export Lane, expand_lane!

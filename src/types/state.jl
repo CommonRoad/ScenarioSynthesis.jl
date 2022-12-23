@@ -49,7 +49,7 @@ struct StateCurv <: State
 end
 
 function Pos(sc::StateCurv)
-    return Pos(FCurv, sc.lon.s, sc.lat.d)
+    return Pos(FRoute, sc.lon.s, sc.lat.d)
 end
 
 struct AccInput <: FieldVector{2, Float64}

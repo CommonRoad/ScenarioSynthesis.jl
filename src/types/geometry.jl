@@ -13,7 +13,7 @@ implementation based on https://stackoverflow.com/questions/563198/how-do-you-de
 function is_intersect(
     ls1::LineSection{F},
     ls2::LineSection{F}
-) where {F<:CoordFrame}
+) where {F<:FCart}
     p = ls1.v1
     r = ls1.v2 - ls1.v1
     q = ls2.v1
@@ -28,7 +28,7 @@ end
 function pos_intersect(
     ls1::LineSection{F},
     ls2::LineSection{F}
-) where {F<:CoordFrame}
+) where {F<:FCart}
     p = ls1.v1
     r = ls1.v2 - ls1.v1
     q = ls2.v1
@@ -51,7 +51,7 @@ end
 function is_intersect(
     p1::LineStrech{F},
     p2::LineStrech{F}
-) where {F<:CoordFrame}
+) where {F<:FCart}
     @inbounds for i = eachindex(p1.vertices[1:end-1])
         ls1 = LineSection(p1.vertices[i], p1.vertices[i+1])
         @inbounds for j = eachindex(p2.vertices[1:end-1])
@@ -65,7 +65,7 @@ end
 function pos_intersect(
     p1::LineStrech{F},
     p2::LineStrech{F}
-) where {F<:CoordFrame}
+) where {F<:FCart}
     @inbounds for i = eachindex(p1.vertices[1:end-1])
         ls1 = LineSection(p1.vertices[i], p1.vertices[i+1])
         @inbounds for j = eachindex(p2.vertices[1:end-1])
@@ -79,7 +79,7 @@ end
 struct Polygon{F}
     vertices::Vector{Pos{F}} # TODO change to Matrix oder SMatrix? 
 
-    function Polygon(::Type{F}, matrix::AbstractMatrix{<:Number}) where {F<:CoordFrame}
+    function Polygon(::Type{F}, matrix::AbstractMatrix{<:Number}) where {F<:FCart}
         m, n = size(matrix)
         m == 2 || throw(error("Vertices must consist of exactly 2 values."))
         n ≥ 3 || throw(error("Polygon must consist of at least 3 vertices."))
@@ -87,14 +87,14 @@ struct Polygon{F}
         return new{F}([Pos{F}(matrix[:,i]) for i=1:n])
     end
 
-    function Polygon(vector::AbstractVector{Pos{F}}) where {F<:CoordFrame}
+    function Polygon(vector::AbstractVector{Pos{F}}) where {F<:FCart}
         n = length(vector)
         n ≥ 3 || throw(error("Polygon must consist of at least 3 vertices."))
 
         return new{F}(vector)
     end
 
-    function Polygon(::Type{F}, vector::AbstractVector{<:AbstractVector}) where {F<:CoordFrame}
+    function Polygon(::Type{F}, vector::AbstractVector{<:AbstractVector}) where {F<:FCart}
         n = length(vector)
         n ≥ 3 || throw(error("Polygon must consist of at least 3 vertices."))
 
@@ -108,7 +108,7 @@ end
 function is_intersect(
     p1::Polygon{F},
     p2::Polygon{F}
-) where {F<:CoordFrame}
+) where {F<:FCart}
     return is_intersect(
         LineStrech([p1.vertices..., p1.vertices[1]]),
         LineStrech([p2.vertices..., p2.vertices[1]])

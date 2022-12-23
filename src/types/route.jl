@@ -98,7 +98,7 @@ struct Route
         (length(route) == 1 || in(route[end], ln.lanelets[route[end-1]].succ)) && (append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos); push!(lanelet_entry_pos, ln.lanelets[route[end]].frame.ref_pos[1]))
         
         ### resampling center line
-        temp_frame = TransFrame(merged_center_line)
+        temp_frame = TransFrame(FRoute, merged_center_line)
         resampled_center_line = [merged_center_line[1]]
 
         for dst in resampling_dst:resampling_dst:temp_frame.cum_dst[end]
@@ -113,23 +113,24 @@ struct Route
         smoothed_center_line = corner_cutting(resampled_center_line, 1)
 
         ### creation of TransFrame 
-        frame = TransFrame(smoothed_center_line)
+        frame = TransFrame(FRoute, smoothed_center_line)
 
         ### transition points at the crossing from one lanelet to another
-        transition_points = map(x -> transform(x, frame).c1, lanelet_entry_pos)
+        transition_points = map(x -> transform(FRoute, x, frame).c1, lanelet_entry_pos)
         push!(transition_points, frame.cum_dst[end])
 
         ### lanelet frame offset
-        lanelet_frame_offset = map(x -> transform(x[1], ln.lanelets[x[2]].frame).c1, zip(lanelet_entry_pos, route))
+        lanelet_frame_offset = map(x -> transform(FLanelet, x[1], ln.lanelets[x[2]].frame).c1, zip(lanelet_entry_pos, route))
 
         ### calculate conflict sections
         conflict_sections = Dict{ConflictSectionID, Tuple{Float64, Float64}}()
         for ltid in route
             for (csid, section) in ln.lanelets[ltid].conflict_sections
-                s_start = transform(transform(Pos(FCurv, section[1], 0.0), ln.lanelets[ltid].frame), frame).c1
-                step1 = transform(Pos(FCurv, section[2], 0.0), ln.lanelets[ltid].frame)
-                s_end = transform(step1, frame).c1
-                conflict_sections[csid] = (s_start, s_end)
+                step1 = transform(Pos(FLanelet, section[1], 0.0), ln.lanelets[ltid].frame) # pos FCart
+                s_start = transform(FRoute, step1, frame).c1
+                step2 = transform(Pos(FLanelet, section[2], 0.0), ln.lanelets[ltid].frame) # pos FCart
+                s_end = transform(FRoute, step2, frame).c1
+                conflict_sections[csid] = (s_start, s_end) # s in FRoute
             end
         end
 
