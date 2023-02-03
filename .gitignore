@@ -1,3 +1,5 @@
 Manifest.toml
 __pycache__
 foo.jl
+*.log
+*.lp

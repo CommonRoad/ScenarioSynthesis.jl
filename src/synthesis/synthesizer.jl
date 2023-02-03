@@ -24,6 +24,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     @variable(model, in_cs[1:N+1, 1:n_conlict_sections], Bin)
     @variable(model, cost_var[1:N, 1:n_actors])
 
+    
     for i=1:N
         @constraint(model, cost_var[i,:] .== jerk[i,:] .* (1 - scene_seen[i, n_scenes+1]))
     end
@@ -31,6 +32,9 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number=0.2)
     ### set up objective function 
     @objective(model, Min, sum(cost_var.^2)) # use acc instead?
     
+
+    # @objective(model, Min, sum(jerk.^2))
+
     ### set up constraints
     # store lims -- TODO dicts instead of vectors?
     s_low_lims = zeros(Float64, 5)
