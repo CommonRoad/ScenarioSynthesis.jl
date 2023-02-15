@@ -6,71 +6,197 @@ Assumptions:
 - input set must be convex. 
 - A linear system model (state space)
 """
-function propagate(cs::ConvexStates, A::SMatrix, a_max::Real, a_min::Real, Δt::Real) # TODO constructor for convex states, 
-    convex_states = cs.vertices
-    accelerate = SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
-    decelerate = SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+function propagate(
+    cs::ConvexStates, 
+    A::SMatrix, 
+    a_max::Real, 
+    a_min::Real, 
+    Δt::Real
+)
+    input_set = copy(cs.vertices)
+
+    # time-step forward
     fundamental_matrix = exp(A*Δt)
-    steady_states = [fundamental_matrix * x for x in convex_states]
-    vec_to_next = diff(steady_states)
-    pushfirst!(vec_to_next, steady_states[1] - steady_states[end]) # closed shape
-
-    minkowski_gain = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
-    dotprod = map(x -> dot(x, minkowski_gain), vec_to_next)
-
-    propagated_states = Vector{SVector{2, Float64}}()
-    sizehint!(propagated_states, length(steady_states)+2) # can reduce allocs
-    for i in eachindex(steady_states)
-        if dotprod[i] ≤ 0 && cycle(dotprod, i+1) ≤ 0 
-            push!(propagated_states, steady_states[i] + decelerate)
-        elseif dotprod[i] ≤ 0 && cycle(dotprod, i+1) ≥ 0 
-            push!(propagated_states, steady_states[i] + decelerate)
-            push!(propagated_states, steady_states[i] + accelerate)
-        elseif dotprod[i] ≥ 0 && cycle(dotprod, i+1) ≤ 0 
-            push!(propagated_states, steady_states[i] + accelerate)
-            push!(propagated_states, steady_states[i] + decelerate)
-        else # dotprod[i] ≥ 0 && cycle(dotprod, i+1) ≥ 0 
-            push!(propagated_states, steady_states[i] + accelerate)
-        end
+    @inbounds for i in eachindex(input_set)
+        input_set[i] = fundamental_matrix * input_set[i]
     end
 
-    return propagated_states
-end
-
-function propagate!(cs::ConvexStates, A::SMatrix, a_max::Real, a_min::Real, Δt::Real)
-    convex_states = cs.vertices
-    lencon = length(convex_states)
+    # minkowski
     accelerate = SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
     decelerate = SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
-    fundamental_matrix = exp(A*Δt) # TODO maybe outsource (repetitive) ? 
-    @inbounds for i in eachindex(convex_states)
-        convex_states[i] = fundamental_matrix * convex_states[i]
-    end
+    minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
     
-    # TODO maybe implement without diff, map to minimize allocs? 
-    vec_to_next = diff(convex_states)
-    pushfirst!(vec_to_next, convex_states[1] - convex_states[end])
-
-    minkowski_gain = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
-    dotprod = map(x -> dot(x, minkowski_gain), vec_to_next)
+    output_set = Vector{SVector{2, Float64}}(undef, length(input_set)+2)
 
     counter = 1
-    @inbounds for i in 1:lencon
-        state_orig = convex_states[counter]
-        if dotprod[i] ≤ 0 && cycle(dotprod, i+1) ≤ 0 
-            convex_states[counter] = state_orig + decelerate
-        elseif dotprod[i] ≤ 0 && cycle(dotprod, i+1) ≥ 0 
-            convex_states[counter] = state_orig + decelerate
-            insert!(convex_states, counter+1, state_orig + accelerate)
+    @inbounds for i in eachindex(input_set)
+        vec_to_i = input_set[i] - cycle(input_set, i-1)
+        vec_from_i = cycle(input_set, i+1) - input_set[i]
+        dot_to_i = dot(vec_to_i, minkowski_vec)
+        dot_from_i = dot(vec_from_i, minkowski_vec) 
+        
+        if dot_to_i ≤ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + decelerate
+        elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + decelerate
             counter += 1
-        elseif dotprod[i] ≥ 0 && cycle(dotprod, i+1) ≤ 0 
-            convex_states[counter] = state_orig + accelerate
-            insert!(convex_states, counter+1, state_orig + decelerate)
+            output_set[counter] = input_set[i] + accelerate
+        elseif dot_to_i ≥ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + accelerate
             counter += 1
-        else # dotprod[i] ≥ 0 && cycle(dotprod, i+1) ≥ 0 
-            convex_states[counter] = state_orig + accelerate
+            output_set[counter] = input_set[i] + decelerate
+        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + accelerate
         end
         counter += 1
+    end
+
+    return ConvexStates(output_set, false)
+end
+
+function propagate!(
+    cs::ConvexStates, 
+    A::SMatrix, 
+    a_max::Real, 
+    a_min::Real, 
+    Δt::Real
+)
+    output_set = cs.vertices
+    input_set = copy(cs.vertices)
+
+    # time-step forward
+    fundamental_matrix = exp(A*Δt)
+    @inbounds for i in eachindex(input_set)
+        input_set[i] = fundamental_matrix * input_set[i]
+    end
+
+    # minkowski
+    accelerate = SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
+    decelerate = SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
+
+    counter = 1
+    @inbounds for i in eachindex(input_set)
+        vec_to_i = input_set[i] - cycle(input_set, i-1)
+        vec_from_i = cycle(input_set, i+1) - input_set[i]
+        dot_to_i = dot(vec_to_i, minkowski_vec)
+        dot_from_i = dot(vec_from_i, minkowski_vec) 
+        
+        if dot_to_i ≤ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + decelerate
+        elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + decelerate
+            counter += 1
+            insert!(output_set, counter, input_set[i] + accelerate)
+        elseif dot_to_i ≥ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + accelerate
+            counter += 1
+            insert!(output_set, counter, input_set[i] + decelerate)
+        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + accelerate
+        end
+        counter += 1
+    end
+
+    return nothing
+end
+
+"""
+    backwards
+
+"""
+function propagate_backwards(
+    cs::ConvexStates,
+    A::SMatrix,
+    a_max::Real,
+    a_min::Real,
+    Δt::Real
+)
+    input_set = cs.vertices
+
+    # minkowski
+    accelerate = -SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
+    decelerate = -SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
+
+    output_set = Vector{SVector{2, Float64}}(undef, length(input_set)+2)
+
+    counter = 1
+    @inbounds for i in eachindex(input_set)
+        vec_to_i = input_set[i] - cycle(input_set, i-1)
+        vec_from_i = cycle(input_set, i+1) - input_set[i]
+        dot_to_i = dot(vec_to_i, minkowski_vec)
+        dot_from_i = dot(vec_from_i, minkowski_vec) 
+        
+        if dot_to_i ≤ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + accelerate
+        elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + accelerate
+            counter += 1
+            output_set[counter] = input_set[i] + decelerate
+        elseif dot_to_i ≥ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + decelerate
+            counter += 1
+            output_set[counter] = input_set[i] + accelerate
+        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + decelerate
+        end
+        counter += 1
+    end
+
+    # time-step backward
+    fundamental_matrix_inv = exp(A*Δt)^-1
+
+    @inbounds for i in eachindex(output_set)
+        output_set[i] = fundamental_matrix_inv * output_set[i]
+    end
+
+    return ConvexStates(output_set, false)
+end
+
+function propagate_backwards!(
+    cs::ConvexStates,
+    A::SMatrix,
+    a_max::Real,
+    a_min::Real,
+    Δt::Real
+)
+    output_set = cs.vertices
+    input_set = copy(cs.vertices)
+
+    # minkowski
+    accelerate = -SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
+    decelerate = -SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
+
+    counter = 1
+    @inbounds for i in eachindex(input_set)
+        vec_to_i = input_set[i] - cycle(input_set, i-1)
+        vec_from_i = cycle(input_set, i+1) - input_set[i]
+        dot_to_i = dot(vec_to_i, minkowski_vec)
+        dot_from_i = dot(vec_from_i, minkowski_vec) 
+        
+        if dot_to_i ≤ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + accelerate
+        elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + accelerate
+            counter += 1
+            insert!(output_set, counter, input_set[i] + decelerate)
+        elseif dot_to_i ≥ 0 && dot_from_i ≤ 0 
+            output_set[counter] = input_set[i] + decelerate
+            counter += 1
+            insert!(output_set, counter, input_set[i] + accelerate)
+        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+            output_set[counter] = input_set[i] + decelerate
+        end
+        counter += 1
+    end
+
+    # time-step backward
+    fundamental_matrix_inv = exp(A*Δt)^-1
+
+    @inbounds for i in eachindex(output_set)
+        output_set[i] = fundamental_matrix_inv * output_set[i]
     end
 
     return nothing

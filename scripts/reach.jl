@@ -20,6 +20,19 @@ states = ConvexStates([
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
 Δt = 0.2
 
+states_forward = propagate(states, A, 4.0, -8.0, Δt)
+states_backward = propagate_backwards(states, A, 4.0, -8.0, Δt)
+
+propagate!(states, A, 4.0,-8.0, Δt)
+propagate_backwards!(states, A, 4.0,-8.0, Δt)
+
+plot!(states)
+plot!(states_forward)
+plot!(states_backward)
+
+@benchmark propagate($states, $A, 4.0, -8.0, $Δt)
+@benchmark propagate_backwards($states, $A, 4.0, -8.0, $Δt)
+
 @benchmark propagate!(states, $A, 4.0, -8.0, $Δt) setup=(states = ConvexStates([
     SVector{2,Float64}(0,0),
     SVector{2,Float64}(1,-2),
