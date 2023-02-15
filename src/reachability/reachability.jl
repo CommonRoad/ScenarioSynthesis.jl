@@ -1,8 +1,8 @@
-include("convex_states.jl")
-export ConvexStates, is_convex, is_counter_clockwise
+include("convex_set.jl")
+export ConvexSet, is_convex, is_counter_clockwise
 
 include("propagate.jl")
-export propagate, propagate!, propagate_backwards, propagate_backwards!
+export propagate, propagate!, propagate_backward, propagate_backward!
 
 include("operations.jl")
 export upper_lim!, lower_lim!

@@ -1,4 +1,4 @@
-function plot_data(cs::ConvexStates)
+function plot_data(cs::ConvexSet)
     convex_states = cs.vertices
     lencon = length(convex_states)
     pos = Vector{Float64}(undef, lencon+1)
@@ -12,7 +12,7 @@ function plot_data(cs::ConvexStates)
     return pos, vel
 end
 
-function Plots.plot(cs::ConvexStates)
+function Plots.plot(cs::ConvexSet)
     pos, vel = plot_data(cs)
     return Plots.plot(
         pos, vel; 
@@ -21,7 +21,7 @@ function Plots.plot(cs::ConvexStates)
     )
 end
 
-function Plots.plot!(cs::ConvexStates)
+function Plots.plot!(cs::ConvexSet)
     pos, vel = plot_data(cs)
 
     return Plots.plot!(

@@ -2,7 +2,8 @@ using ScenarioSynthesis
 using StaticArrays
 using BenchmarkTools
 
-states = ConvexStates([
+# inits
+states = ConvexSet([
     SVector{2,Float64}(0,0),
     SVector{2,Float64}(1,-2),
     SVector{2,Float64}(3,-3),
@@ -16,45 +17,45 @@ states = ConvexStates([
     SVector{2,Float64}(1,4),
     SVector{2,Float64}(0,2),
 ])
-
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
 Δt = 0.2
 
+# propagation
+plot(states)
 states_forward = propagate(states, A, 4.0, -8.0, Δt)
-states_backward = propagate_backwards(states, A, 4.0, -8.0, Δt)
-
-propagate!(states, A, 4.0,-8.0, Δt)
-propagate_backwards!(states, A, 4.0,-8.0, Δt)
-
-plot!(states)
+states_backward = propagate_backward(states, A, 4.0, -8.0, Δt)
 plot!(states_forward)
 plot!(states_backward)
+propagate!(states, A, 4.0,-8.0, Δt)
+propagate_backward!(states, A, 4.0,-8.0, Δt)
 
-@benchmark propagate($states, $A, 4.0, -8.0, $Δt)
-@benchmark propagate_backwards($states, $A, 4.0, -8.0, $Δt)
-
-@benchmark propagate!(states, $A, 4.0, -8.0, $Δt) setup=(states = ConvexStates([
-    SVector{2,Float64}(0,0),
-    SVector{2,Float64}(1,-2),
-    SVector{2,Float64}(3,-3),
-    SVector{2,Float64}(5,-3),
-    SVector{2,Float64}(7,-2),
-    SVector{2,Float64}(8,0),
-    SVector{2,Float64}(8,2),
-    SVector{2,Float64}(7,4),
-    SVector{2,Float64}(5,5),
-    SVector{2,Float64}(3,5),
-    SVector{2,Float64}(1,4),
-    SVector{2,Float64}(0,2),
-], false)) evals=1
-
+# limits
 plot(states)
 upper_lim!(states, 5.0, 1)
 plot!(states)
-lower_lim!(states, 2.0, 1)
+lower_lim!(states, -1.0, 2)
 plot!(states)
 
-@benchmark upper_lim!(states, 4.0, 1) setup=(states = ConvexStates([
+# benchmarks
+@benchmark propagate($states, $A, 4.0, -8.0, $Δt)
+@benchmark propagate_backward($states, $A, 4.0, -8.0, $Δt)
+
+@benchmark propagate!(states, $A, 4.0, -8.0, $Δt) setup=(states = ConvexSet([
+    SVector{2,Float64}(0,0),
+    SVector{2,Float64}(1,-2),
+    SVector{2,Float64}(3,-3),
+    SVector{2,Float64}(5,-3),
+    SVector{2,Float64}(7,-2),
+    SVector{2,Float64}(8,0),
+    SVector{2,Float64}(8,2),
+    SVector{2,Float64}(7,4),
+    SVector{2,Float64}(5,5),
+    SVector{2,Float64}(3,5),
+    SVector{2,Float64}(1,4),
+    SVector{2,Float64}(0,2),
+], false)) evals=1
+
+@benchmark propagate_backward!(states, $A, 4.0, -8.0, $Δt) setup=(states = ConvexSet([
     SVector{2,Float64}(0,0),
     SVector{2,Float64}(1,-2),
     SVector{2,Float64}(3,-3),
@@ -70,35 +71,17 @@ plot!(states)
 ], false)) evals=1
 
 
-function find_min(states, dir) # ~ 2x faster compared to standard implementation
-    x = Inf
-    ind = 0
-    @inbounds for i in eachindex(states)
-        if states[i][dir] < x
-            x = states[i][dir]
-            ind = i
-        end
-    end
-    return ind
-end
-
-## set vs. Vector{Bool} vs. BitVector
-
-using DataStructures
-
-set_a = Set(round.(Int, 20000*rand(10000)))
-set_b = Set(round.(Int, 20000*rand(10000)))
-
-@benchmark setdiff($set_a, $set_b)
-@benchmark union($set_a, $set_b)
-
-bool_a = rand(Bool, 10000)
-bool_b = rand(Bool, 10000)
-bit_a = BitVector(bool_a)
-bit_b = BitVector(bool_b)
-
-@benchmark $bool_a.&&$bool_b
-@benchmark $bool_a.||$bool_b
-
-@benchmark $bit_a.&&$bit_b
-@benchmark $bit_a.||$bit_b
+@benchmark upper_lim!(states, 4.0, 1) setup=(states = ConvexSet([
+    SVector{2,Float64}(0,0),
+    SVector{2,Float64}(1,-2),
+    SVector{2,Float64}(3,-3),
+    SVector{2,Float64}(5,-3),
+    SVector{2,Float64}(7,-2),
+    SVector{2,Float64}(8,0),
+    SVector{2,Float64}(8,2),
+    SVector{2,Float64}(7,4),
+    SVector{2,Float64}(5,5),
+    SVector{2,Float64}(3,5),
+    SVector{2,Float64}(1,4),
+    SVector{2,Float64}(0,2),
+], false)) evals=1

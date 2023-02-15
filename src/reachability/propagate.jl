@@ -7,7 +7,7 @@ Assumptions:
 - A linear system model (state space)
 """
 function propagate(
-    cs::ConvexStates, 
+    cs::ConvexSet, 
     A::SMatrix, 
     a_max::Real, 
     a_min::Real, 
@@ -51,11 +51,11 @@ function propagate(
         counter += 1
     end
 
-    return ConvexStates(output_set, false)
+    return ConvexSet(output_set, false)
 end
 
 function propagate!(
-    cs::ConvexStates, 
+    cs::ConvexSet, 
     A::SMatrix, 
     a_max::Real, 
     a_min::Real, 
@@ -105,8 +105,8 @@ end
     backwards
 
 """
-function propagate_backwards(
-    cs::ConvexStates,
+function propagate_backward(
+    cs::ConvexSet,
     A::SMatrix,
     a_max::Real,
     a_min::Real,
@@ -151,11 +151,11 @@ function propagate_backwards(
         output_set[i] = fundamental_matrix_inv * output_set[i]
     end
 
-    return ConvexStates(output_set, false)
+    return ConvexSet(output_set, false)
 end
 
-function propagate_backwards!(
-    cs::ConvexStates,
+function propagate_backward!(
+    cs::ConvexSet,
     A::SMatrix,
     a_max::Real,
     a_min::Real,

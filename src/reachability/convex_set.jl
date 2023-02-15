@@ -3,7 +3,7 @@ import Plots
 
 @inline function cycle(vec::Vector, ind::Integer) # TODO use CircularArrays instead?
     lenvec = length(vec)
-    ind = mod(ind, 1:lenvec)
+    ind = mod1(ind, lenvec)
     return vec[ind]
 end
 
@@ -12,10 +12,10 @@ struct State <: FieldVector{2, Float64}
     vel::Float64
 end
 
-struct ConvexStates
+struct ConvexSet
     vertices::Vector{State}
 
-    function ConvexStates(vertices::Vector{SVector{2, Float64}}, check_properties::Bool=true)
+    function ConvexSet(vertices::Vector{SVector{2, Float64}}, check_properties::Bool=true)
         if check_properties
             length(vertices) ≥ 2 || throw(error("Less than two vertices."))
             is_convex(vertices) || throw(error("Vertices are non-convex."))
@@ -31,7 +31,7 @@ function is_convex(vertices::Vector{SVector{2, Float64}})
 end
 
 function is_counter_clockwise(vertices::Vector{SVector{2, Float64}})
-    val, ind = findmin(x -> x[2], vertices) # minimum velocity
+    val, ind = findmin(x -> x[2], vertices) # minimum velocity -- use self-implemented find_min?
     vec_from_prev = vertices[ind] - cycle(vertices, ind-1)
     vec_to_next = cycle(vertices, ind+1) - vertices[ind]
     
@@ -39,3 +39,17 @@ function is_counter_clockwise(vertices::Vector{SVector{2, Float64}})
     
     return dotprod > 0.0 ? true : false
 end
+
+#=
+function find_min(states, dir) # ~ 2x faster compared to standard implementation
+    x = Inf
+    ind = 0
+    @inbounds for i in eachindex(states)
+        if states[i][dir] < x
+            x = states[i][dir]
+            ind = i
+        end
+    end
+    return ind
+end
+=#
