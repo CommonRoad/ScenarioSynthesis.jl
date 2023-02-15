@@ -38,6 +38,8 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
 plot(states)
 upper_lim!(states, 5.0, 1)
 plot!(states)
+lower_lim!(states, 2.0, 1)
+plot!(states)
 
 @benchmark upper_lim!(states, 4.0, 1) setup=(states = ConvexStates([
     SVector{2,Float64}(0,0),
