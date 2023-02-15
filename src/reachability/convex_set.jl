@@ -12,44 +12,32 @@ struct State <: FieldVector{2, Float64}
     vel::Float64
 end
 
+"""
+    ConvexSet
+
+Vector of states which form a counter-clockwise convex set.
+"""
 struct ConvexSet
     vertices::Vector{State}
 
     function ConvexSet(vertices::Vector{SVector{2, Float64}}, check_properties::Bool=true)
         if check_properties
             length(vertices) ≥ 2 || throw(error("Less than two vertices."))
-            is_convex(vertices) || throw(error("Vertices are non-convex."))
-            is_counter_clockwise(vertices) || throw(eror("Vertices are not ordered counter-clockwise."))
+            is_counterclockwise_convex(vertices) || throw(eror("Vertices are not counter-clockwise convex."))
         end
         return new(vertices)
     end
 end
 
-function is_convex(vertices::Vector{SVector{2, Float64}})
-    @warn "function not implement yet."
-    return true # TODO add code
-end
-
-function is_counter_clockwise(vertices::Vector{SVector{2, Float64}})
-    val, ind = findmin(x -> x[2], vertices) # minimum velocity -- use self-implemented find_min?
-    vec_from_prev = vertices[ind] - cycle(vertices, ind-1)
-    vec_to_next = cycle(vertices, ind+1) - vertices[ind]
-    
-    dotprod = dot(vec_to_next, SVector{2, Float64}(-vec_from_prev[2], vec_from_prev[1]))
-    
-    return dotprod > 0.0 ? true : false
-end
-
-#=
-function find_min(states, dir) # ~ 2x faster compared to standard implementation
-    x = Inf
-    ind = 0
-    @inbounds for i in eachindex(states)
-        if states[i][dir] < x
-            x = states[i][dir]
-            ind = i
+function is_counterclockwise_convex(vertices::Vector{SVector{2, Float64}})
+    lenvert = length(vertices)
+    rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
+    @inbounds for i in 1:lenvert-1
+        vec_to_next = vertices[i] - cycle(vertices, i-1) 
+        test_vec = rotmat * vec_to_next
+        @inbounds for j = i+1:lenvert
+            dot(test_vec, vertices[j] - vertices[i]) < 0 && return false
         end
     end
-    return ind
+    return true
 end
-=#

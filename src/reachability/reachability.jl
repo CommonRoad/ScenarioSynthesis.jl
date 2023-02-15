@@ -1,5 +1,5 @@
 include("convex_set.jl")
-export ConvexSet, is_convex, is_counter_clockwise
+export ConvexSet, is_counterclockwise_convex
 
 include("propagate.jl")
 export propagate, propagate!, propagate_backward, propagate_backward!
