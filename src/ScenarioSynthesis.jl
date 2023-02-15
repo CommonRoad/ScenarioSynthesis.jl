@@ -4,6 +4,7 @@ module ScenarioSynthesis
 # @info "pythoncall exe set to: $(ENV["JULIA_PYTHONCALL_EXE"])"
 
 include("types/Types.jl")
+include("reachability/reachability.jl")
 include("scenarios/Scenarios.jl")
 # include("predicates/Predicates.jl")
 include("synthesis/Synthesis.jl")

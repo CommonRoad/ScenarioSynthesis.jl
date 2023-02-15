@@ -1,6 +1,6 @@
 import StaticArrays.FieldVector
 
-abstract type State end
+# abstract type State end
 
 """
     StateLon
@@ -29,7 +29,7 @@ end
 
 Curvlinear state, consisting of longitudinal state `lon`, and lateral state `lat`.
 """
-struct StateCurv <: State
+struct StateCurv # <: State
     lon::StateLon
     lat::StateLat
 
