@@ -85,3 +85,30 @@ plot!(states)
     SVector{2,Float64}(1,4),
     SVector{2,Float64}(0,2),
 ], false)) evals=1
+
+###
+using Profile
+function foo(num::Integer)
+    A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
+    Δt = 0.2
+    for i=1:num
+        cs = ConvexSet([
+            SVector{2,Float64}(0,0),
+            SVector{2,Float64}(1,-2),
+            SVector{2,Float64}(3,-3),
+            SVector{2,Float64}(5,-3),
+            SVector{2,Float64}(7,-2),
+            SVector{2,Float64}(8,0),
+            SVector{2,Float64}(8,2),
+            SVector{2,Float64}(7,4),
+            SVector{2,Float64}(5,5),
+            SVector{2,Float64}(3,5),
+            SVector{2,Float64}(1,4),
+            SVector{2,Float64}(0,2),
+        ], false)
+
+        propagate!(cs, A, 4.0,-8.0, Δt)
+    end
+end
+
+@profview foo(1000000)

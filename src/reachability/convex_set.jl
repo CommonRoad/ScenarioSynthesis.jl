@@ -1,11 +1,7 @@
 import StaticArrays.FieldVector, StaticArrays.SVector, StaticArrays.SMatrix
 import Plots
 
-@inline function cycle(vec::Vector, ind::Integer) # TODO use CircularArrays instead?
-    lenvec = length(vec)
-    ind = mod1(ind, lenvec)
-    return vec[ind]
-end
+@inline cycle(vec::Vector, ind::Integer) = vec[mod1(ind, length(vec))] # TODO use CircularArrays instead?
 
 struct State <: FieldVector{2, Float64}
     pos::Float64

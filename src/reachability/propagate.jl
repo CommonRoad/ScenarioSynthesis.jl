@@ -45,7 +45,7 @@ function propagate(
             output_set[counter] = input_set[i] + accelerate
             counter += 1
             output_set[counter] = input_set[i] + decelerate
-        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+        elseif dot_to_i ≥ 0 && dot_from_i ≥ 0 
             output_set[counter] = input_set[i] + accelerate
         end
         counter += 1
@@ -63,6 +63,7 @@ function propagate!( # more readable implementation in previous commit -- this o
 )
     output_set = cs.vertices
     leninput = length(cs.vertices)
+    #sizehint!(output_set, leninput+2)
 
     # time-step forward
     fundamental_matrix = exp(A*Δt)
@@ -104,7 +105,7 @@ function propagate!( # more readable implementation in previous commit -- this o
             counter += 1
             insert!(output_set, counter, orig + decelerate)
             previous_correction = decelerate
-        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+        elseif dot_to_i ≥ 0 && dot_from_i ≥ 0 
             output_set[counter] = output_set[counter] + accelerate
             previous_correction = accelerate
         end
@@ -152,7 +153,7 @@ function propagate_backward(
             output_set[counter] = input_set[i] + decelerate
             counter += 1
             output_set[counter] = input_set[i] + accelerate
-        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+        elseif dot_to_i ≥ 0 && dot_from_i ≥ 0 
             output_set[counter] = input_set[i] + decelerate
         end
         counter += 1
@@ -206,7 +207,7 @@ function propagate_backward!(
             output_set[counter] = output_set[counter] + decelerate
             counter += 1
             insert!(output_set, counter, output_set[counter] + accelerate)
-        else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
+        elseif dot_to_i ≥ 0 && dot_from_i ≥ 0 
             output_set[counter] = output_set[counter] + decelerate
         end
         counter += 1
