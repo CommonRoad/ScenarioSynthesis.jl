@@ -86,7 +86,7 @@ plot!(states)
     SVector{2,Float64}(0,2),
 ], false)) evals=1
 
-###
+#### Profiling
 using Profile
 function foo(num::Integer)
     A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
@@ -112,3 +112,39 @@ function foo(num::Integer)
 end
 
 @profview foo(1000000)
+
+#### Vehicles 
+# initial states
+vehicle1 = ConvexSet([
+    SVector{2, Float64}(2,1),
+    SVector{2, Float64}(4,1),
+    SVector{2, Float64}(4,3),
+    SVector{2, Float64}(2,3),
+])
+
+vehicle2 = ConvexSet([
+    SVector{2, Float64}(3,2),
+    SVector{2, Float64}(5,2),
+    SVector{2, Float64}(5,4),
+    SVector{2, Float64}(3,4),
+])
+
+plot(vehicle1)
+plot!(vehicle2)
+
+# traffic rules + specifications to be considered
+# v1 keeps lane speed limit (10 m/s)
+# v1 is behind v2 || v1 is slower v2 
+
+upper_lim!(vehicle1, 1, 10.0)
+
+vehicle1_fork = copy(vehicle1)
+
+pos_lim = get_upper_lim(vehicle2, 1, 0.6)
+vel_lim = get_upper_lim(vehicle2, 2, 0.8)
+upper_lim!(vehicle1, 1, pos_lim)
+upper_lim!(vehicle1_fork, 2, vel_lim)
+plot!(vehicle1)
+plot!(vehicle1_fork)
+
+

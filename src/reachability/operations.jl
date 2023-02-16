@@ -1,4 +1,4 @@
-function upper_lim!(cs::ConvexSet, lim::Real, dir::Integer)
+function upper_lim!(cs::ConvexSet, dir::Integer, lim::Real)
     input_set = cs.vertices
     lencon = length(input_set)
     counter = 1
@@ -35,7 +35,7 @@ function upper_lim!(cs::ConvexSet, lim::Real, dir::Integer)
     return nothing
 end
 
-function lower_lim!(cs::ConvexSet, lim::Real, dir::Integer)
+function lower_lim!(cs::ConvexSet, dir::Integer, lim::Real)
     input_set = cs.vertices
     lencon = length(input_set)
     counter = 1
@@ -70,4 +70,48 @@ function lower_lim!(cs::ConvexSet, lim::Real, dir::Integer)
 
     length(input_set) ≥ 2 || throw(error("Less than two states."))
     return nothing
+end
+
+function get_upper_lim(cs::ConvexSet, dir::Integer, ψ::Real)
+    lb = min(cs, dir)
+    ub = max(cs, dir)
+    return lb + (1-ψ) * (ub-lb)
+end
+
+function get_lower_lim(cs::ConvexSet, dir::Integer, ψ::Real)
+    lb = min(cs, dir)
+    ub = max(cs, dir)
+    return lb + ψ * (ub-lb)
+end
+
+function intersection(cs1::ConvexSet, cs2::ConvexSet)
+    output_set = Vector{SVector{2, Float64}}()
+
+    @inbounds for i = eachindex(c1.vertices)
+        p1 = c1.vertices[i]
+        p2 = cycle(c1.vertices, i+1)
+        @inbounds for j = eachindex(c2.vertices)
+            q1 = c2.vertices[j]
+            q2 = cycle(c2.vertices, j+1)
+
+            λ, μ = foo() # TODO implement function 
+            if (0 ≤ λ ≤ 1) && (0 ≤ μ ≤ 1)
+                # 
+                break # TODO does this break both for loops? 
+            end
+        end
+    end
+
+    if length(output_set) == 0 
+        # test whether c1 in c2 or vice versa; return smaller set
+    end
+
+    length(output_set) ≥ 2 || throw(error("not enough..."))
+    return ConvexSet(output_set, false)
+end
+
+@inline function intersection_point()
+    λ = 0.2
+    μ = 0.3
+    return λ, μ
 end

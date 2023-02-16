@@ -1,5 +1,5 @@
 import StaticArrays.FieldVector, StaticArrays.SVector, StaticArrays.SMatrix
-import Plots
+import Base
 
 @inline cycle(vec::Vector, ind::Integer) = vec[mod1(ind, length(vec))] # TODO use CircularArrays instead?
 
@@ -37,3 +37,21 @@ function is_counterclockwise_convex(vertices::Vector{SVector{2, Float64}})
     end
     return true
 end
+
+function Base.min(cs::ConvexSet, dir::Integer)
+    val = Inf64
+    @inbounds for st in cs.vertices
+        st[dir] < val ? val = st[dir] : nothing
+    end
+    return val
+end
+
+function Base.max(cs::ConvexSet, dir::Integer)
+    val = -Inf64
+    @inbounds for st in cs.vertices
+        st[dir] > val ? val = st[dir] : nothing
+    end
+    return val
+end
+
+Base.copy(cs::ConvexSet) = ConvexSet(copy(cs.vertices), false)
