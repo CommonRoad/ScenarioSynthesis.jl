@@ -77,40 +77,15 @@ function propagate!( # more readable implementation in previous commit -- this o
 
     counter = 1
     previous_correction = SVector{2, Float64}(0, 0)
-
-    # first value
-    vec_to_i = output_set[counter] - output_set[end]
-    vec_from_i = cycle(output_set, counter+1) - output_set[counter]
-    dot_to_i = dot(vec_to_i, minkowski_vec)
-    dot_from_i = dot(vec_from_i, minkowski_vec) 
-    
-    if dot_to_i ≤ 0 && dot_from_i ≤ 0 
-        output_set[counter] = output_set[counter] + decelerate
-        previous_correction = decelerate
-    elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
-        orig = output_set[counter]
-        output_set[counter] = orig + decelerate
-        counter += 1
-        insert!(output_set, counter, orig + accelerate)
-        previous_correction = accelerate
-    elseif dot_to_i ≥ 0 && dot_from_i ≤ 0
-        orig = output_set[counter]
-        output_set[counter] = orig + accelerate
-        counter += 1
-        insert!(output_set, counter, orig + decelerate)
-        previous_correction = decelerate
-    else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
-        output_set[counter] = output_set[counter] + accelerate
-        previous_correction = accelerate
-    end
-    counter += 1
-
-    first_correction = previous_correction # store for later
+    first_correction = SVector{2, Float64}(0, 0)
+    next_correction = SVector{2, Float64}(0, 0)
 
     # iteration
-    @inbounds for i in 2:leninput-1
+    @inbounds for i in 1:leninput
+        i==leninput ? next_correction = first_correction : nothing
+
         vec_to_i = output_set[counter] - (cycle(output_set, counter-1) - previous_correction)
-        vec_from_i = cycle(output_set, counter+1) - output_set[counter]
+        vec_from_i = (cycle(output_set, counter+1) - next_correction) - output_set[counter]
         dot_to_i = dot(vec_to_i, minkowski_vec)
         dot_from_i = dot(vec_from_i, minkowski_vec) 
         
@@ -134,28 +109,7 @@ function propagate!( # more readable implementation in previous commit -- this o
             previous_correction = accelerate
         end
         counter += 1
-    end
-
-    # last value
-    vec_to_i = output_set[counter] - (cycle(output_set, counter-1) - previous_correction)
-    vec_from_i = cycle(output_set, counter+1) - first_correction - output_set[counter]
-    dot_to_i = dot(vec_to_i, minkowski_vec)
-    dot_from_i = dot(vec_from_i, minkowski_vec) 
-    
-    if dot_to_i ≤ 0 && dot_from_i ≤ 0 
-        output_set[counter] = output_set[counter] + decelerate
-    elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
-        orig = output_set[counter]
-        output_set[counter] = orig + decelerate
-        counter += 1
-        insert!(output_set, counter, orig + accelerate)
-    elseif dot_to_i ≥ 0 && dot_from_i ≤ 0
-        orig = output_set[counter]
-        output_set[counter] = orig + accelerate
-        counter += 1
-        insert!(output_set, counter, orig + decelerate)
-    else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
-        output_set[counter] = output_set[counter] + accelerate
+        i==1 ? first_correction = previous_correction : nothing
     end
 
     return nothing
@@ -222,7 +176,7 @@ function propagate_backward!(
     Δt::Real
 )
     output_set = cs.vertices
-    input_set = copy(cs.vertices)
+    leninput = length(cs.vertices)
 
     # minkowski
     accelerate = -SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
@@ -230,26 +184,34 @@ function propagate_backward!(
     minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
 
     counter = 1
-    @inbounds for i in eachindex(input_set)
-        vec_to_i = input_set[i] - cycle(input_set, i-1)
-        vec_from_i = cycle(input_set, i+1) - input_set[i]
+    previous_correction = SVector{2, Float64}(0, 0)
+    first_correction = SVector{2, Float64}(0, 0)
+    next_correction = SVector{2, Float64}(0, 0)
+
+    @inbounds for i in 1:leninput
+        i == leninput ? next_correction = first_correction : nothing
+
+        vec_to_i = output_set[counter] - (cycle(output_set, counter-1) - previous_correction)
+        vec_from_i = (cycle(output_set, counter+1) - next_correction) - output_set[counter]
         dot_to_i = dot(vec_to_i, minkowski_vec)
         dot_from_i = dot(vec_from_i, minkowski_vec) 
         
         if dot_to_i ≤ 0 && dot_from_i ≤ 0 
-            output_set[counter] = input_set[i] + accelerate
+            output_set[counter] = output_set[counter] + accelerate
         elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
-            output_set[counter] = input_set[i] + accelerate
+            output_set[counter] = output_set[counter] + accelerate
             counter += 1
-            insert!(output_set, counter, input_set[i] + decelerate)
+            insert!(output_set, counter, output_set[counter] + decelerate)
         elseif dot_to_i ≥ 0 && dot_from_i ≤ 0 
-            output_set[counter] = input_set[i] + decelerate
+            output_set[counter] = output_set[counter] + decelerate
             counter += 1
-            insert!(output_set, counter, input_set[i] + accelerate)
+            insert!(output_set, counter, output_set[counter] + accelerate)
         else # dot_to_i ≥ 0 && dot_from_i ≥ 0 
-            output_set[counter] = input_set[i] + decelerate
+            output_set[counter] = output_set[counter] + decelerate
         end
         counter += 1
+
+        i == 1 ? first_correction = previous_correction : nothing
     end
 
     # time-step backward

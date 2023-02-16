@@ -21,7 +21,7 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
 Δt = 0.2
 
 # propagation
-plot(states)
+plot!(states)
 states_forward = propagate(states, A, 4.0, -8.0, Δt)
 states_backward = propagate_backward(states, A, 4.0, -8.0, Δt)
 plot!(states_forward)

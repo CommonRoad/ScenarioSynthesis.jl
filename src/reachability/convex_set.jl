@@ -20,7 +20,7 @@ Vector of states which form a counter-clockwise convex set.
 struct ConvexSet
     vertices::Vector{State}
 
-    function ConvexSet(vertices::Vector{SVector{2, Float64}}, check_properties::Bool=true)
+    function ConvexSet(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}}, check_properties::Bool=true)
         if check_properties
             length(vertices) ≥ 2 || throw(error("Less than two vertices."))
             is_counterclockwise_convex(vertices) || throw(eror("Vertices are not counter-clockwise convex."))
