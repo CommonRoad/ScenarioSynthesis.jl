@@ -125,7 +125,7 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
         is_within(cs1, cs2.vertices[1]) && return cs2 # cs2 is withon cs1
     end
 
-    length(output_set) == 0 && return ConvexSet(output_set, true, false)  # both cs do not intersect. 
+    length(output_set) < 3 && return ConvexSet(output_set, true, false)  # both cs do not intersect. 
     return ConvexSet(output_set, false, false)
 end
 

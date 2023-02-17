@@ -199,16 +199,22 @@ function propagate_backward!(
         
         if dot_to_i ≤ 0 && dot_from_i ≤ 0 
             output_set[counter] = output_set[counter] + accelerate
+            previous_correction = accelerate
         elseif dot_to_i ≤ 0 && dot_from_i ≥ 0 
-            output_set[counter] = output_set[counter] + accelerate
+            orig = output_set[counter]
+            output_set[counter] = orig + accelerate
             counter += 1
-            insert!(output_set, counter, output_set[counter] + decelerate)
-        elseif dot_to_i ≥ 0 && dot_from_i ≤ 0 
-            output_set[counter] = output_set[counter] + decelerate
+            insert!(output_set, counter, orig + decelerate)
+            previous_correction = decelerate
+        elseif dot_to_i ≥ 0 && dot_from_i ≤ 0
+            orig = output_set[counter] 
+            output_set[counter] = orig + decelerate
             counter += 1
-            insert!(output_set, counter, output_set[counter] + accelerate)
+            insert!(output_set, counter, orig + accelerate)
+            previous_correction = accelerate
         elseif dot_to_i ≥ 0 && dot_from_i ≥ 0 
             output_set[counter] = output_set[counter] + decelerate
+            previous_correction = decelerate
         end
         counter += 1
 

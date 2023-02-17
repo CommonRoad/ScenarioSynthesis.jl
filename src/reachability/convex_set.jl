@@ -26,7 +26,7 @@ struct ConvexSet
     end
 end
 
-function is_counterclockwise_convex(vertices::Vector{SVector{2, Float64}})
+function is_counterclockwise_convex(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}})
     lenvert = length(vertices)
     rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
     
