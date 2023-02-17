@@ -73,7 +73,6 @@ a_min = -8.0
     @test all(states.vertices .== states_ref_forward.vertices)
 end
 
-#=
 @testset "propagate backward" begin
     states_backward = propagate_backward(states_ref, A, a_max, a_min, Δt)
     @test all(states_backward.vertices .== states_ref_backward.vertices)
@@ -81,7 +80,6 @@ end
     propagate_backward!(states, A, a_max, a_min, Δt)
     @test all(states.vertices .== states_ref_backward.vertices)
 end
-=#
 
 @testset "visualization" begin 
     p = plot(states_ref)
