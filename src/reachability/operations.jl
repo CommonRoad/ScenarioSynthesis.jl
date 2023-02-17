@@ -3,7 +3,7 @@ function upper_lim!(cs::ConvexSet, dir::Integer, lim::Real)
     lencon = length(input_set)
     counter = 1
 
-    @inbounds for i = 1:lencon
+    @inbounds for i = 1:lencon # TODO get rid of cycle function to improve performance
         if input_set[counter][dir] < lim
             if cycle(input_set, counter-1)[dir] > lim
                 # construct additional state

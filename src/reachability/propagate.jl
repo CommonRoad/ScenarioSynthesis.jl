@@ -51,7 +51,7 @@ function propagate(
         counter += 1
     end
 
-    return ConvexSet(output_set, false)
+    return ConvexSet(output_set, false, false)
 end
 
 function propagate!( # more readable implementation in previous commit -- this one is optimized for few allocations
@@ -166,7 +166,7 @@ function propagate_backward(
         output_set[i] = fundamental_matrix_inv * output_set[i]
     end
 
-    return ConvexSet(output_set, false)
+    return ConvexSet(output_set, false, false)
 end
 
 function propagate_backward!(
