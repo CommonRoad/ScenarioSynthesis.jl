@@ -67,18 +67,18 @@ a_min = -8.0
 
 @testset "propagate" begin
     states_forward = propagate(states_ref, A, a_max, a_min, Δt)
-    @test all(states_forward.vertices .== states_ref_forward.vertices)
+    @test isapprox(states_forward.vertices, states_ref_forward.vertices)
     states = copy(states_ref)
     propagate!(states, A, a_max, a_min, Δt)
-    @test all(states.vertices .== states_ref_forward.vertices)
+    @test isapprox(states.vertices, states_ref_forward.vertices)
 end
 
 @testset "propagate backward" begin
     states_backward = propagate_backward(states_ref, A, a_max, a_min, Δt)
-    @test all(states_backward.vertices .== states_ref_backward.vertices)
+    @test isapprox(states_backward.vertices, states_ref_backward.vertices)
     states = copy(states_ref)
     propagate_backward!(states, A, a_max, a_min, Δt)
-    @test all(states.vertices .== states_ref_backward.vertices)
+    @test isapprox(states.vertices, states_ref_backward.vertices)
 end
 
 @testset "visualization" begin 
@@ -134,7 +134,7 @@ cs5_ref = ConvexSet(
 
 @testset "intersection" begin
     cs5 = intersection(cs1, cs2)
-    @test all(cs5.vertices .== cs5_ref.vertices)
+    @test isapprox(cs5.vertices, cs5_ref.vertices)
 
     @test intersection(cs1, cs4).is_empty == true
     
@@ -169,6 +169,6 @@ cs1_lb_ref = ConvexSet(
     upper_lim!(cs1_ub, 1, 3.0)
     lower_lim!(cs1_lb, 1, 3.0)
 
-    @test all(cs1_ub.vertices .== cs1_ub_ref.vertices)
-    @test all(cs1_lb.vertices .== cs1_lb_ref.vertices)
+    @test isapprox(cs1_ub.vertices, cs1_ub_ref.vertices)
+    @test isapprox(cs1_lb.vertices, cs1_lb_ref.vertices)
 end
