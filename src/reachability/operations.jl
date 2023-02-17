@@ -84,34 +84,136 @@ function get_lower_lim(cs::ConvexSet, dir::Integer, ψ::Real)
     return lb + ψ * (ub-lb)
 end
 
+abstract type StateType end
+struct Intersect <: StateType end
+struct Vertice <: StateType end
+
 function intersection(cs1::ConvexSet, cs2::ConvexSet)
-    output_set = Vector{SVector{2, Float64}}()
+    output_set = Vector{State}()
+    # sizehint!(output_set, length(cs1.vertices) + length(cs2.vertices))
+    is_break = false
+    cs = (cs1, cs2)
 
-    @inbounds for i = eachindex(c1.vertices)
-        p1 = c1.vertices[i]
-        p2 = cycle(c1.vertices, i+1)
-        @inbounds for j = eachindex(c2.vertices)
-            q1 = c2.vertices[j]
-            q2 = cycle(c2.vertices, j+1)
+    @inbounds for i = eachindex(cs1.vertices)
+        p1 = cs1.vertices[i]
+        p2 = cycle(cs1.vertices, i+1)
+        @inbounds for j = eachindex(cs2.vertices)
+            q1 = cs2.vertices[j]
+            q2 = cycle(cs2.vertices, j+1)
 
-            λ, μ = foo() # TODO implement function 
-            if (0 ≤ λ ≤ 1) && (0 ≤ μ ≤ 1)
-                # 
-                break # TODO does this break both for loops? 
+            λ, μ = intersection_point(p1, p2, q1, q2)
+            if (0 ≤ λ ≤ 1) && (0 ≤ μ ≤ 1) # first intersection point found
+                next_state = p1 + λ * (p2 - p1) # === q1 + μ * (q2 - q1)
+                state_type = Intersect # other possibility: Vertice
+                active = 1
+                cs_counter = [i, j]
+                push!(output_set, next_state) # add first intersection point to output set
+                while true
+                    next_state, state_type, active = get_next_state!(state_type, cs, next_state, active, cs_counter)
+                    norm(next_state - output_set[1]) ≤ 1e-2 && break
+                    push!(output_set, next_state)
+                end
+
+                is_break = true; break
             end
         end
+        is_break && break
     end
 
     if length(output_set) == 0 
-        # test whether c1 in c2 or vice versa; return smaller set
+        is_within(cs2, cs1.vertices[1]) && return cs1 # cs1 is within cs2
+        is_within(cs1, cs2.vertices[1]) && return cs2 # cs2 is withon cs1
     end
 
-    length(output_set) ≥ 2 || throw(error("not enough..."))
-    return ConvexSet(output_set, false)
+    length(output_set) == 0 && return ConvexSet(output_set, true, false)  # both cs do not intersect. 
+    return ConvexSet(output_set, false, false)
 end
 
-@inline function intersection_point()
-    λ = 0.2
-    μ = 0.3
+@inline function intersection_point(p1::State, p2::State, q1::State, q2::State)
+    λ = ((p1[2]-q1[2]) * (q2[1]-q1[1]) - (p1[1]-q1[1]) * (q2[2]-q1[2])) / ((p2[1]-p1[1]) * (q2[2]-q1[2]) - (p2[2]-p1[2]) * (q2[1]-q1[1]))
+    μ = ((q1[2]-p1[2]) * (p2[1]-p1[1]) - (q1[1]-p1[1]) * (p2[2]-p1[2])) / ((q2[1]-q1[1]) * (p2[2]-p1[2]) - (q2[2]-q1[2]) * (p2[1]-p1[1]))
     return λ, μ
+end
+
+function get_next_state!(
+    ::Type{Intersect},
+    cs::Tuple{ConvexSet, ConvexSet}, 
+    prev_state::State, 
+    active::Integer,
+    cs_counter::Vector{<:Integer}
+)
+    inactive = (active == 1 ? 2 : 1)
+
+    to_next_active = cycle(cs[active].vertices, cs_counter[active]+1) - prev_state
+    to_next_inactive = cycle(cs[inactive].vertices, cs_counter[inactive]+1) - prev_state
+    rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0) # TODO check direction
+
+    dotprod = dot(to_next_inactive, rotmat*to_next_active)
+    if dotprod > 0 # change active
+        active, inactive = inactive, active
+    end
+
+    # check for intersections
+    p1 = prev_state
+    p2 = cycle(cs[active].vertices, cs_counter[active]+1)
+    @inbounds for k in eachindex(cs[inactive].vertices)
+        q1 = cs[inactive].vertices[k]
+        q2 = cycle(cs[inactive].vertices, k+1)
+        λ, μ = intersection_point(p1, p2, q1, q2)
+        if (0 < λ < 1) && (0 < μ < 1)
+            next_state = p1 + λ * (p2 - p1)
+            cs_counter[inactive] = k
+            return next_state, Intersect, active
+        end
+    end
+    
+    # no intersections, return next vertice
+    next_state = cycle(cs[active].vertices, cs_counter[active]+1)
+    cs_counter[active] += 1
+    return next_state, Vertice, active
+end
+
+function get_next_state!(
+    ::Type{Vertice},
+    cs::Tuple{ConvexSet, ConvexSet}, 
+    prev_state::State, 
+    active::Integer,
+    cs_counter::Vector{<:Integer}
+)
+    inactive = (active == 1 ? 2 : 1)
+    cs_counter[active] = mod1(cs_counter[active], length(cs[active].vertices))
+    cs_counter[inactive] = mod1(cs_counter[inactive], length(cs[inactive].vertices))
+
+    p1 = cs[active].vertices[cs_counter[active]]
+    p2 = cycle(cs[active].vertices, cs_counter[active]+1)
+    @inbounds for k in eachindex(cs[inactive].vertices)
+        q1 = cs[inactive].vertices[k]
+        q2 = cycle(cs[inactive].vertices, k+1)
+        λ, μ = intersection_point(p1, p2, q1, q2)
+        if (0 < λ < 1) && (0 < μ < 1)
+            next_state = p1 + λ * (p2 - p1)
+            cs_counter[inactive] = k
+            return next_state, Intersect, active
+        end
+    end
+
+    # no intersections, return next vertice
+    next_state = cycle(cs[active].vertices, cs_counter[active]+1)
+    cs_counter[active] += 1
+    return next_state, Vertice, active
+end
+
+@inline function is_within(cs::ConvexSet, state::State)
+    lencon = length(cs.vertices)
+    rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
+    vec_to_next = cs.vertices[1] - cs.vertices[end]
+    dotprod = dot(state - cs.vertices[end], rotmat * vec_to_next)
+    dotprod < 0 && return false # < 0 allows state to be on edge; ≤ does not allow state on edge
+
+    @inbounds for i in 1:lencon-1
+        vec_to_next = cs.vertices[i+1] - cs.vertices[i]
+        dotprod = dot(state - cs.vertices[i], rotmat * vec_to_next)
+        dotprod < 0 && return false
+    end
+    return true
 end

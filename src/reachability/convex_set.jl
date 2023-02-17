@@ -15,24 +15,25 @@ Vector of states which form a counter-clockwise convex set.
 """
 struct ConvexSet
     vertices::Vector{State}
+    is_empty::Bool
 
-    function ConvexSet(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}}, check_properties::Bool=true)
-        if check_properties
-            length(vertices) ≥ 2 || throw(error("Less than two vertices."))
+    function ConvexSet(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}}, is_empty::Union{Bool, Nothing}=nothing, check_properties::Bool=true)
+        isa(is_empty, Nothing) ? is_empty = length(vertices)==0 : nothing
+        if check_properties && !is_empty
             is_counterclockwise_convex(vertices) || throw(eror("Vertices are not counter-clockwise convex."))
         end
-        return new(vertices)
+        return new(vertices, is_empty)
     end
 end
 
 function is_counterclockwise_convex(vertices::Vector{SVector{2, Float64}})
     lenvert = length(vertices)
     rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
+    
     @inbounds for i in 1:lenvert-1
-        vec_to_next = vertices[i] - cycle(vertices, i-1) 
-        test_vec = rotmat * vec_to_next
-        @inbounds for j = i+1:lenvert
-            dot(test_vec, vertices[j] - vertices[i]) < 0 && return false
+        vec_to_next = vertices[i+1] - vertices[i] 
+        @inbounds for j = i+2:lenvert
+            dot(rotmat * vec_to_next, vertices[j] - vertices[i]) < 0 && return false # ≤ 0 would mean, that vertices cannot lay on a straight line
         end
     end
     return true
@@ -54,4 +55,4 @@ function Base.max(cs::ConvexSet, dir::Integer)
     return val
 end
 
-Base.copy(cs::ConvexSet) = ConvexSet(copy(cs.vertices), false)
+Base.copy(cs::ConvexSet) = ConvexSet(copy(cs.vertices), cs.is_empty, false)

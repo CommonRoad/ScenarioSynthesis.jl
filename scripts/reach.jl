@@ -53,7 +53,7 @@ plot!(states)
     SVector{2,Float64}(3,5),
     SVector{2,Float64}(1,4),
     SVector{2,Float64}(0,2),
-], false)) evals=1
+], false, false)) evals=1
 
 @benchmark propagate_backward!(states, $A, 4.0, -8.0, $Δt) setup=(states = ConvexSet([
     SVector{2,Float64}(0,0),
@@ -68,10 +68,10 @@ plot!(states)
     SVector{2,Float64}(3,5),
     SVector{2,Float64}(1,4),
     SVector{2,Float64}(0,2),
-], false)) evals=1
+], false, false)) evals=1
 
 
-@benchmark upper_lim!(states, 4.0, 1) setup=(states = ConvexSet([
+@benchmark upper_lim!(states, 1, 4.0) setup=(states = ConvexSet([
     SVector{2,Float64}(0,0),
     SVector{2,Float64}(1,-2),
     SVector{2,Float64}(3,-3),
@@ -84,7 +84,7 @@ plot!(states)
     SVector{2,Float64}(3,5),
     SVector{2,Float64}(1,4),
     SVector{2,Float64}(0,2),
-], false)) evals=1
+], false, false)) evals=1
 
 #### Profiling
 using Profile
@@ -105,7 +105,7 @@ function foo(num::Integer)
             SVector{2,Float64}(3,5),
             SVector{2,Float64}(1,4),
             SVector{2,Float64}(0,2),
-        ], false)
+        ], false, false)
 
         propagate!(cs, A, 4.0,-8.0, Δt)
     end
@@ -132,6 +132,17 @@ vehicle2 = ConvexSet([
 plot(vehicle1)
 plot!(vehicle2)
 
+@benchmark intersection($vehicle1, $vehicle2)
+
+function ffo(num, cs1, cs2)
+    for i=1:num
+        cs3 = intersection(cs1, cs2)
+    end
+    return nothing
+end
+
+@profview ffo(1000000, vehicle1, vehicle2)
+
 # traffic rules + specifications to be considered
 # v1 keeps lane speed limit (10 m/s)
 # v1 is behind v2 || v1 is slower v2 
@@ -147,4 +158,9 @@ upper_lim!(vehicle1_fork, 2, vel_lim)
 plot!(vehicle1)
 plot!(vehicle1_fork)
 
+struct Intersect end
+struct Vertice end
 
+function foo(::Type{Intersect}, a::Real)
+    print("this function handels type intersect")
+end
