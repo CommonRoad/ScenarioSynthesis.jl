@@ -65,6 +65,10 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
 a_max = 4.0
 a_min = -8.0
 
+@testset "area" begin
+    @test area(states_ref) == 52.0
+end
+
 @testset "propagate" begin
     states_forward = propagate(states_ref, A, a_max, a_min, Δt)
     @test isapprox(states_forward.vertices, states_ref_forward.vertices)

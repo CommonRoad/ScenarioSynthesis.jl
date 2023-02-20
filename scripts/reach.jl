@@ -20,6 +20,18 @@ states = ConvexSet([
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
 Δt = 0.2
 
+cs = ConvexSet([
+    State(0, 0), 
+    State(1, 0), 
+    State(1, 1), 
+    State(0, 1), 
+])
+
+plot(cs)
+area(states)
+
+@benchmark area($states)
+
 # propagation
 plot!(states)
 states_forward = propagate(states, A, 4.0, -8.0, Δt)
@@ -31,9 +43,9 @@ propagate_backward!(states, A, 4.0,-8.0, Δt)
 
 # limits
 plot(states)
-upper_lim!(states, 5.0, 1)
+upper_lim!(states, 1, 5.0)
 plot!(states)
-lower_lim!(states, -1.0, 2)
+lower_lim!(states, 2, -1.0)
 plot!(states)
 
 # benchmarks

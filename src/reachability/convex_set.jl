@@ -56,3 +56,18 @@ function Base.max(cs::ConvexSet, dir::Integer)
 end
 
 Base.copy(cs::ConvexSet) = ConvexSet(copy(cs.vertices), cs.is_empty, false)
+
+function area(cs::ConvexSet)
+    area_twice = 0.0
+    cs.is_empty && return area_twice / 2
+    
+    area_twice += cs.vertices[end][1] * cs.vertices[1][2]
+    area_twice -= cs.vertices[1][1] * cs.vertices[end][2]
+    
+    @inbounds for i=1:length(cs.vertices)-1
+        area_twice += cs.vertices[i][1] * cs.vertices[i+1][2]
+        area_twice -= cs.vertices[i+1][1] * cs.vertices[i][2]
+    end
+
+    return area_twice / 2
+end
