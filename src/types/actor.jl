@@ -7,7 +7,8 @@ abstract type ActorType end # TODO replace with RoadUser type? @enum instead of 
 struct Vehicle <: ActorType end # TODO is this even useful? 
 
 struct Actor # TODO add type as label or element? 
-    route::Route # TODO maybe detach route from actor and infer route based on scenes instead? => more freedom for optimizer
+    route::Route
+    # states::Vector{ConvexSet},
     lenwid::SVector{2, Float64} # m 
     v_min::Float64 # m/s
     v_max::Float64 # m/s

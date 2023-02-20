@@ -5,6 +5,7 @@ struct Route
     frame::TransFrame{FRoute}
     transition_points::Vector{Float64} # transition points at the crossing from one lanelet to the next one
     lanelet_frame_offset::Vector{Float64}
+    # TODO add intervals for "on lanelet" --> merge with transition points? 
     conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}} 
 
     function Route(route::Vector{LaneletID}, ln::LaneletNetwork, resampling_dst::Number=2.0)
