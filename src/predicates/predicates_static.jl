@@ -1,6 +1,6 @@
 struct OnLanelet <: Predicate
     actor_ego::ActorID
-    lanelet::LaneletID
+    lanelet::Set{LaneletID} # Lanelet IDs must be sequential -- TODO add specific constructor? 
 end
 
 function Bounds( # TODO might be worth memoizing, suited for @generated?

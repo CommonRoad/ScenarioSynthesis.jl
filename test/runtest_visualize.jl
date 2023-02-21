@@ -1,5 +1,6 @@
 using ScenarioSynthesis
 using Test
+using StaticArrays
 import Plots
 
 @testset "plots" begin
@@ -16,7 +17,8 @@ import Plots
     p_po = plot_polygon(Polygon(FCart, [1 2 3; 4 5 6]))
     @test isa(p_po, Plots.Plot)
 
-    route = Route(LaneletID.([64]), ln)
+    lenwid = SVector{2, Float64}(5.0, 2,2)
+    route = Route(LaneletID.([64]), ln, lenwid)
     p_ro = plot_route(route)
     @test isa(p_ro, Plots.Plot)
 end

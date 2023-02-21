@@ -1,31 +1,49 @@
 import LinearAlgebra.norm
+import StaticArrays.FieldVector
+
+struct LaneletInterval <: FieldVector{3, Float64}
+    lb::Float64 # longitudinal coordinate of route at first contact between actor and lanelet
+    ub::Float64 # longitudinal coordinate of route at last contact between actor and lanelet
+    offset::Float64 # longitudinal coordinate of lanelet at first contact between actor and lanelet
+end
 
 struct Route
     route::Vector{LaneletID}
     frame::TransFrame{FRoute}
-    transition_points::Vector{Float64} # transition points at the crossing from one lanelet to the next one
-    lanelet_frame_offset::Vector{Float64}
-    # TODO add intervals for "on lanelet" --> merge with transition points? 
+    lanelet_interval::Dict{LaneletID, LaneletInterval}
     conflict_sections::Dict{ConflictSectionID, Tuple{Float64, Float64}} 
 
-    function Route(route::Vector{LaneletID}, ln::LaneletNetwork, resampling_dst::Number=2.0)
+    function Route(route::Vector{LaneletID}, ln::LaneletNetwork, lenwid::SVector{2, Float64}, resampling_dst::Number=4.0)
         ### validity checks
-        length(route) ≥ 1 || throw(error("Route must travel at least one LaneSection."))
-        for i=eachindex(route[1:end-1])
-            in(route[i+1], ln.lanelets[route[i]].succ) || throw(error("LaneSections of Route must be connected.")) # TODO also allow lane changes
+        lenroute = length(route)
+        lenroute ≥ 1 || throw(error("Route must travel at least one LaneSection."))
+        transition_type = Vector{Symbol}()
+        for i = 1:lenroute-1
+            if in(route[i+1], ln.lanelets[route[i]].succ)
+                push!(transition_type, :succeeding)
+            elseif route[i+1] == ln.lanelets[route[i]].adjLeft.lanelet_id
+                push!(transition_type, :lane_change_left)
+            elseif route[i+1] == ln.lanelets[route[i]].adjRght.lanelet_id
+                push!(transition_type, :lane_change_rght)
+            else 
+                throw(error("LaneSections of Route must be connected."))
+            end
         end
 
         ### merged center line
         merged_center_line = Vector{Pos{FCart}}()
         lanelet_entry_pos = Vector{Pos{FCart}}()
-        for i in eachindex(route[1:end-1])
-            if in(route[i+1], ln.lanelets[route[i]].succ)
+        transition_angle = Vector{Float64}()
+        for i = 1:lenroute-1
+            if transition_type[i] == :succeeding
                 append!(merged_center_line, ln.lanelets[route[i]].frame.ref_pos)
                 push!(lanelet_entry_pos, ln.lanelets[route[i]].frame.ref_pos[1])
-            elseif route[i+1] == ln.lanelets[route[i]].adjRght.lanelet_id
+                push!(transition_angle, 0.0)
+            elseif transition_type[i] == :lane_change_rght
                 # handle lane change right
                 lt1 = ln.lanelets[route[i]]
                 push!(lanelet_entry_pos, lt1.frame.ref_pos[1])
+                push!(transition_angle, 0.0)
 
                 # first quarter
                 trid = findlast(x -> x ≤ 0.25 * lt1.frame.cum_dst[end], lt1.frame.cum_dst)
@@ -39,9 +57,11 @@ struct Route
 
                 # second quarter support point
                 cum_dst_rght_bound = cumsum(norm.(diff(lt1.boundRght.vertices)))
+                pushfirst!(cum_dst_rght_bound, 0.0)
                 trid = findlast(x -> x ≤ 0.5 * cum_dst_rght_bound[end], lt1.cum_dst_rght_bound)
                 s_remain = 0.5 * cum_dst_rght_bound[end] - cum_dst_rght_bound[trid]
                 vec_to_next = lt1.boundRght.vertices[trid+1] - lt1.boundRght.vertices[trid]
+                angle_bound = atan(vec_to_next...)
                 support_point = lt1.boundRght.vertices[trid] + vec_to_next * (s_remain / norm(vec_to_next))
                 push!(merged_center_line, support_point)
                 push!(lanelet_entry_pos, support_point)
@@ -53,14 +73,18 @@ struct Route
                 vec_to_next = lt2.frame.ref_pos[trid+1] - lt2.frame.ref_pos[trid]
                 support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / nomr(vec_to_next))
                 push!(merged_center_line, support_point)
+                angle_cross = atan((merged_center_line[end]-merged_center_line[end-2])...)
+                angle_transition = abs(rem2pi(angle_bound-angle_cross, RoundNearest))
+                push!(transition_angle, angle_transition)
 
                 # remainder
                 append!(merged_center_line, lt2.frame.ref_pos[trid+1:end])
 
-            elseif route[i+1] == ln.lanelets[route[i]].adjLeft.lanelet_id
+            elseif transition_type[i] == :lane_change_left
                 # handle lane change left
                 lt1 = ln.lanelets[route[i]]
                 push!(lanelet_entry_pos, lt1.frame.ref_pos[1])
+                push!(transition_angle, 0.0)
 
                 # first quarter
                 trid = findlast(x -> x ≤ 0.25 * lt1.frame.cum_dst[end], lt1.frame.cum_dst)
@@ -74,9 +98,11 @@ struct Route
 
                 # second quarter support point
                 cum_dst_left_bound = cumsum(norm.(diff(lt1.boundLeft.vertices)))
+                pushfirst!(cum_dst_left_bound, 0.0)
                 trid = findlast(x -> x ≤ 0.5 * cum_dst_left_bound[end], lt1.cum_dst_left_bound)
                 s_remain = 0.5 * cum_dst_left_bound[end] - cum_dst_left_bound[trid]
                 vec_to_next = lt1.boundLeft.vertices[trid+1] - lt1.boundLeft.vertices[trid]
+                angle_bound = atan(vec_to_next...)
                 support_point = lt1.boundLeft.vertices[trid] + vec_to_next * (s_remain / norm(vec_to_next))
                 push!(merged_center_line, support_point)
                 push!(lanelet_entry_pos, support_point)
@@ -88,15 +114,16 @@ struct Route
                 vec_to_next = lt2.frame.ref_pos[trid+1] - lt2.frame.ref_pos[trid]
                 support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / nomr(vec_to_next))
                 push!(merged_center_line, support_point)
+                angle_cross = atan((merged_center_line[end]-merged_center_line[end-2])...)
+                angle_transition = abs(rem2pi(angle_bound-angle_cross, RoundNearest))
+                push!(transition_angle, angle_transition)
 
                 # remainder
                 append!(merged_center_line, lt2.frame.ref_pos[trid+1:end])
-            else
-                throw(error("You should have never reached this part."))
             end
         end
 
-        (length(route) == 1 || in(route[end], ln.lanelets[route[end-1]].succ)) && (append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos); push!(lanelet_entry_pos, ln.lanelets[route[end]].frame.ref_pos[1]))
+        (length(route) == 1 || transition_type[end] == :succeeding) && (append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos); push!(lanelet_entry_pos, ln.lanelets[route[end]].frame.ref_pos[1]); push!(transition_angle, 0.0))
         
         ### resampling center line
         temp_frame = TransFrame(FRoute, merged_center_line)
@@ -117,11 +144,52 @@ struct Route
         frame = TransFrame(FRoute, smoothed_center_line)
 
         ### transition points at the crossing from one lanelet to another
-        transition_points = map(x -> transform(FRoute, x, frame).c1, lanelet_entry_pos)
-        push!(transition_points, frame.cum_dst[end])
+        transition_point = map(x -> transform(FRoute, x, frame).c1, lanelet_entry_pos)
+        push!(transition_point, frame.cum_dst[end])
 
         ### lanelet frame offset
         lanelet_frame_offset = map(x -> transform(FLanelet, x[1], ln.lanelets[x[2]].frame).c1, zip(lanelet_entry_pos, route))
+
+        lanelet_interval = Dict{LaneletID, LaneletInterval}()
+        #=
+        if lenroute ≤ 1
+            push!(lanelet_interval, LaneletInterval(0.0, ln.lanelets[route[1]].frame.cum_dst[end], 0.0))
+        end
+        =#
+
+        pushfirst!(transition_type, :succeeding)
+        push!(transition_type, :succeeding)
+        pushfirst!(transition_angle, 0.0)
+        push!(transition_angle, 0.0)
+
+        for i = 1:lenroute
+            lb = 0.0
+            lb_lim = 0.0
+            lb_edit = 0.0
+            ub = 0.0
+            ub_lim = 0.0
+            ub_edit = 0.0
+            
+            if transition_type[i] == :succeeding 
+                lb_edit = - lenwid[1] / 2
+            else
+                lb_edit = - lenwid[2] / 2 / tan(transition_angle[i])
+            end
+
+            if transition_type[i+1] == :succeeding
+                ub_edit = + lenwid[1] / 2
+            else
+                ub_edit = + lenwid[2] / 2 / tan(transition_angle[i])
+            end
+
+            lb = transition_point[i] + lb_edit
+            lb_lim = max(0.0, lb)
+
+            ub = transition_point[i+1] + ub_edit
+            ub_lim = min(frame.cum_dst[end], ub)
+
+            lanelet_interval[route[i]] = LaneletInterval(lb_lim, ub_lim, lb_edit + (lb_lim - lb))
+        end
 
         ### calculate conflict sections
         conflict_sections = Dict{ConflictSectionID, Tuple{Float64, Float64}}()
@@ -135,7 +203,7 @@ struct Route
             end
         end
 
-        return new(route, frame, transition_points, lanelet_frame_offset, conflict_sections)
+        return new(route, frame, lanelet_interval, conflict_sections)
     end
 end
 
@@ -194,15 +262,17 @@ function corner_cutting(ls::Vector{Pos{FCart}}, n_iter::Integer)
 end
 
 function corner_cutting_core(ls::Vector{T}) where {T<:Pos{FCart}}
-    length(ls) ≥ 3 || return ls # throw(error("at least 3 points necessary for corner cutting."))
-    smooth = Vector{T}(undef, (length(ls)-1)*2)
+    lenls = length(ls)
+    lenls ≥ 3 || return ls # throw(error("at least 3 points necessary for corner cutting."))
+    smooth = Vector{T}(undef, (lenls-1)*2)
     smooth[1] = ls[1]
     vec_to_next = ls[2] - ls[1]
     smooth[2] = ls[1] + 0.75 * vec_to_next
-    for i in eachindex(ls[1:end-3])
-        vec_to_next = ls[i+2] - ls[i+1]
-        smooth[2i+1] = ls[i+1] + 0.25 * vec_to_next
-        smooth[2i+2] = ls[i+1] + 0.75 * vec_to_next
+
+    for i = 2:lenls-2
+        vec_to_next = ls[i+1] - ls[i]
+        smooth[2i-1] = ls[i] + 0.25 * vec_to_next
+        smooth[2i] = ls[i] + 0.75 * vec_to_next
     end
     vec_to_next = ls[end] - ls[end-1]
     smooth[end-1] = ls[end-1] + 0.25 * vec_to_next

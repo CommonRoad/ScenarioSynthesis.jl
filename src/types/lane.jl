@@ -21,9 +21,3 @@ function expand_lane!(lanelets::AbstractSet{LaneletID}, queue::AbstractSet{Lanel
     union!(lanelets, new)
     union!(queue, new)
 end
-
-function lanes(actor::Actor, ln::LaneletNetwork, s, v, d, ḋ) # s: lon pos of actor
-    lanelets = lanelets(actor, ln, s, v, d, ḋ)
-    lanes = [Lane(lt, ln) for lt in lanelets]
-    return lanes
-end

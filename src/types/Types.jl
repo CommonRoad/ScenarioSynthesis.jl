@@ -4,9 +4,6 @@ export CoordFrame, FCart, FCurv, FRoute, FLanelet, Pos, Vec, distance, TransFram
 include("geometry.jl")
 export Polygon, LineSection, is_intersect, pos_intersect
 
-include("interval.jl")
-export Interval
-
 include("traffic_light.jl")
 export TrafficLight, TrafficLightID
 
