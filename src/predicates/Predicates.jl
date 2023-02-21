@@ -1,8 +1,36 @@
-include("util.jl")
-export safety_distance, velocity_tolerance, position_tolerance
+const TimeStep = Int64
 
-include("binary/Binary.jl")
-export binary
+abstract type Predicate end
 
-include("robustness/Robustness.jl")
-export robustness
+struct Bounds
+    s_min::Float64
+    s_max::Float64
+    v_min::Float64
+    v_max::Float64
+end
+
+#=
+struct GenericPredicate <: Predicate
+    actor_ego::ActorID # TODO or ::Actor ??
+    actor_other::ActorID
+    lanelet::LaneletID
+    conflict_section::ConflictSectionID
+end
+
+function Bounds(
+    Predicate::GenericPredicate,
+    actors::ActorsDict,
+    ...,
+    ψ::Real = 1.0 # min. degree of statisfaction
+)
+    return Bounds(...)
+end
+=#
+
+export TimeStep, Predciate, Bounds
+
+include("predicates_static.jl")
+OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection
+
+include("predicates_dynamic.jl")
+BehindActor

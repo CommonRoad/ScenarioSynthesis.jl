@@ -1,5 +1,6 @@
 using ScenarioSynthesis
 using Test
+using StaticArrays
 
 @testset "Corner Cutting" begin
     ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
@@ -13,13 +14,16 @@ end
     ln = ln_from_xml(path)
     process!(ln)
 
-    route0 = Route(LaneletID.([64]), ln)
-    route1 = Route(LaneletID.([64, 143, 11]), ln)
-    route2 = Route(LaneletID.([8, 92, 11]), ln)
-    route3 = Route(LaneletID.([66, 147, 63]), ln)
-    route4 = Route(LaneletID.([25, 112, 66, 146]), ln)
+    lenwid = SVector{2, Float64}(5.0, 2.2)
 
-    @test all(isapprox.(route1.conflict_sections[20], [127.6377710361829, 134.04640592930664])) # csid could change from time to time
+    route0 = Route(LaneletID.([64]), ln, lenwid)
+    route1 = Route(LaneletID.([64, 143, 11]), ln, lenwid)
+    route2 = Route(LaneletID.([8, 92, 11]), ln, lenwid)
+    route3 = Route(LaneletID.([66, 147, 63]), ln, lenwid)
+    route4 = Route(LaneletID.([25, 112, 66, 146]), ln, lenwid)
+
+    print(route1.conflict_sections[20])
+    @test all(isapprox.(route1.conflict_sections[20], [127.57066556122432, 133.92983221345858])) # csid could change from time to time
 
     @test reference_pos(route0, route0, ln) == ([-6.1858, -126.32625], [-6.1858, -126.32625], true) # same lanelet
     @test reference_pos(route0, route1, ln) == ([-6.1858, -126.32625], [-6.1858, -126.32625], true) # same lanelet

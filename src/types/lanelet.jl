@@ -191,7 +191,7 @@ function Polygon_cut_from_end(lt::Lanelet, e::Number)
     return Polygon(vertices)
 end
 
-function Θ_l(lt::Lanelet, s::Real) # TODO check coordinate defs, write test
+function Θₗ(lt::Lanelet, s::Real) # TODO check coordinate defs, write test
     0.0 ≤ s < lt.frame.cum_dst[end] || throw(error("out of bounds."))
 
     ind = findlast(x -> x ≤ s, lt.frame.cum_dst)
