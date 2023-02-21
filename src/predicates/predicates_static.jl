@@ -3,11 +3,9 @@ struct OnLanelet <: Predicate
     lanelet::LaneletID
 end
 
-function Bounds( # TODO might be worth memoizing, suitable for @generated
+function Bounds( # TODO might be worth memoizing, suited for @generated?
     predicate::OnLanelet,
-    actors::ActorsDict,
-    k::Union{TimeStep, Nothing} = nothing,
-    ln::Union{LaneletNetwork, Nothing} = nothing # TODO keep this? 
+    actors::ActorsDict
 )
     s_min = -Inf
     s_max = Inf
@@ -15,7 +13,7 @@ function Bounds( # TODO might be worth memoizing, suitable for @generated
     route = actors[predicate.actor_ego].route
 
     is_found = false
-    @inbounds for i in eachindex(route.route)
+    @inbounds for i in eachindex(route.route) # TODO use new data structure instead
         if route.route[i] == predicate.lanelet
             s_min = route.transition_points[i]
             s_max = route.transition_points[i+1]

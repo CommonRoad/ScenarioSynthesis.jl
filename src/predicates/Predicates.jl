@@ -16,9 +16,21 @@ struct GenericPredicate <: Predicate
     lanelet::LaneletID
     conflict_section::ConflictSectionID
 end
+
+function Bounds(
+    Predicate::GenericPredicate,
+    actors::ActorsDict,
+    ...,
+    ψ::Real = 1.0 # min. degree of statisfaction
+)
+    return Bounds(...)
+end
 =#
 
 export TimeStep, Predciate, Bounds
 
-include("static_predicates.jl")
-include("dynamic_predicates.jl")
+include("predicates_static.jl")
+OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection
+
+include("predicates_dynamic.jl")
+BehindActor

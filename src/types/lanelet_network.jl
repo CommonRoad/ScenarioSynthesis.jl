@@ -1,5 +1,4 @@
 import LightXML.parse_file, LightXML.root, LightXML.free, LightXML.XMLElement, LightXML.attribute, LightXML.name, LightXML.content
-import DataStructures.DefaultDict
 
 struct LaneletNetwork
     lanelets::Dict{LaneletID, Lanelet}

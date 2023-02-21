@@ -1,4 +1,3 @@
-import DataStructures.SortedDict
 import StaticArrays.SMatrix, StaticArrays.SVector
 
 const ActorID = Int64
@@ -8,7 +7,7 @@ struct Vehicle <: ActorType end # TODO is this even useful?
 
 struct Actor # TODO add type as label or element? 
     route::Route
-    # states::Vector{ConvexSet},
+    states::Vector{ConvexSet}
     lenwid::SVector{2, Float64} # m 
     v_min::Float64 # m/s
     v_max::Float64 # m/s
@@ -16,7 +15,8 @@ struct Actor # TODO add type as label or element?
     a_max::Float64 # m/s²
 
     function Actor(
-        route::Route;
+        route::Route,
+        initial_state::ConvexSet;
         len::Number=5.0,
         wid::Number=2.2,
         v_min::Number=-4.0,
@@ -31,15 +31,32 @@ struct Actor # TODO add type as label or element?
         @assert a_min < 0 # breaking 
         @assert a_max > 0 # accelerating
 
-        return new(route, SVector{2, Float64}(len, wid), v_min, v_max, a_min, a_max)
+        return new(route, [initial_state], SVector{2, Float64}(len, wid), v_min, v_max, a_min, a_max)
     end
 end
 
 struct ActorsDict
-    actors::SortedDict{ActorID, Actor}
+    actors::Dict{ActorID, Actor}
+    offset::Dict{Tuple{ActorID, ActorID}, Float64}
 
-    function ActorsDict(actors::AbstractVector{Actor})
-        return new(SortedDict{ActorID, Actor}(zip(eachindex(actors), actors))) # assign each actor a unique ActorID
+    function ActorsDict(actors::AbstractVector{Actor}, ln::LaneletNetwork)
+        offset = Dict{Tuple{ActorID, ActorID}, Float64}()
+
+        for i in eachindex(actors)
+            for j in i+1:length(actors)
+                ref_pos_fcart_i, ref_pos_fcart_j, does_exist = reference_pos(actors[i].route, actors[j].route, ln)
+
+                if does_exist
+                    ref_pos_i = transform(FRoute, ref_pos_fcart_i, actors[i].route.frame)
+                    ref_pos_j = transform(FRoute, ref_pos_fcart_j, actors[j].route.frame)
+
+                    offset[(i,j)] = ref_pos_j.c1 - ref_pos_i.c1
+                    offset[(j,i)] = ref_pos_i.c1 - ref_pos_j.c1
+                end
+            end
+        end
+
+        return new(Dict{ActorID, Actor}(zip(eachindex(actors), actors)), offset) # assign each actor a unique ActorID
     end
 end
 
@@ -112,12 +129,12 @@ end
 # returns only those lanelets, which are logicially connected
 # be more accurate by using conflict section information (of lanelets) -- only implemented for on ref lt yet -- should be accurate enough
 function lanelets(actor::Actor, ln::LaneletNetwork, s, v, d, ḋ)
-    Θ_a = atan(ḋ, v)
-    -0.35 ≤ Θ_a ≤ 0.35 || @warn "Θ_a pretty high; please check correctness."
+    Θₐ = atan(ḋ, v)
+    -0.35 ≤ Θₐ ≤ 0.35 || @warn "Θₐ pretty high; please check correctness."
     ref_lt_id, s_l = ref_lanelet(actor, s)
     ref_lt = ln.lanelets[ref_lt_id]
 
-    si, co = sincos(Θ_a)
+    si, co = sincos(Θₐ)
     # lateral
     proj_wid = abs(si * actor.lenwid[1] + co * actor.lenwid[2])
     d_max = d + proj_wid / 2
