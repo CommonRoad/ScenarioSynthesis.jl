@@ -31,8 +31,5 @@ export Route, reference_pos, corner_cutting
 include("actor.jl")
 export Actor, Vehicle, ActorsDict, run_timestep, lon_distance
 
-include("predicate.jl")
-export Predicate, ActorRel, LaneletRel, ConflictSectionRel, Behind, SameLon, InFront, Slower, SameVel, Faster
-
 include("lane.jl")
 export Lane, expand_lane!

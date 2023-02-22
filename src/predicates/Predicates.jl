@@ -3,10 +3,10 @@ const TimeStep = Int64
 abstract type Predicate end
 
 struct Bounds
-    s_min::Float64
-    s_max::Float64
-    v_min::Float64
-    v_max::Float64
+    s_lb::Float64
+    s_ub::Float64
+    v_lb::Float64
+    v_ub::Float64
 end
 
 #=
@@ -30,7 +30,7 @@ end
 export TimeStep, Predciate, Bounds
 
 include("predicates_static.jl")
-OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection
+export OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection
 
 include("predicates_dynamic.jl")
-BehindActor
+export BehindActor

@@ -5,7 +5,7 @@ module ScenarioSynthesis
 
 include("reachability/reachability.jl")
 include("types/Types.jl")
-# include("predicates/Predicates.jl")
+include("predicates/Predicates.jl")
 include("visualization/Visualization.jl")
 
 end

@@ -32,4 +32,6 @@ end
     @test reference_pos(route1, route3, ln) == ([Inf, Inf], [Inf, Inf], false) # no intersection
     @test reference_pos(route2, route3, ln) == ([57.34194907069542, -16.19480523769797], [57.34194907069542, -16.19480523769797], true) # intersection
     # TODO test neighboring lanelets, diverging route
+
+    # TODO test LaneletIntervals
 end

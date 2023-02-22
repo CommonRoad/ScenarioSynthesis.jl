@@ -1,7 +1,7 @@
 using ScenarioSynthesis
 using Test
 
-@testset "BehindActor Predicate"
+@testset "BehindActor Predicate" begin
     
 
     @test true
