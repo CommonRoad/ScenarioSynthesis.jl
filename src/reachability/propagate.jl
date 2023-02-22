@@ -8,9 +8,9 @@ Assumptions:
 """
 function propagate(
     cs::ConvexSet, 
-    A::SMatrix, 
-    a_max::Real, 
-    a_min::Real, 
+    A::SMatrix, # TODO add SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) as default? 
+    a_ub::Real, # TODO change order to match actor defs
+    a_lb::Real, 
     Δt::Real
 )
     input_set = copy(cs.vertices)
@@ -22,8 +22,8 @@ function propagate(
     end
 
     # minkowski
-    accelerate = SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
-    decelerate = SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    accelerate = SVector{2,Float64}(a_ub / 2 * Δt^2, a_ub * Δt)
+    decelerate = SVector{2,Float64}(a_lb / 2 * Δt^2, a_lb * Δt)
     minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
     
     output_set = Vector{SVector{2, Float64}}(undef, length(input_set)+2)
@@ -57,8 +57,8 @@ end
 function propagate!( # more readable implementation in previous commit -- this one is optimized for few allocations
     cs::ConvexSet, 
     A::SMatrix, 
-    a_max::Real, 
-    a_min::Real, 
+    a_ub::Real, 
+    a_lb::Real, 
     Δt::Real
 )
     output_set = cs.vertices
@@ -72,8 +72,8 @@ function propagate!( # more readable implementation in previous commit -- this o
     end
 
     # minkowski
-    accelerate = SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
-    decelerate = SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    accelerate = SVector{2,Float64}(a_ub / 2 * Δt^2, a_ub * Δt)
+    decelerate = SVector{2,Float64}(a_lb / 2 * Δt^2, a_lb * Δt)
     minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
 
     counter = 1
@@ -123,15 +123,15 @@ end
 function propagate_backward(
     cs::ConvexSet,
     A::SMatrix,
-    a_max::Real,
-    a_min::Real,
+    a_ub::Real,
+    a_lb::Real,
     Δt::Real
 )
     input_set = cs.vertices
 
     # minkowski
-    accelerate = -SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
-    decelerate = -SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    accelerate = -SVector{2,Float64}(a_ub / 2 * Δt^2, a_ub * Δt)
+    decelerate = -SVector{2,Float64}(a_lb / 2 * Δt^2, a_lb * Δt)
     minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
 
     output_set = Vector{SVector{2, Float64}}(undef, length(input_set)+2)
@@ -172,16 +172,16 @@ end
 function propagate_backward!(
     cs::ConvexSet,
     A::SMatrix,
-    a_max::Real,
-    a_min::Real,
+    a_ub::Real,
+    a_lb::Real,
     Δt::Real
 )
     output_set = cs.vertices
     leninput = length(cs.vertices)
 
     # minkowski
-    accelerate = -SVector{2,Float64}(a_max / 2 * Δt^2, a_max * Δt)
-    decelerate = -SVector{2,Float64}(a_min / 2 * Δt^2, a_min * Δt)
+    accelerate = -SVector{2,Float64}(a_ub / 2 * Δt^2, a_ub * Δt)
+    decelerate = -SVector{2,Float64}(a_lb / 2 * Δt^2, a_lb * Δt)
     minkowski_vec = SVector{2,Float64}(-2 / Δt, 1) # rotated by 90°
 
     counter = 1

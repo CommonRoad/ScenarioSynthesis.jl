@@ -5,33 +5,33 @@ const ActorID = Int64
 abstract type ActorType end # TODO replace with RoadUser type? @enum instead of sttucts? 
 struct Vehicle <: ActorType end # TODO is this even useful? 
 
-struct Actor # TODO add type as label or element? 
+struct Actor # TODO add type as label or element? or skip? or bool VRU?  
     route::Route
     states::Vector{ConvexSet}
     lenwid::SVector{2, Float64} # m 
-    v_min::Float64 # m/s
-    v_max::Float64 # m/s
-    a_min::Float64 # m/s²
-    a_max::Float64 # m/s²
+    v_lb::Float64 # m/s
+    v_ub::Float64 # m/s
+    a_lb::Float64 # m/s²
+    a_ub::Float64 # m/s²
 
     function Actor(
         route::Route,
         initial_state::ConvexSet;
         len::Number=5.0,
         wid::Number=2.2,
-        v_min::Number=-4.0,
-        v_max::Number=40.0,
-        a_min::Number=-7.0,
-        a_max::Number=3.0
+        v_lb::Number=-1.0,
+        v_ub::Number=30.0,
+        a_lb::Number=-6.0,
+        a_ub::Number=3.0
     )
         @assert len > 0
         @assert wid > 0
-        @assert v_min < 0 # backward
-        @assert v_max > 0 # forward
-        @assert a_min < 0 # breaking 
-        @assert a_max > 0 # accelerating
+        @assert v_lb < 0 # backward
+        @assert v_ub > 0 # forward
+        @assert a_lb < 0 # breaking 
+        @assert a_ub > 0 # accelerating
 
-        return new(route, [initial_state], SVector{2, Float64}(len, wid), v_min, v_max, a_min, a_max)
+        return new(route, [initial_state], SVector{2, Float64}(len, wid), v_lb, v_ub, a_lb, a_ub)
     end
 end
 
@@ -60,6 +60,7 @@ struct ActorsDict
     end
 end
 
+#=
 function run_timestep(
     state::StateCurv,
     input::JerkInput, # constant over time Δt
@@ -107,3 +108,4 @@ function lon_distance(
     
     return (does_exist ? (lon1 - lon2 - transform(ref_pos1, actor1.route.frame).c1 + transform(ref_pos2, actor2.route.frame).c1, true) : (Inf64, false))
 end
+=#

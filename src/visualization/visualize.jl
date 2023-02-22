@@ -1,7 +1,7 @@
 import Plots.gr, Plots.plot!, Plots.plot, Plots.Plot, Plots.plotly, Plots.annotate!
 import StaticArrays.SMatrix
 
-backend() = plotly()
+backend() = plotly() # TODO remove this? 
 
 function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction::Bool=true, annotate_id::Bool=true)
 

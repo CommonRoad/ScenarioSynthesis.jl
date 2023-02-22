@@ -110,7 +110,7 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
                 push!(output_set, next_state) # add first intersection point to output set
                 while true
                     next_state, state_type, active = get_next_state!(state_type, cs, next_state, active, cs_counter)
-                    norm(next_state - output_set[1]) ≤ 1e-2 && break
+                    norm(next_state - output_set[1]) ≤ 1e-4 && break
                     push!(output_set, next_state)
                 end
 
@@ -160,7 +160,7 @@ function get_next_state!(
         q1 = cs[inactive].vertices[k]
         q2 = cycle(cs[inactive].vertices, k+1)
         λ, μ = intersection_point(p1, p2, q1, q2)
-        if (0 < λ < 1) && (0 < μ < 1)
+        if (1e-6 < λ < 1-1e-6) && (1e-6 < μ < 1-1e-6) # 1e-3 enhances numerical robustness
             next_state = p1 + λ * (p2 - p1)
             cs_counter[inactive] = k
             return next_state, Intersect, active
@@ -182,7 +182,7 @@ function get_next_state!(
 )
     inactive = (active == 1 ? 2 : 1)
     cs_counter[active] = mod1(cs_counter[active], length(cs[active].vertices))
-    cs_counter[inactive] = mod1(cs_counter[inactive], length(cs[inactive].vertices))
+    cs_counter[inactive] = mod1(cs_counter[inactive], length(cs[inactive].vertices)) # TODO wozu das? 
 
     p1 = cs[active].vertices[cs_counter[active]]
     p2 = cycle(cs[active].vertices, cs_counter[active]+1)
@@ -190,7 +190,7 @@ function get_next_state!(
         q1 = cs[inactive].vertices[k]
         q2 = cycle(cs[inactive].vertices, k+1)
         λ, μ = intersection_point(p1, p2, q1, q2)
-        if (0 < λ < 1) && (0 < μ < 1)
+        if (1e-6 < λ < 1-1e-6) && (1e-6 < μ < 1-1e-6) # 1e-3 enhances numerical robustness
             next_state = p1 + λ * (p2 - p1)
             cs_counter[inactive] = k
             return next_state, Intersect, active

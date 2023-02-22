@@ -28,7 +28,7 @@ import ScenarioSynthesis.ActorID
     ])
 
     actor1 = Actor(route1, cs)
-    actor2 = Actor(route2, cs; a_min=-2.0)
+    actor2 = Actor(route2, cs; a_lb=-2.0)
     actor3 = Actor(route3, cs)
     actor4 = Actor(route4, cs)
 

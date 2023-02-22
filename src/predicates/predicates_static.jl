@@ -5,7 +5,8 @@ end
 
 function Bounds( # TODO might be worth memoizing, suited for @generated?
     predicate::OnLanelet,
-    actors::ActorsDict
+    actors::ActorsDict,
+    unnecessary...
 )
     s_lb = Inf
     s_ub = -Inf
@@ -28,7 +29,8 @@ end
 
 function Bounds(
     predicate::OnConflictSection,
-    actors::ActorsDict
+    actors::ActorsDict, 
+    unnecessary...
 )
     s_lb, s_ub = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
 
@@ -42,7 +44,8 @@ end
 
 function Bounds(
     predicate::BeforeConflictSection,
-    actors::ActorsDict
+    actors::ActorsDict, 
+    unnecessary...
 )
     s_ub, _ = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
  
@@ -56,9 +59,22 @@ end
 
 function Bounds(
     predicate::BehindConflictSection,
-    actors::ActorsDict
+    actors::ActorsDict,
+    unnecessary...
 )
     _, s_lb = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
  
     return Bounds(s_lb, Inf, -Inf, Inf)
+end
+
+struct VelocityLimits <: Predicate
+    actor_ego::ActorID
+end
+
+function Bounds(
+    predicate::VelocityLimits,
+    actors::ActorsDict,
+    unnecessary...
+)
+    return Bounds(-Inf, Inf, actors.actors[predicate.actor_ego].v_lb, actors.actors[predicate.actor_ego].v_ub)
 end

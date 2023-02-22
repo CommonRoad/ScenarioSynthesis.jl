@@ -1,66 +1,121 @@
 using ScenarioSynthesis
+using StaticArrays
+using Plots
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
 # 2. define Actors (incl. their routes)
-# 3. define Scenes containing further specifications / predicates
-# 4. build scenario
-# 5. synthesis
+# 3. define fornal specifications / sequence of Predicates
+# 4. synthesis
 
 ### load LaneletNetwork
 ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
 process!(ln)
-plot_lanelet_network(ln; annotate_id=true)
+# plot_lanelet_network(ln; annotate_id=true)
 
-
+lenwid = SVector{2, Float64}(5.0, 2.2)
 ### define Actors
-route0 = Route(LaneletID.([64]), ln);
-route1 = Route(LaneletID.([64, 143, 11]), ln);
-route2 = Route(LaneletID.([8, 92, 11]), ln);
-route3 = Route(LaneletID.([66, 147, 63]), ln);
-route4 = Route(LaneletID.([25, 112, 66, 146]), ln);
+route0 = Route(LaneletID.([64]), ln, lenwid);
+route1 = Route(LaneletID.([64, 143, 11]), ln, lenwid);
+route2 = Route(LaneletID.([8, 92, 11]), ln, lenwid);
+route3 = Route(LaneletID.([66, 147, 63]), ln, lenwid);
+route4 = Route(LaneletID.([25, 112, 66, 146, 7]), ln, lenwid);
 
 reference_pos(route2, route3, ln)
 
-actor1 = Actor(route1);
-actor2 = Actor(route2; a_min=-2.0);
-actor3 = Actor(route3);
-actor4 = Actor(route4);
+cs1 = ConvexSet([
+    State(105, 12),
+    State(110, 12),
+    State(110, 15),
+    State(105, 15),
+])
+
+cs2 = ConvexSet([
+    State(100, 12),
+    State(140, 12),
+    State(140, 15),
+    State(100, 15),
+])
+
+actor1 = Actor(route1, cs1);
+actor2 = Actor(route2, cs2);
+# actor3 = Actor(route3, cs);
+# actor4 = Actor(route4, cs);
  
-actors = ActorsDict([actor1, actor2, actor3, actor4]);
+#actors = ActorsDict([actor1, actor2, actor3, actor4], ln);
+actors = ActorsDict([actor1, actor2], ln);
 
-### define scenes
-rel1 = [Predicate(LaneletRel(SameLon), 1, [64, 143])] #, Relation(IsOnLanelet, 2, 8), Relation(IsOnLanelet, 3, 66), Relation(IsBehind, 4, 3)];
-rel2 = [Predicate(ActorRel(Behind), 4, 3), Predicate(ActorRel(Behind), 3, 147)];
-rel3 = [Predicate(ActorRel(Behind), 4, 3), Predicate(LaneletRel(SameLon), 1, [11])];
+actors.offset
 
-scene1 = Scene(4.0, 8.0, rel1);
-scene2 = Scene(4.0, 8.0, rel2);
-scene3 = Scene(4.0, 8.0, rel3);
+A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate functions? 
 
-scenes = ScenesDict([scene1, scene2, scene3]);
+### define formal specifications
+Δt = 0.2
+k_max = 21 # → scene duration: Δt * (k_max - 1) = 4 sec
 
-### build scenario
-scenario = Scenario(actors, scenes, ln);
+empty_set = Set{Predicate}()
+pred1 = BehindActor(2, 1)
+pred2 = OnLanelet(1, Set([143]))
+pred3 = SlowerActor(1, 2)
+pred4 = VelocityLimits(1); pred5 = VelocityLimits(2)
 
-### synthesis
-op = synthesize_optimization_problem(scenario)
+ψ = 0.95
 
-### optimization
-import JuMP
-import Plots
+spec = Vector{Set{Predicate}}(undef, k_max)
+for i=1:k_max
+    spec[i] = copy(empty_set)
+    push!(spec[i], pred1)
+    push!(spec[i], pred4)
+    push!(spec[i], pred5)
+end
+for i=8:12
+    push!(spec[i], pred2)
+end
+for i=15:k_max
+    push!(spec[i], pred3)
+end
 
-solve_optimization_problem!(op)
-JuMP.optimize!(op)
+plot(actor1.states[1])
+plot!(actor2.states[1])
 
-Plots.plot(JuMP.value.(op.obj_dict[:scene_active]))
-Plots.plot(JuMP.value.(op.obj_dict[:in_cs]))
-Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,1]); xlabel="step [1]", ylabel="s [m]")
-Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,2]); xlabel="step [1]", ylabel="v [m/s]")
-Plots.plot(JuMP.value.(op.obj_dict[:state][:,:,3]); xlabel="step [1]", ylabel="a [m/s²]")
-Plots.plot(JuMP.value.(op.obj_dict[:jerk]); xlabel="step [1]", ylabel="j [m/s³]") 
+for i = 1:k_max
+    # restrict convex set to match specifications
+    @info i
+    for pred in spec[i]
+        bounds = Bounds(pred, actors, i, ψ)
+        apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
+    end
 
-### corner cutting
+    # propagate convex set to get next time step
+    for (actor_id, actor) in actors.actors
+        @assert length(actor.states) == i 
+        push!(actor.states, propagate(actor.states[i], A, actor.a_ub, actor.a_lb, Δt))
+    end
+
+    plot!(actor1.states[i]); plot!(actor2.states[i])
+end
+
+plot!(actor1.states[k_max]); plot!(actor2.states[k_max])
+
+# backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
+
+plotly()
+backward = propagate_backward(actor2.states[21], A, actor2.a_ub, actor2.a_lb, Δt)
+plot(backward)
+plot!(actor2.states[20])
+intersection(actor2.states[20], backward)
+
+
+for (actor_id, actor) in actors.actors
+    for i in reverse(1:k_max-1)
+        @info i
+        backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
+        intersect = intersection(actor.states[i], backward) 
+        actor.states[i] = intersect     
+    end
+end
+
+### corner cutting # TODO move to tests
 using BenchmarkTools
 using Plots
 ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
