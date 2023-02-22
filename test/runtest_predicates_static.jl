@@ -2,7 +2,7 @@ using ScenarioSynthesis
 using Test
 using StaticArrays
 
-@testset "OnLanelet Predicate" begin
+@testset "Static Predicate" begin
     ### load LaneletNetwork
     path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")
     ln = ln_from_xml(path)
@@ -23,10 +23,27 @@ using StaticArrays
     actor_ego = Actor(route_ego, cs)
     actors_dict = ActorsDict([actor_ego], ln)
 
-    predicate = OnLanelet(1, Set([143]))
+    # OnLanelet
+    on_lanelet_predicate = OnLanelet(1, Set([143]))
+    on_lanelet_bounds = Bounds(on_lanelet_predicate, actors_dict)
+    @test on_lanelet_bounds.s_lb == actor_ego.route.lanelet_interval[143].lb
+    @test on_lanelet_bounds.s_ub == actor_ego.route.lanelet_interval[143].ub
 
-    bounds = Bounds(predicate, actors_dict)
+    # OnConflictSection
+    on_conflict_section_predicate = OnConflictSection(1, 75)
+    on_conflict_section_bounds = Bounds(on_conflict_section_predicate, actors_dict)
+    @test on_conflict_section_bounds.s_lb == actor_ego.route.conflict_sections[75][1]
+    @test on_conflict_section_bounds.s_ub == actor_ego.route.conflict_sections[75][2]
 
-    @test bounds.s_lb == actor_ego.route.lanelet_interval[143].lb
-    @test bounds.s_ub == actor_ego.route.lanelet_interval[143].ub
+    # BeforeConflictSection
+    before_conflict_section_predicate = BeforeConflictSection(1, 75)
+    before_conflict_section_bounds = Bounds(before_conflict_section_predicate, actors_dict)
+    @test before_conflict_section_bounds.s_lb == -Inf
+    @test before_conflict_section_bounds.s_ub == actor_ego.route.conflict_sections[75][1]
+
+    # BehindConflictSection
+    behind_conflict_section_predicate = BehindConflictSection(1, 75)
+    behind_conflict_section_bounds = Bounds(behind_conflict_section_predicate, actors_dict)
+    @test behind_conflict_section_bounds.s_lb == actor_ego.route.conflict_sections[75][2]
+    @test behind_conflict_section_bounds.s_ub == Inf
 end

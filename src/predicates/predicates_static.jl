@@ -30,35 +30,35 @@ function Bounds(
     predicate::OnConflictSection,
     actors::ActorsDict
 )
-    s_lb, s_ub = actors.actors[predicate.actor_ego].conflict_sections[predicate.conflict_section]
+    s_lb, s_ub = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
 
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
 struct BeforeConflictSection <: Predicate
     actor_ego::ActorID
-    OnConflictSection::ConflictSectionID
+    conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::BeforeConflictSection,
     actors::ActorsDict
 )
-    s_ub, _ = actors.actors[predicate.actor_ego].conflict_sections[predicate.conflict_section]
+    s_ub, _ = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
  
     return Bounds(-Inf, s_ub, -Inf, Inf)
 end
 
 struct BehindConflictSection <: Predicate
     actor_ego::ActorID
-    OnConflictSection::ConflictSectionID
+    conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::BehindConflictSection,
     actors::ActorsDict
 )
-    _, s_lb = actors.actors[predicate.actor_ego].conflict_sections[predicate.conflict_section]
+    _, s_lb = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
  
     return Bounds(s_lb, Inf, -Inf, Inf)
 end

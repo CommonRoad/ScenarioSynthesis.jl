@@ -33,4 +33,4 @@ include("predicates_static.jl")
 export OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection
 
 include("predicates_dynamic.jl")
-export BehindActor
+export BehindActor, SlowerActor
