@@ -93,11 +93,12 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
     # sizehint!(output_set, length(cs1.vertices) + length(cs2.vertices))
     is_break = false
     cs = (cs1, cs2)
+    max_iter = 100
 
-    @inbounds for i = eachindex(cs1.vertices)
+    for i = eachindex(cs1.vertices)
         p1 = cs1.vertices[i]
         p2 = cycle(cs1.vertices, i+1)
-        @inbounds for j = eachindex(cs2.vertices)
+        for j = eachindex(cs2.vertices)
             q1 = cs2.vertices[j]
             q2 = cycle(cs2.vertices, j+1)
 
@@ -107,11 +108,14 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
                 state_type = Intersect # other possibility: Vertice
                 active = 1
                 cs_counter = [i, j]
+                @info cs_counter
                 push!(output_set, next_state) # add first intersection point to output set
                 while true
                     next_state, state_type, active = get_next_state!(state_type, cs, next_state, active, cs_counter)
                     norm(next_state - output_set[1]) ≤ 1e-4 && break
+                    norm(next_state - output_set[end]) ≤ 1e-4 && continue # increases numerical robustness
                     push!(output_set, next_state)
+                    max_iter -= 1; max_iter > 0 || throw(error("reached max iter. $cs_counter"))
                 end
 
                 is_break = true; break
@@ -126,7 +130,7 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
     end
 
     length(output_set) < 3 && return ConvexSet(output_set, true, false)  # both cs do not intersect. 
-    return ConvexSet(output_set, false, false)
+    return ConvexSet(output_set, false, true)
 end
 
 @inline function intersection_point(p1::State, p2::State, q1::State, q2::State)
@@ -146,7 +150,7 @@ function get_next_state!(
 
     to_next_active = cycle(cs[active].vertices, cs_counter[active]+1) - prev_state
     to_next_inactive = cycle(cs[inactive].vertices, cs_counter[inactive]+1) - prev_state
-    rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0) # TODO check direction
+    rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
 
     dotprod = dot(to_next_inactive, rotmat*to_next_active)
     if dotprod > 0 # change active
@@ -156,14 +160,47 @@ function get_next_state!(
     # check for intersections
     p1 = prev_state
     p2 = cycle(cs[active].vertices, cs_counter[active]+1)
-    @inbounds for k in eachindex(cs[inactive].vertices)
+    for k in eachindex(cs[inactive].vertices)
+        k == cs_counter[inactive] && continue
         q1 = cs[inactive].vertices[k]
         q2 = cycle(cs[inactive].vertices, k+1)
         λ, μ = intersection_point(p1, p2, q1, q2)
-        if (1e-6 < λ < 1-1e-6) && (1e-6 < μ < 1-1e-6) # 1e-3 enhances numerical robustness
+        if (0 < λ < 1) && (0 < μ < 1)
             next_state = p1 + λ * (p2 - p1)
             cs_counter[inactive] = k
             return next_state, Intersect, active
+        
+        elseif λ == 1
+            # continue with next vertice in sequence of active set
+            break
+        
+        elseif λ == 0 && (0 ≤ μ ≤ 1) # vertice of active set intersects with inactive set -- perform intersection handling
+            add_step = (μ == 1 ? 1 : 0)
+            q2 = cycle(cs[inactive].vertices, k+1+add_step)
+            to_next_active = p2 - p1
+            to_next_inactive = q2 - p1
+            rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
+            dotprod = dot(to_next_inactive, rotmat*to_next_active)
+
+            if dotprod < 0 || (dotprod == 0 && norm(to_next_active) ≤ norm(to_next_inactive)) 
+                # return next vertice of active set
+                break
+            else dotprod > 0 
+                # switch sets and return next vertice of new active set
+                active, inactive = inactive, active
+                next_state = cycle(cs[active].vertices, k+1+add_step)
+                cs_counter[active] = k+1+add_step
+                return next_state, Vertice, active
+            end
+
+        elseif (0 < λ < 1) μ == 1
+            active, inactive = inactive, active
+            next_state = cycle(cs[active].vertices, k+1)
+            cs_counter[active] = k+1
+            return next_state, Vertice, active
+        
+        elseif μ == 0 
+            throw(error("handling necessary?"))
         end
     end
     
@@ -186,14 +223,46 @@ function get_next_state!(
 
     p1 = cs[active].vertices[cs_counter[active]]
     p2 = cycle(cs[active].vertices, cs_counter[active]+1)
-    @inbounds for k in eachindex(cs[inactive].vertices)
+    for k in eachindex(cs[inactive].vertices)
+        # k == cs_counter[inactive] && continue
         q1 = cs[inactive].vertices[k]
         q2 = cycle(cs[inactive].vertices, k+1)
         λ, μ = intersection_point(p1, p2, q1, q2)
-        if (1e-6 < λ < 1-1e-6) && (1e-6 < μ < 1-1e-6) # 1e-3 enhances numerical robustness
+        if (0 < λ < 1) && (0 < μ < 1)
             next_state = p1 + λ * (p2 - p1)
             cs_counter[inactive] = k
             return next_state, Intersect, active
+        
+        elseif λ == 1
+            # continue with next vertice in sequence of active set
+            break
+        elseif λ == 0 && (0 ≤ μ ≤ 1) # vertice of active set intersects with inactive set -- perform intersection handling
+            add_step = (μ == 1 ? 1 : 0)
+            q2 = cycle(cs[inactive].vertices, k+1+add_step)
+            to_next_active = p2 - p1
+            to_next_inactive = q2 - p1
+            rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
+            dotprod = dot(to_next_inactive, rotmat*to_next_active)
+
+            if dotprod < 0 || (dotprod == 0 && norm(to_next_active) ≤ norm(to_next_inactive)) 
+                # return next vertice of active set
+                break
+            else dotprod > 0 
+                # switch sets and return next vertice of new active set
+                active, inactive = inactive, active
+                next_state = cycle(cs[active].vertices, k+1+add_step)
+                cs_counter[active] = k+1+add_step
+                return next_state, Vertice, active
+            end
+
+        elseif (0 < λ < 1) && μ == 1
+            active, inactive = inactive, active
+            next_state = cycle(cs[active].vertices, k+1)
+            cs_counter[active] = k+1
+            return next_state, Vertice, active
+        
+        elseif μ == 0 
+            throw(error("handling necessary?"))
         end
     end
 

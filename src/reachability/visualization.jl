@@ -19,7 +19,8 @@ function Plots.plot(cs::ConvexSet)
     return Plots.plot(
         pos, vel; 
         aspect_ratio=:equal, 
-        label=false
+        label=false,
+        fillalpha=0.2
     )
 end
 
@@ -29,6 +30,7 @@ function Plots.plot!(cs::ConvexSet)
     return Plots.plot!(
         pos, vel; 
         aspect_ratio=:equal, 
-        label=false
+        label=false,
+        fillalpha=0.2
     )
 end

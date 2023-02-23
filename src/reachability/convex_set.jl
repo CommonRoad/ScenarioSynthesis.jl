@@ -20,7 +20,7 @@ struct ConvexSet
     function ConvexSet(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}}, is_empty::Union{Bool, Nothing}=nothing, check_properties::Bool=true)
         isa(is_empty, Nothing) ? is_empty = length(vertices)==0 : nothing
         if check_properties && !is_empty
-            is_counterclockwise_convex(vertices) || throw(eror("Vertices are not counter-clockwise convex."))
+            is_counterclockwise_convex(vertices) || throw(error("Vertices are not counter-clockwise convex."))
         end
         return new(vertices, is_empty)
     end
@@ -71,3 +71,5 @@ function area(cs::ConvexSet)
 
     return area_twice / 2
 end
+
+Base.:+(cs::ConvexSet, state::State) = ConvexSet([vert + state for vert in cs.vertices], cs.is_empty, false)
