@@ -99,11 +99,16 @@ plot!(; xlabel = "s", ylabel = "v")
 
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 
+@code_warntype intersection(actor2.states[20], actor2.states[19])
+plot(actor2.states[20])
+plot!(actor2.states[19])
+plot!(inters)
+
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
         @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
-        intersect = intersection(actor.states[i], backward) 
+        intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
     end
 end
@@ -135,7 +140,7 @@ using LinearAlgebra
 
 output_set = Vector{State}()
 cs = (cs1, cs2)
-i, j = 7, 8
+i, j = 4, 7
 
 p1 = cs1.vertices[i]; p2 = cycle(cs1.vertices, i+1)
 q1 = cs2.vertices[j]; q2 = cycle(cs2.vertices, j+1)
@@ -154,17 +159,10 @@ push!(output_set, next_state);
 
 ##
 inactive = (active == 1 ? 2 : 1)
+cs_counter[active] = mod1(cs_counter[active], length(cs[active].vertices))
+cs_counter[inactive] = mod1(cs_counter[inactive], length(cs[inactive].vertices)) # TODO wozu das? 
 
-to_next_active = cycle(cs[active].vertices, cs_counter[active]+1) - prev_state
-to_next_inactive = cycle(cs[inactive].vertices, cs_counter[inactive]+1) - prev_state
-rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
-
-dotprod = dot(to_next_inactive, rotmat*to_next_active)
-if dotprod > 0 # change active
-    active, inactive = inactive, active
-end
-
-p1 = prev_state
+p1 = cs[active].vertices[cs_counter[active]]
 p2 = cycle(cs[active].vertices, cs_counter[active]+1)
 
 k += 1 ; q1 = cs[inactive].vertices[k]; q2 = cycle(cs[inactive].vertices, k+1); λ, μ = intersection_point(p1, p2, q1, q2)

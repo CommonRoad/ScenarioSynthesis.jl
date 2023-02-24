@@ -1,3 +1,5 @@
+import LazySets._intersection_vrep_2d, LazySets.monotone_chain!
+
 function upper_lim!(cs::ConvexSet, dir::Integer, lim::Real)
     input_set = cs.vertices
     lencon = length(input_set)
@@ -88,6 +90,7 @@ abstract type StateType end
 struct Intersect <: StateType end
 struct Vertice <: StateType end
 
+#=
 function intersection(cs1::ConvexSet, cs2::ConvexSet)
     output_set = Vector{State}()
     # sizehint!(output_set, length(cs1.vertices) + length(cs2.vertices))
@@ -132,12 +135,14 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
     length(output_set) < 3 && return ConvexSet(output_set, true, false)  # both cs do not intersect. 
     return ConvexSet(output_set, false, true)
 end
-
+=#
 @inline function intersection_point(p1::State, p2::State, q1::State, q2::State)
     λ = ((p1[2]-q1[2]) * (q2[1]-q1[1]) - (p1[1]-q1[1]) * (q2[2]-q1[2])) / ((p2[1]-p1[1]) * (q2[2]-q1[2]) - (p2[2]-p1[2]) * (q2[1]-q1[1]))
     μ = ((q1[2]-p1[2]) * (p2[1]-p1[1]) - (q1[1]-p1[1]) * (p2[2]-p1[2])) / ((q2[1]-q1[1]) * (p2[2]-p1[2]) - (q2[2]-q1[2]) * (p2[1]-p1[1]))
     return λ, μ
 end
+#=
+@inline margin() = 2*eps()
 
 function get_next_state!(
     ::Type{Intersect},
@@ -165,17 +170,17 @@ function get_next_state!(
         q1 = cs[inactive].vertices[k]
         q2 = cycle(cs[inactive].vertices, k+1)
         λ, μ = intersection_point(p1, p2, q1, q2)
-        if (0 < λ < 1) && (0 < μ < 1)
+        if (0 < λ < 1-margin()) && (0 < μ < 1-margin())
             next_state = p1 + λ * (p2 - p1)
             cs_counter[inactive] = k
             return next_state, Intersect, active
         
-        elseif λ == 1
+        elseif isapprox(λ, 1; atol=margin())
             # continue with next vertice in sequence of active set
             break
         
         elseif λ == 0 && (0 ≤ μ ≤ 1) # vertice of active set intersects with inactive set -- perform intersection handling
-            add_step = (μ == 1 ? 1 : 0)
+            add_step = (isapprox(μ, 1; atol=margin()) ? 1 : 0)
             q2 = cycle(cs[inactive].vertices, k+1+add_step)
             to_next_active = p2 - p1
             to_next_inactive = q2 - p1
@@ -193,7 +198,7 @@ function get_next_state!(
                 return next_state, Vertice, active
             end
 
-        elseif (0 < λ < 1) μ == 1
+        elseif (0 < λ < 1) && isapprox(μ, 1; atol=margin())
             active, inactive = inactive, active
             next_state = cycle(cs[active].vertices, k+1)
             cs_counter[active] = k+1
@@ -228,16 +233,16 @@ function get_next_state!(
         q1 = cs[inactive].vertices[k]
         q2 = cycle(cs[inactive].vertices, k+1)
         λ, μ = intersection_point(p1, p2, q1, q2)
-        if (0 < λ < 1) && (0 < μ < 1)
+        if (0 < λ < 1-margin()) && (0 < μ < 1-margin())
             next_state = p1 + λ * (p2 - p1)
             cs_counter[inactive] = k
             return next_state, Intersect, active
         
-        elseif λ == 1
+        elseif isapprox(λ, 1; atol=margin())
             # continue with next vertice in sequence of active set
             break
         elseif λ == 0 && (0 ≤ μ ≤ 1) # vertice of active set intersects with inactive set -- perform intersection handling
-            add_step = (μ == 1 ? 1 : 0)
+            add_step = (isapprox(μ, 1; atol=margin()) ? 1 : 0)
             q2 = cycle(cs[inactive].vertices, k+1+add_step)
             to_next_active = p2 - p1
             to_next_inactive = q2 - p1
@@ -255,7 +260,7 @@ function get_next_state!(
                 return next_state, Vertice, active
             end
 
-        elseif (0 < λ < 1) && μ == 1
+        elseif (0 < λ < 1) && isapprox(μ, 1; atol=margin())
             active, inactive = inactive, active
             next_state = cycle(cs[active].vertices, k+1)
             cs_counter[active] = k+1
@@ -271,7 +276,7 @@ function get_next_state!(
     cs_counter[active] += 1
     return next_state, Vertice, active
 end
-
+=#
 @inline function is_within(cs::ConvexSet, state::State)
     lencon = length(cs.vertices)
     rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
@@ -285,4 +290,54 @@ end
         dotprod < 0 && return false
     end
     return true
+end
+
+function intersection_new(cs1::ConvexSet, cs2::ConvexSet)
+    output_set = _intersection_vrep_2d(cs1.vertices, cs2.vertices) # TODO if removed, also delete LazySets form dependencies
+    return ConvexSet(monotone_chain!(output_set))
+end
+
+function intersection(cs1::ConvexSet, cs2::ConvexSet)
+    output_set = Vector{State}()
+
+    # add all states of cs1, which are inside cs2
+    for st in cs1.vertices
+        is_within(cs2, st) && push!(output_set, st) # on line? 
+    end
+    # add all states of cs2, which are inside cs1
+    for st in cs2.vertices
+        is_within(cs1, st) && push!(output_set, st) # on line? 
+    end
+    # add all intersection points
+    for i in eachindex(cs1.vertices)
+        p1 = cs1.vertices[i]
+        p2 = cycle(cs1.vertices, i+1)
+        for j in eachindex(cs2.vertices)
+            q1 = cs2.vertices[j]
+            q2 = cycle(cs2.vertices, j+1)
+            λ, μ = intersection_point(p1, p2, q1, q2)
+            if (0 < λ < 1) && (0 < μ < 1) 
+                next_state = p1 + λ * (p2 - p1)
+                push!(output_set, next_state)
+            end
+        end
+    end
+
+    # sort counter clockwise convex
+    left_bottom = State(Inf, Inf)
+    left_bottom_ind = 0
+    for i in eachindex(output_set)
+        st = output_set[i]
+        if st[1] < left_bottom[1] || (st[1] ≤ left_bottom[1] && st[2] < left_bottom[2])
+            left_bottom = st
+            left_bottom_ind = i
+        end
+    end
+
+    # switch left_bottom to beginning of output_set
+    output_set[1], output_set[left_bottom_ind] = output_set[left_bottom_ind], output_set[1]
+
+    partialsort!(output_set, 2:length(output_set), by = st -> (st[2]-left_bottom[2])/(st[1]-left_bottom[1]), rev=false)
+    
+    return ConvexSet(output_set) # TODO skip checks if works well
 end
