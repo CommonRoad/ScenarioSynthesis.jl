@@ -1,6 +1,6 @@
 using ScenarioSynthesis
 using StaticArrays
-using Plots
+using Plots; plotly()
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
@@ -75,12 +75,8 @@ for i=15:k_max
     push!(spec[i], pred3)
 end
 
-plotly()
-plot()
-
 for i = 1:k_max
     # restrict convex set to match specifications
-    @info i
     for pred in spec[i]
         bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
         apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
@@ -91,22 +87,23 @@ for i = 1:k_max
         @assert length(actor.states) == i 
         push!(actor.states, propagate(actor.states[i], A, actor.a_ub, actor.a_lb, Δt))
     end
-
-    plot!(actor1.states[i]); plot!(actor2.states[i] + State(actors.offset[2, 1], 0))
 end
 
-plot!(; xlabel = "s", ylabel = "v")
+if !@isdefined actor1_states_copy
+    actor1_states_copy = deepcopy(actor1.states)
+end 
+if !@isdefined actor2_states_copy
+    actor2_states_copy = deepcopy(actor2.states)
+end
+
+if true # true to reload states
+    actor1.states[:] = deepcopy.(actor1_states_copy)
+    actor2.states[:] = deepcopy.(actor2_states_copy)
+end
 
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
-
-@code_warntype intersection(actor2.states[20], actor2.states[19])
-plot(actor2.states[20])
-plot!(actor2.states[19])
-plot!(inters)
-
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
-        @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
         intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
@@ -114,60 +111,11 @@ for (actor_id, actor) in actors.actors
 end
 
 # plot
-plot()
+plot();
 for i=1:k_max
     plot!(actor1.states[i]); plot!(actor2.states[i] + State(actors.offset[2, 1], 0))
 end
 plot!(; xlabel = "s", ylabel = "v")
-
-
-# debug intersection
-plot(actor1.states[12])
-backward = propagate_backward(actor1.states[13], A, actor2.a_ub, actor2.a_lb, Δt)
-intersect = intersection(actor1.states[12], backward) 
-
-plot(backward)
-plot!(actor1.states[12])
-plot!(intersect)
-
-cs1 = actor1.states[12]
-cs2 = backward
-
-plot(cs1); plot!(cs2)
-
-import ScenarioSynthesis.cycle, ScenarioSynthesis.Intersect, ScenarioSynthesis.Vertice, ScenarioSynthesis.get_next_state!, ScenarioSynthesis.intersection_point
-using LinearAlgebra
-
-output_set = Vector{State}()
-cs = (cs1, cs2)
-i, j = 4, 7
-
-p1 = cs1.vertices[i]; p2 = cycle(cs1.vertices, i+1)
-q1 = cs2.vertices[j]; q2 = cycle(cs2.vertices, j+1)
-
-λ, μ = intersection_point(p1, p2, q1, q2)
-
-next_state = p1 + λ * (p2 - p1) # === q1 + μ * (q2 - q1)
-state_type = Intersect # other possibility: Vertice
-active = 1
-cs_counter = [i, j]
-
-push!(output_set, next_state)
-
-next_state, state_type, active = get_next_state!(state_type, cs, next_state, active, cs_counter)
-push!(output_set, next_state);
-
-##
-inactive = (active == 1 ? 2 : 1)
-cs_counter[active] = mod1(cs_counter[active], length(cs[active].vertices))
-cs_counter[inactive] = mod1(cs_counter[inactive], length(cs[inactive].vertices)) # TODO wozu das? 
-
-p1 = cs[active].vertices[cs_counter[active]]
-p2 = cycle(cs[active].vertices, cs_counter[active]+1)
-
-k += 1 ; q1 = cs[inactive].vertices[k]; q2 = cycle(cs[inactive].vertices, k+1); λ, μ = intersection_point(p1, p2, q1, q2)
-print()
-
 
 
 ### corner cutting # TODO move to tests
