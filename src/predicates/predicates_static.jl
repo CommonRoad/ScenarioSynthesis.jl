@@ -5,66 +5,76 @@ end
 
 function Bounds( # TODO might be worth memoizing, suited for @generated?
     predicate::OnLanelet,
-    actors::ActorsDict
+    actors::ActorsDict,
+    unnecessary...
 )
-    s_min = -Inf
-    s_max = Inf
+    s_lb = Inf
+    s_ub = -Inf
 
-    route = actors[predicate.actor_ego].route
+    route = actors.actors[predicate.actor_ego].route
 
-    is_found = false
-    @inbounds for i in eachindex(route.route) # TODO use new data structure instead
-        if route.route[i] == predicate.lanelet
-            s_min = route.transition_points[i]
-            s_max = route.transition_points[i+1]
-            is_found = true
-            break
-        end
+    for lt in predicate.lanelet
+        s_lb_temp, s_ub_temp, _ = route.lanelet_interval[lt]
+        s_lb = min(s_lb, s_lb_temp)
+        s_ub = max(s_ub, s_ub_temp)
     end
-    
-    is_found || throw(error("predicate cannot be fulfilled. predicate.lanelet not part of actor_ego.route.")) # TODO add relaxed handling? 
 
-    return Bounds(s_min, s_max, -Inf, Inf)
+    return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
 struct OnConflictSection <: Predicate
     actor_ego::ActorID
-    conflict_section::ConflictSection
+    conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::OnConflictSection,
-    actors::ActorsDict
+    actors::ActorsDict, 
+    unnecessary...
 )
-    s_min, s_max = actors.actors[predicate.actor_ego].conflict_sections[predicate.conflict_section]
+    s_lb, s_ub = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
 
-    return Bounds(s_min, s_max, -Inf, Inf)
+    return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
 struct BeforeConflictSection <: Predicate
     actor_ego::ActorID
-    OnConflictSection::ConflictSectionID
+    conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::BeforeConflictSection,
-    actors::ActorsDict
+    actors::ActorsDict, 
+    unnecessary...
 )
-    s_max, _ = actors.actors[predicate.actor_ego].conflict_sections[predicate.conflict_section]
+    s_ub, _ = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
  
-    return Bounds(-Inf, s_max, -Inf, Inf)
+    return Bounds(-Inf, s_ub, -Inf, Inf)
 end
 
 struct BehindConflictSection <: Predicate
     actor_ego::ActorID
-    OnConflictSection::ConflictSectionID
+    conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::BehindConflictSection,
-    actors::ActorsDict
+    actors::ActorsDict,
+    unnecessary...
 )
-    _, s_min = actors.actors[predicate.actor_ego].conflict_sections[predicate.conflict_section]
+    _, s_lb = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
  
-    return Bounds(s_min, Inf, -Inf, Inf)
+    return Bounds(s_lb, Inf, -Inf, Inf)
+end
+
+struct VelocityLimits <: Predicate
+    actor_ego::ActorID
+end
+
+function Bounds(
+    predicate::VelocityLimits,
+    actors::ActorsDict,
+    unnecessary...
+)
+    return Bounds(-Inf, Inf, actors.actors[predicate.actor_ego].v_lb, actors.actors[predicate.actor_ego].v_ub)
 end

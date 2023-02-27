@@ -20,7 +20,7 @@ struct ConvexSet
     function ConvexSet(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}}, is_empty::Union{Bool, Nothing}=nothing, check_properties::Bool=true)
         isa(is_empty, Nothing) ? is_empty = length(vertices)==0 : nothing
         if check_properties && !is_empty
-            is_counterclockwise_convex(vertices) || throw(eror("Vertices are not counter-clockwise convex."))
+            is_counterclockwise_convex(vertices) || throw(error("Vertices are not counter-clockwise convex."))
         end
         return new(vertices, is_empty)
     end
@@ -57,17 +57,24 @@ end
 
 Base.copy(cs::ConvexSet) = ConvexSet(copy(cs.vertices), cs.is_empty, false)
 
+Base.:+(cs::ConvexSet, state::State) = ConvexSet([vert + state for vert in cs.vertices], cs.is_empty, false)
+
 function area(cs::ConvexSet)
     area_twice = 0.0
-    cs.is_empty && return area_twice / 2
-    
-    area_twice += cs.vertices[end][1] * cs.vertices[1][2]
-    area_twice -= cs.vertices[1][1] * cs.vertices[end][2]
-    
-    @inbounds for i=1:length(cs.vertices)-1
-        area_twice += cs.vertices[i][1] * cs.vertices[i+1][2]
-        area_twice -= cs.vertices[i+1][1] * cs.vertices[i][2]
+    @inbounds for i=2:length(cs.vertices)-1
+        area_twice += cross(cs.vertices[i] - cs.vertices[1], cs.vertices[i+1] - cs.vertices[1])
     end
-
     return area_twice / 2
+end
+
+function centroid(cs::ConvexSet)
+    area_twice = 0.0
+    centroid = State(0, 0)
+    for i=2:length(cs.vertices)-1
+        centroid_temp = (cs.vertices[i+1] + cs.vertices[i] + cs.vertices[1]) / 3
+        area_twice_temp = cross(cs.vertices[i] - cs.vertices[1], cs.vertices[i+1] - cs.vertices[1])
+        centroid = (centroid * area_twice + centroid_temp * area_twice_temp) /(area_twice + area_twice_temp)
+        area_twice += area_twice_temp
+    end
+    return centroid # could also return area
 end
