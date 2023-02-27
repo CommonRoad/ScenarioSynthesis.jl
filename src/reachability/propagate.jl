@@ -230,3 +230,5 @@ function propagate_backward!(
 
     return nothing
 end
+
+# TODO add propagate for (initial) State
