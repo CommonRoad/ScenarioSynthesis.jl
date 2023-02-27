@@ -37,8 +37,8 @@ cs2 = ConvexSet([
     State(100, 15),
 ])
 
-actor1 = Actor(route1, cs1);
-actor2 = Actor(route2, cs2);
+actor1 = Actor(route1, cs1; a_lb = -2.0, v_lb = 0.0);
+actor2 = Actor(route2, cs2; a_lb = -1.0, v_lb = 0.0);
 # actor3 = Actor(route3, cs);
 # actor4 = Actor(route4, cs);
  
@@ -59,7 +59,7 @@ pred2 = OnLanelet(1, Set([143]))
 pred3 = SlowerActor(1, 2)
 pred4 = VelocityLimits(1); pred5 = VelocityLimits(2)
 
-ψ = 0.8
+ψ = 0.99
 
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
@@ -76,6 +76,7 @@ for i=15:k_max
 end
 
 for i = 1:k_max
+    @info i
     # restrict convex set to match specifications
     for pred in spec[i]
         bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
@@ -89,6 +90,7 @@ for i = 1:k_max
     end
 end
 
+#=
 if !@isdefined actor1_states_copy
     actor1_states_copy = deepcopy(actor1.states)
 end 
@@ -100,7 +102,7 @@ if true # true to reload states
     actor1.states[:] = deepcopy.(actor1_states_copy)
     actor2.states[:] = deepcopy.(actor2_states_copy)
 end
-
+=#
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)

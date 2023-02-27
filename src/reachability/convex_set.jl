@@ -57,19 +57,24 @@ end
 
 Base.copy(cs::ConvexSet) = ConvexSet(copy(cs.vertices), cs.is_empty, false)
 
+Base.:+(cs::ConvexSet, state::State) = ConvexSet([vert + state for vert in cs.vertices], cs.is_empty, false)
+
 function area(cs::ConvexSet)
     area_twice = 0.0
-    cs.is_empty && return area_twice / 2
-    
-    area_twice += cs.vertices[end][1] * cs.vertices[1][2]
-    area_twice -= cs.vertices[1][1] * cs.vertices[end][2]
-    
-    @inbounds for i=1:length(cs.vertices)-1
-        area_twice += cs.vertices[i][1] * cs.vertices[i+1][2]
-        area_twice -= cs.vertices[i+1][1] * cs.vertices[i][2]
+    @inbounds for i=2:length(cs.vertices)-1
+        area_twice += cross(cs.vertices[i] - cs.vertices[1], cs.vertices[i+1] - cs.vertices[1])
     end
-
     return area_twice / 2
 end
 
-Base.:+(cs::ConvexSet, state::State) = ConvexSet([vert + state for vert in cs.vertices], cs.is_empty, false)
+function centroid(cs::ConvexSet)
+    area_twice = 0.0
+    centroid = State(0, 0)
+    for i=2:length(cs.vertices)-1
+        centroid_temp = (cs.vertices[i+1] + cs.vertices[i] + cs.vertices[1]) / 3
+        area_twice_temp = cross(cs.vertices[i] - cs.vertices[1], cs.vertices[i+1] - cs.vertices[1])
+        centroid = (centroid * area_twice + centroid_temp * area_twice_temp) /(area_twice + area_twice_temp)
+        area_twice += area_twice_temp
+    end
+    return centroid # could also return area
+end

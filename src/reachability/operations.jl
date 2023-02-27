@@ -90,7 +90,7 @@ end
     return λ, μ
 end
 
-@inline function is_within(cs::ConvexSet, state::State)
+@inline function is_within(state::State, cs::ConvexSet)
     lencon = length(cs.vertices)
     rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
     vec_to_next = cs.vertices[1] - cs.vertices[end]
@@ -110,11 +110,11 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
 
     # add all states of cs1, which are inside cs2
     for st in cs1.vertices
-        is_within(cs2, st) && push!(output_set, st) # on line? 
+        is_within(st, cs2) && push!(output_set, st) # on line? 
     end
     # add all states of cs2, which are inside cs1
     for st in cs2.vertices
-        is_within(cs1, st) && !in(st, output_set) && push!(output_set, st) # on line? 
+        is_within(st, cs1) && !in(st, output_set) && push!(output_set, st) # on line? 
     end
     # add all intersection points
     for i in eachindex(cs1.vertices)

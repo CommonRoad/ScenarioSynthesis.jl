@@ -69,6 +69,10 @@ a_min = -8.0
     @test area(states_ref) == 52.0
 end
 
+@testset "centroid" begin
+    @test isapprox(centroid(states_ref), State(4, 1))
+end
+
 @testset "propagate" begin
     states_forward = propagate(states_ref, A, a_max, a_min, Δt)
     @test isapprox(states_forward.vertices, states_ref_forward.vertices)
