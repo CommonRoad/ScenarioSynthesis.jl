@@ -8,6 +8,7 @@ struct State <: FieldVector{2, Float64}
     vel::Float64
 end
 
+# TODO replace by: ConvexSet{T} = Vector{State} ; T::Bool → "is_empty"
 """
     ConvexSet
 
@@ -76,5 +77,5 @@ function centroid(cs::ConvexSet)
         centroid = (centroid * area_twice + centroid_temp * area_twice_temp) /(area_twice + area_twice_temp)
         area_twice += area_twice_temp
     end
-    return centroid # could also return area
+    return centroid # also return area? 
 end

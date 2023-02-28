@@ -9,6 +9,8 @@ struct Incoming
     right_neighbor::LaneletID
     has_right_neighbor::Bool
 end
+
+# TODO replace by const Intersection = Dict{IncomingID, Incoming}
 struct Intersection
     incomings::Dict{IncomingID, Incoming}
 end

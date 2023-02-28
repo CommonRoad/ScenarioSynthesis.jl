@@ -119,6 +119,10 @@ for i=1:k_max
 end
 plot!(; xlabel = "s", ylabel = "v")
 
+traj = synthesize_trajectories(actors, k_max, Δt)
+
+plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:])
+plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:])
 
 ### corner cutting # TODO move to tests
 using BenchmarkTools
