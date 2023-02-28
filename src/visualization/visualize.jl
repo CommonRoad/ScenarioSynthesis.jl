@@ -1,9 +1,9 @@
 import Plots.gr, Plots.plot!, Plots.plot, Plots.Plot, Plots.plotly, Plots.annotate!
 import StaticArrays.SMatrix
 
-backend() = plotly() # TODO remove this? 
+# backend() = plotly() # TODO remove this? 
 
-function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction::Bool=true, annotate_id::Bool=true)
+function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction::Bool=true, annotate_id::Bool=true, size::Tuple{<:Integer, <:Integer}=(800, 600))
 
     vertNorth = map(v -> v.c2, lt.boundRght.vertices)
     append!(vertNorth, map(v -> v.c2, reverse(lt.boundLeft.vertices)))
@@ -30,7 +30,8 @@ function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction
         legend = false,
         aspect_ratio = :equal,
         grid = false,
-        color = :black
+        color = :black,
+        size = size
     )
 
     if annotate_id
@@ -40,13 +41,13 @@ function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction
     return p
 end
 
-function plot_lanelet_network(ln::LaneletNetwork; overwrite_backend::Bool=true, draw_direction::Bool=true, annotate_id::Bool=false)
-    overwrite_backend && backend()
+function plot_lanelet_network(ln::LaneletNetwork; overwrite_backend::Bool=true, draw_direction::Bool=true, annotate_id::Bool=false, size::Tuple{<:Integer,<:Integer}=(800, 600))
+    #overwrite_backend && backend()
 
     p = plot()
 
     for (id, lt) in ln.lanelets
-        plot!(p, plot_lanelet(lt, id, p; draw_direction=draw_direction, annotate_id=annotate_id))
+        plot!(p, plot_lanelet(lt, id, p; draw_direction=draw_direction, annotate_id=annotate_id, size=size))
     end
 
     return p 

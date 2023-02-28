@@ -124,6 +124,8 @@ traj = synthesize_trajectories(actors, k_max, Δt)
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:])
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:])
 
+animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
+
 ### corner cutting # TODO move to tests
 using BenchmarkTools
 using Plots
