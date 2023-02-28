@@ -11,7 +11,7 @@ using Plots; plotly()
 ### load LaneletNetwork
 ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
 process!(ln)
-# plot_lanelet_network(ln; annotate_id=true)
+plot_lanelet_network(ln; annotate_id=true)
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
 ### define Actors
@@ -20,8 +20,6 @@ route1 = Route(LaneletID.([64, 143, 11]), ln, lenwid);
 route2 = Route(LaneletID.([8, 92, 11]), ln, lenwid);
 route3 = Route(LaneletID.([66, 147, 63]), ln, lenwid);
 route4 = Route(LaneletID.([25, 112, 66, 146, 7]), ln, lenwid);
-
-reference_pos(route2, route3, ln)
 
 cs1 = ConvexSet([
     State(105, 12),
@@ -59,7 +57,7 @@ pred2 = OnLanelet(1, Set([143]))
 pred3 = SlowerActor(1, 2)
 pred4 = VelocityLimits(1); pred5 = VelocityLimits(2)
 
-ψ = 0.99
+ψ = 0.90
 
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
