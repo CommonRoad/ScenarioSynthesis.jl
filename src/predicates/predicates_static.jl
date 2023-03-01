@@ -1,4 +1,6 @@
-struct OnLanelet <: Predicate
+abstract type StaticPredicate <: BasicPredicate end
+
+struct OnLanelet <: StaticPredicate
     actor_ego::ActorID
     lanelet::Set{LaneletID} # Lanelet IDs must be sequential -- TODO add specific constructor? 
 end
@@ -22,7 +24,7 @@ function Bounds( # TODO might be worth memoizing, suited for @generated?
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
-struct OnConflictSection <: Predicate
+struct OnConflictSection <: StaticPredicate
     actor_ego::ActorID
     conflict_section::ConflictSectionID
 end
@@ -37,7 +39,7 @@ function Bounds(
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
-struct BeforeConflictSection <: Predicate
+struct BeforeConflictSection <: StaticPredicate
     actor_ego::ActorID
     conflict_section::ConflictSectionID
 end
@@ -52,7 +54,7 @@ function Bounds(
     return Bounds(-Inf, s_ub, -Inf, Inf)
 end
 
-struct BehindConflictSection <: Predicate
+struct BehindConflictSection <: StaticPredicate
     actor_ego::ActorID
     conflict_section::ConflictSectionID
 end
@@ -67,7 +69,7 @@ function Bounds(
     return Bounds(s_lb, Inf, -Inf, Inf)
 end
 
-struct VelocityLimits <: Predicate
+struct VelocityLimits <: StaticPredicate
     actor_ego::ActorID
 end
 

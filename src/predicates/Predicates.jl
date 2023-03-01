@@ -1,9 +1,8 @@
 const TimeStep = Int64
-
-abstract type Predicate end
+export TimeStep
 
 #=
-struct GenericPredicate <: Predicate
+struct GenericBasePredicate <: BasicPredicate
     actor_ego::ActorID # TODO or ::Actor ??
     actor_other::ActorID
     lanelet::LaneletID
@@ -11,7 +10,8 @@ struct GenericPredicate <: Predicate
 end
 =#
 
-export TimeStep, Predicate
+include("metric_temporal_logic.jl")
+export Predicate, BasicPredicate, MTLPredicate, LogicOperator, And, Or, Not, Implies, TimeOperator, Once, Future, Globally, Previously, Interval
 
 include("bounds.jl")
 export Bounds, apply_bounds!
@@ -21,3 +21,5 @@ export OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSectio
 
 include("predicates_dynamic.jl")
 export BehindActor, SlowerActor
+
+include("higher_level_predicates.jl")

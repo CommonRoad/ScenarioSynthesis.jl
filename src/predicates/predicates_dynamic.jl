@@ -1,4 +1,6 @@
-struct BehindActor <: Predicate 
+abstract type DynamicPredicate <: BasicPredicate end
+
+struct BehindActor <: DynamicPredicate 
     actor_ego::ActorID
     actor_other::ActorID
 end
@@ -20,7 +22,7 @@ function Bounds(
     return Bounds(-Inf, s_ub, -Inf, Inf)
 end
 
-struct SlowerActor <: Predicate
+struct SlowerActor <: DynamicPredicate
     actor_ego::ActorID
     actor_other::ActorID
 end
