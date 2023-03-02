@@ -79,7 +79,7 @@ function mtl2config(mtl::MTLPredicate, k_max::Integer)
     range_max = 0:k_max-1
     config = [(zeros(Int64, k_max, number_of_basic_predicates), range_max)]
 
-    explore_mtl!(mtl, config, basic_predicate_dict)
+    explore_mtl!(mtl, 1, config, basic_predicate_dict)
 
     return config
 end
@@ -111,46 +111,102 @@ end
 
 function explore_mtl!(
     mtl::MTLPredicate{T, R, L, N}, 
+    index::Integer,
     config::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:UnitRange}},
     basic_predicate_dict::Dict{BasicPredicate, Int64}
 ) where {T<:TimeOperator, R<:TimeReference, L<:LogicOperator, N<:Predicate}
     throw(error("Handling for \nT: $T \nR: $R \nL: $L \nN: $N \nnot implemented yet."))
+    
+    return nothing
+end
+
+function explore_mtl!(
+    pred::BasicPredicate,
+    index::Integer,
+    config::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:UnitRange}},
+    basic_predicate_dict::Dict{BasicPredicate, Int64}
+)
+    config[index][1][config[index][2].+1, basic_predicate_dict[pred]] .= 1
+
     return nothing
 end
 
 function explore_mtl!(
     mtl::MTLPredicate{Globally, Absolute, And, N},
+    index::Integer,
     config::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:UnitRange}},
     basic_predicate_dict::Dict{BasicPredicate, Int64}
 ) where {N<:Predicate}
-    @assert length(config) == 1
-    conf = config[1]
-    new_range = intersect(conf[2], mtl.interval)
-    if !isempty(new_range)
-        for pred in mtl.predicates
-            if isa(pred, BasicPredicate)
-                conf[1][new_range.+1, basic_predicate_dict[pred]] .= 1 # TODO also handle negotiation
-            end
+    config[index] = (config[index][1], intersect(config[index][2], mtl.interval))
+    if !isempty(config[index][2])
+        for pred in mtl.predicates # first process basic predicates
+            isa(pred, BasicPredicate) && explore_mtl!(pred, index, config, basic_predicate_dict)
         end
-        for pred in mtl.predicates
-            if !isa(pred, BasicPredicate)
-                explore_mtl!(pred, [(conf[1], new_range)], basic_predicate_dict)
-            end
+        for pred in mtl.predicates # second process higher level predicates
+            !isa(pred, BasicPredicate) && explore_mtl!(pred, index, config, basic_predicate_dict)
         end
     end
 
     return nothing
 end
 
-#=
 function explore_mtl!(
-    mtl::MTLPredicate{Globally, Relative, And, N},
+    mtl::MTLPredicate{Globally, Absolute, Or, N},
+    index::Integer,
     config::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:UnitRange}},
     basic_predicate_dict::Dict{BasicPredicate, Int64}
 ) where {N<:Predicate}
+    config[index] = (config[index][1], intersect(config[index][2], mtl.interval))
+    if !isempty(config[index][2])
+        lenconfig = length(config)
+        for i in length(mtl.predicates)-1 # original one can be used continuously
+            push!(config, deepcopy(config[index]))
+        end
+        original_one_used = false
+        counter = 0
+        ind = 0
+        for pred in mtl.predicates
+            if isa(pred, BasicPredicate)
+                if original_one_used
+                    counter += 1
+                    ind = lenconfig + counter
+                else
+                    original_one_used = true
+                    ind = index
+                end
+
+                explore_mtl!(pred, ind, config, basic_predicate_dict)
+            end
+        end
+        for pred in mtl.predicates
+            if !isa(pred, BasicPredicate)
+                if original_one_used
+                    counter += 1
+                    ind = lenconfig + counter
+                else
+                    original_one_used = true
+                    ind = index
+                end
+
+                explore_mtl!(pred, ind, config, basic_predicate_dict)
+            end
+        end
+    end # TODO how to handle else? just no additional constraints? 
+
+    # TODO additional admissable combinations of pred1 ∨ pred2 are, when pred1 and pred2 alternte over time
+
     return nothing
 end
-=#
+
+function explore_mtl!(
+    mtl::MTLPredicate{Globally, Relative, And, N},
+    index::Integer,
+    config::AbstractVector{<:Tuple{<:AbstractMatrix{<:Integer}, <:UnitRange}},
+    basic_predicate_dict::Dict{BasicPredicate, Int64}
+) where {N<:Predicate}
+    lenupper = length(config[index][])
+
+end
 
 function Base.isless(mat1::Matrix, mat2::Matrix)
     @assert size(mat1) == size(mat2)
