@@ -135,21 +135,28 @@ ls = corner_cutting(ls, 1)
 plot(hcat(ls...)'[:,1], hcat(ls...)'[:,2])
 
 ### MTL
+using ScenarioSynthesis
+
 pred1 = OnLanelet(1, Set([143]))
 pred2 = OnConflictSection(1, 75)
 pred3 = BehindActor(1, 2)
 pred4 = SlowerActor(1, 2)
 
-testmtl = MTLPredicate(Globally, Or, UnitRange(1,10), [
-    MTLPredicate(Globally, And, UnitRange(1,5), [
-            pred1, 
-            pred2
-        ]),
-    MTLPredicate(Once, And, UnitRange(1, 3), [
-        pred3
+mtl = MTLPredicate(
+    Globally, 
+    Absolute, 
+    And, 
+    UnitRange(1, 4), [
+        MTLPredicate(
+            Globally,
+            Relative,
+            And,
+            UnitRange(2, 7), [
+                pred1,
+                pred2
+            ]
+        ), 
+        pred3,
     ])
-])
 
-Not(pred1)
-
-spec_graph = mtl2graph()
+result = mtl2config(mtl, 10)

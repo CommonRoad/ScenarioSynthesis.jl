@@ -7,15 +7,15 @@ using Test
     pred3 = BehindActor(1, 2)
     pred4 = SlowerActor(1, 2)
 
-    testmtl = MTLPredicate(Globally, Or, UnitRange(1,10), [
-        MTLPredicate(Globally, And, UnitRange(1,5), [
-            MTLPredicate(Globally, And, UnitRange(2, 5), [
+    testmtl = MTLPredicate(Globally, Absolute, Or, UnitRange(1,10), [
+        MTLPredicate(Globally, Absolute, And, UnitRange(1,5), [
+            MTLPredicate(Globally, Absolute, And, UnitRange(2, 5), [
                     pred1, 
                     pred2
                 ]),
                 pred3
             ]),
-        MTLPredicate(Once, And, UnitRange(1, 3), [
+        MTLPredicate(Once, Relative, And, UnitRange(1, 3), [
             pred4
         ])
     ])

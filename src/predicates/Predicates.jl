@@ -11,7 +11,7 @@ end
 =#
 
 include("metric_temporal_logic.jl")
-export Predicate, BasicPredicate, MTLPredicate, LogicOperator, And, Or, Not, Implies, TimeOperator, Once, Future, Globally, Previously, Interval
+export Predicate, BasicPredicate, MTLPredicate, LogicOperator, And, Or, Not, Implies, TimeOperator, Once, Future, Globally, Previously, Interval, mtl2config, explore_mtl!, jump_to_next_basic_predicate!, simplify!, Relative, Absolute
 
 include("bounds.jl")
 export Bounds, apply_bounds!
