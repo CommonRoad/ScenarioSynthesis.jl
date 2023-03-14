@@ -62,7 +62,10 @@ function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real; 
                     # isapprox(a_vel, a_pos; atol=1e-2, rtol=1e-2) || @warn "a_vel: $a_vel, a_pos: $a_pos"
                     if (actor.a_lb ≤ a_vel/relax ≤ actor.a_ub) && (actor.a_lb ≤ a_pos/relax ≤ actor.a_ub)
                         a_max_sq = max(a_vel^2, a_pos^2)
-                        temp_cost = prev_cost + a_max_sq
+                        add_cost = a_max_sq # a_max_sq # + 2.0 * max(0.0, (20.0-vel)^2) 
+                        add_cost = max(add_cost, 0.0)
+                        temp_cost = prev_cost + add_cost
+                        temp_cost = max(temp_cost, 0.0)
                         search_state = SearchState(prev_state.k+1, counter)
                         if !haskey(cost_dict, search_state) || temp_cost < cost_dict[search_state]
                             state_dict[search_state] = temp_state

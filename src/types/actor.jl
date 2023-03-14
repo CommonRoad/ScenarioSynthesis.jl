@@ -26,7 +26,7 @@ struct Actor # TODO add type as label or element? or skip? or bool VRU?
     )
         @assert len > 0
         @assert wid > 0
-        @assert v_lb ≤ 0 # backward
+        #@assert v_lb ≤ 0 # backward
         @assert v_ub > 0 # forward
         @assert a_lb < 0 # breaking 
         @assert a_ub > 0 # accelerating

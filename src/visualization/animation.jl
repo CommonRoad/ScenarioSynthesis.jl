@@ -10,7 +10,7 @@ function animate_scenario(
     playback_speed::Real=1.0
 ) # TODO where to store Δt?
     Plots.gr()
-    size = (2000, 1400)
+    size = (600, 400)
     plt_ln = plot_lanelet_network(ln; size=size)
 
     total_duration = Δt * (k_max-1)

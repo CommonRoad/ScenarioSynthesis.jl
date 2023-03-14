@@ -17,9 +17,12 @@ include("bounds.jl")
 export Bounds, apply_bounds!
 
 include("predicates_static.jl")
-export OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits
+export StaticPredicate, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits
 
 include("predicates_dynamic.jl")
-export BehindActor, SlowerActor
+export DynamicPredicate, BehindActor, InFrontOfActor, SlowerActor, FasterActor
+
+include("type_ranking.jl")
+export type_ranking
 
 include("higher_level_predicates.jl")
