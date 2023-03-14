@@ -17,7 +17,7 @@ const Trajectory = Vector{State}
     return product(itr_pos, itr_vel) 
 end
 
-function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real)
+function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real; relax::Real=1.0)
     trajectories = Dict{ActorID, Trajectory}()
     for (actor_id, actor) in actors.actors
         @assert length(actor.states) ≥ k_max # TODO == ? required to be backwards propagated? 
@@ -27,7 +27,6 @@ function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real)
         prev_state_dict = Dict{SearchState, SearchState}()
         cost_dict = Dict{SearchState, CostType}()
         queue = PriorityQueue{SearchState, CostType}()
-        relax = 2.0
 
         # initial state
         counter = 0
@@ -54,12 +53,13 @@ function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real)
             end
 
             counter = 0
-            for (pos, vel) in sampling_states(actor.states[prev_state.k+1], 10, 10)
+            for (pos, vel) in sampling_states(actor.states[prev_state.k+1], 20, 20)
                 counter += 1
                 temp_state = State(pos, vel)
                 if is_within(temp_state, actor.states[prev_state.k+1])
                     a_vel = (temp_state.vel - state_dict[prev_state].vel) / Δt
                     a_pos = (temp_state.pos - state_dict[prev_state].pos - state_dict[prev_state].vel * Δt) * 2 / Δt^2
+                    # isapprox(a_vel, a_pos; atol=1e-2, rtol=1e-2) || @warn "a_vel: $a_vel, a_pos: $a_pos"
                     if (actor.a_lb ≤ a_vel/relax ≤ actor.a_ub) && (actor.a_lb ≤ a_pos/relax ≤ actor.a_ub)
                         a_max_sq = max(a_vel^2, a_pos^2)
                         temp_cost = prev_cost + a_max_sq

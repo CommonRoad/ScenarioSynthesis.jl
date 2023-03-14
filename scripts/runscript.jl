@@ -10,8 +10,11 @@ using Plots; plotly()
 
 ### load LaneletNetwork
 ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
+#ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
+#ln = ln_from_xml("example_files/ZAM_Tjunction-1_55_T-1.xml");
 process!(ln)
 plot_lanelet_network(ln; annotate_id=true)
+
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
 ### define Actors
@@ -35,29 +38,37 @@ cs2 = ConvexSet([
     State(100, 15),
 ])
 
+cs3 = ConvexSet([
+    State(40, 10),
+    State(50, 10),
+    State(50, 12),
+    State(40, 12),
+])
+
 actor1 = Actor(route1, cs1; a_lb = -2.0, v_lb = 0.0);
 actor2 = Actor(route2, cs2; a_lb = -1.0, v_lb = 0.0);
-# actor3 = Actor(route3, cs);
+actor3 = Actor(route3, cs3; a_lb = -2.0, v_lb = 0.0);
 # actor4 = Actor(route4, cs);
  
 #actors = ActorsDict([actor1, actor2, actor3, actor4], ln);
-actors = ActorsDict([actor1, actor2], ln);
+actors = ActorsDict([actor1, actor2, actor3], ln);
 
-actors.offset
+actors.offset # TODO why no offset for actors 1 & 3??
 
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate functions? 
 
 ### define formal specifications
 Δt = 0.2
-k_max = 21 # → scene duration: Δt * (k_max - 1) = 4 sec
+k_max = 26 # → scene duration: Δt * (k_max - 1) = 4 sec
 
 empty_set = Set{Predicate}()
 pred1 = BehindActor(2, 1)
 pred2 = OnLanelet(1, Set([143]))
 pred3 = SlowerActor(1, 2)
-pred4 = VelocityLimits(1); pred5 = VelocityLimits(2)
+pred4 = VelocityLimits(1); pred5 = VelocityLimits(2); pred6 = VelocityLimits(3)
+pred7 = BehindActor(3, 2)
 
-ψ = 0.90
+ψ = 0.95
 
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
@@ -65,6 +76,8 @@ for i=1:k_max
     push!(spec[i], pred1)
     push!(spec[i], pred4)
     push!(spec[i], pred5)
+    push!(spec[i], pred6)
+    push!(spec[i], pred7)
 end
 for i=8:12
     push!(spec[i], pred2)
@@ -113,14 +126,16 @@ end
 # plot
 plot();
 for i=1:k_max
-    plot!(actor1.states[i]); plot!(actor2.states[i] + State(actors.offset[2, 1], 0))
+    plot!(actor2.states[i]); plot!(actor1.states[i] + State(actors.offset[1, 2], 0)); plot!(actor3.states[i] + State(actors.offset[3, 2], 0))
 end
 plot!(; xlabel = "s", ylabel = "v")
 
-traj = synthesize_trajectories(actors, k_max, Δt)
+traj = synthesize_trajectories(actors, k_max, Δt; relax=1.3)
 
-plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:])
-plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:])
+plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
+plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
+plot!(hcat(traj[3]...)[1,:], hcat(traj[3]...)[2,:]); @warn "not offset-corrected"
+plot!(; xlabel = "s", ylabel = "v")
 
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
 

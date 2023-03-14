@@ -226,7 +226,7 @@ function process!(ln::LaneletNetwork)
                     union!(ln.lanelets[in_str].intersecting_with, intersection.incomings[incoming.right_neighbor].succLeft)
                 end
                 for in_left in incoming.succLeft
-                    union!(ln.lanelets[in_left].intersecting_with, intersection.incomings[incoming.right_neighbor].succLeft)
+                    union!(ln.lanelets[in_left].intersecting_with, intersection.incomings[incoming.right_neighbor].succLeft) # TODO throws error when used with 3-way intersection? 
                 end
             end
             left_neighbor, has_left_neighbor = left_neighbor_func(k, intersection)
