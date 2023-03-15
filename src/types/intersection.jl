@@ -6,7 +6,7 @@ struct Incoming
     succRight::Set{LaneletID}
     succStraight::Set{LaneletID}
     succLeft::Set{LaneletID}
-    right_neighbor::LaneletID
+    right_neighbor::IncomingID
     has_right_neighbor::Bool
 end
 

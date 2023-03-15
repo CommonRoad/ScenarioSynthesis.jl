@@ -1713,7 +1713,7 @@
       <incomingLanelet ref="50201"/>
       <successorsRight ref="50215"/>
       <successorsStraight ref="50213"/>
-      <isLeftOf ref="50203"/>
+      <isLeftOf ref="50232"/>
     </incoming>
     <incoming id="50231">
       <incomingLanelet ref="50195"/>
@@ -1724,7 +1724,7 @@
       <incomingLanelet ref="50205"/>
       <successorsRight ref="50207"/>
       <successorsLeft ref="50217"/>
-      <isLeftOf ref="50197"/>
+      <isLeftOf ref="50231"/>
     </incoming>
   </intersection>
   <dynamicObstacle id="1">

@@ -186,14 +186,14 @@ function Incoming(incom::XMLElement)
     succStraight = Set(parse.(LaneletID, attribute.(incom["successorsStraight"], "ref")))
     succLeft = Set(parse.(LaneletID, attribute.(incom["successorsLeft"], "ref")))
     is_left_of = -1
-    has_left_neighbor = false
+    is_left_neighbor = false
     length(incom["isLeftOf"]) == 0 || length(incom["isLeftOf"]) == 1 || throw(error("wrong size. failure in imported xml file."))
     if length(incom["isLeftOf"]) == 1
         is_left_of = parse.(IncomingID, attribute.(incom["isLeftOf"], "ref"))[1]
-        has_left_neighbor = true
+        is_left_neighbor = true
     end
     
-    return Incoming(incomingLanelets, succRight, succStraight, succLeft, is_left_of, has_left_neighbor)
+    return Incoming(incomingLanelets, succRight, succStraight, succLeft, is_left_of, is_left_neighbor)
 end
 
 function process!(ln::LaneletNetwork)

@@ -11,8 +11,8 @@ using BenchmarkTools
 
 ### load LaneletNetwork
 #ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
-#ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
-ln = ln_from_xml("example_files/ZAM_Tjunction-edit.xml");
+ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
+#ln = ln_from_xml("example_files/ZAM_Tjunction-1_55_T-1.xml");
 process!(ln)
 plot_lanelet_network(ln; annotate_id=true)
 
@@ -157,41 +157,3 @@ plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]); @warn "not offset-corrected
 plot!(; xlabel = "s", ylabel = "v")
 
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
-
-
-### corner cutting # TODO move to tests
-using BenchmarkTools
-using Plots
-ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
-@benchmark corner_cutting($ls, 1)
-
-ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
-ls = corner_cutting(ls, 1)
-plot(hcat(ls...)'[:,1], hcat(ls...)'[:,2])
-
-### MTL
-using ScenarioSynthesis
-
-pred1 = OnLanelet(1, Set([143]))
-pred2 = OnConflictSection(1, 75)
-pred3 = BehindActor(1, 2)
-pred4 = SlowerActor(1, 2)
-
-mtl = MTLPredicate(
-    Globally, 
-    Absolute, 
-    And, 
-    UnitRange(1, 4), [
-        MTLPredicate(
-            Globally,
-            Relative,
-            And,
-            UnitRange(2, 7), [
-                pred1,
-                pred2
-            ]
-        ), 
-        pred3,
-    ])
-
-result = mtl2config(mtl, 10)
