@@ -27,8 +27,8 @@ function apply_predicate!(
         s_other_max = max(s_other_max, vert[1])
     end
     
-    s_other_min += actors.offset[(predicate.actor_ego, predicate.actor_other)]
-    s_other_max += actors.offset[(predicate.actor_ego, predicate.actor_other)]
+    s_other_min += actors.offset[predicate.actor_other, predicate.actor_ego]
+    s_other_max += actors.offset[predicate.actor_other, predicate.actor_ego]
 
     s_ego_max < s_other_min && return nothing # no collision at all
     s_ego_max = min(s_ego_max, s_other_max)
@@ -37,7 +37,7 @@ function apply_predicate!(
     centr = (1-ψ) * s_ego_max + ψ * s_other_min
 
     s_ego_ub = centr - actor_ego.lenwid[1] / 2 - actor_other.lenwid[1] / 2
-    s_other_lb = centr + actors.offset[(predicate.actor_ego, predicate.actor_other)] + actor_ego.lenwid[1] / 2 + actor_other.lenwid[1] / 2
+    s_other_lb = centr + actors.offset[predicate.actor_ego, predicate.actor_other] + actor_ego.lenwid[1] / 2 + actor_other.lenwid[1] / 2
 
     bounds_ego = Bounds(-Inf, s_ego_ub, -Inf, Inf)
     bounds_other = Bounds(s_other_lb, Inf, -Inf, Inf)

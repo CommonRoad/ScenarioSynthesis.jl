@@ -144,15 +144,24 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
             left_bottom_ind = i
         end
     end 
-    left_bottom = deepcopy(output_set[left_bottom_ind])
-
+    left_bottom = output_set[left_bottom_ind] # deepcopy necessary? 
+    
     # switch left_bottom to beginning of output_set
     output_set[1], output_set[left_bottom_ind] = output_set[left_bottom_ind], output_set[1]
+
+    i=2
+    while i < length(output_set) # remove duplicate points (which are almost identical to the left bottom point)
+        if norm(output_set[i]-left_bottom) ≤ 1e-3 
+            deleteat!(output_set, i)
+        else
+            i += 1 
+        end
+    end
 
     partialsort!(output_set, 2:length(output_set), by = st -> (st[2]-left_bottom[2])/(st[1]-left_bottom[1]), rev=false)
 
     i = 1
-    while i < length(output_set)
+    while i < length(output_set) # remove duplicate points (which are almost identical)
         if norm(output_set[i+1]-output_set[i]) < 1e-3
             deleteat!(output_set, i+1)
         else
