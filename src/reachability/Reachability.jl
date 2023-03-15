@@ -1,5 +1,5 @@
 include("convex_set.jl")
-export ConvexSet, State, is_counterclockwise_convex, area, centroid
+export ConvexSet, State, is_counterclockwise_convex, area, centroid, centroid_and_direction
 
 include("propagate.jl")
 export propagate, propagate!, propagate_backward, propagate_backward!

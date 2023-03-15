@@ -1,6 +1,7 @@
 using ScenarioSynthesis
 using StaticArrays
 using Plots; plotly()
+using BenchmarkTools
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
@@ -51,7 +52,7 @@ cs4 = ConvexSet([
     State(40, 24),
 ])
 
-actor1 = Actor(route1, cs1; a_lb = -7.0, v_lb = 0.0);
+actor1 = Actor(route1, cs1; a_lb = -4.0, v_lb = 0.0);
 actor2 = Actor(route2, cs2; a_lb = -2.0, v_lb = 0.0);
 actor3 = Actor(route3, cs3; a_lb = -2.0, v_lb = 0.0);
 actor4 = Actor(route4, cs4; a_lb = -2.0, v_lb = 10.0);
@@ -68,13 +69,13 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate function
 k_max = 35 # → scene duration: Δt * (k_max - 1) = 4 sec
 
 empty_set = Set{Predicate}()
-pred1 = VelocityLimits(1); pred2 = VelocityLimits(2); pred3 = VelocityLimits(3); pred4 = VelocityLimits(4); pred5a = BehindActor(4, 3); pred5b = InFrontOfActor(3, 4)
-pred6a = BehindActor(2, 1); pred6b = InFrontOfActor(1, 2);
-pred7a = BehindActor(3, 2); pred7b = InFrontOfActor(2, 3); pred8a = BehindActor(1, 3); pred8b = InFrontOfActor(3, 1); pred9a = BehindActor(4, 1); pred9b = InFrontOfActor(1, 4)
-pred10 = OnLanelet(1, Set([28, 24]));
-pred11a = FasterActor(4, 2); pred11b = SlowerActor(2, 4);
+pred1 = VelocityLimits(1); pred2 = VelocityLimits(2); pred3 = VelocityLimits(3); pred4 = VelocityLimits(4); pred5 = BehindActor(4, 3);
+pred6 = BehindActor(2, 1);
+pred7 = BehindActor(3, 2); pred8 = BehindActor(1, 3); pred9 = BehindActor(4, 1);
+pred10 = OnLanelet(1, Set([24]));
+pred11 = SlowerActor(2, 4);
 
-ψ = 0.6
+ψ = 0.5
 
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
@@ -83,27 +84,19 @@ for i=1:k_max
     push!(spec[i], pred2)
     push!(spec[i], pred3)
     push!(spec[i], pred4)
-    push!(spec[i], pred5a)
-    push!(spec[i], pred5b)
+    push!(spec[i], pred5)
 end
 for i=1:5
-    push!(spec[i], pred6a)
-    push!(spec[i], pred6b)
+    push!(spec[i], pred6)
 end
 for i=k_max-10:k_max
-    push!(spec[i], pred7a)
-    push!(spec[i], pred7b)
-    push!(spec[i], pred8a)
-    push!(spec[i], pred8b)
-    push!(spec[i], pred9a)
-    push!(spec[i], pred9b)
+    push!(spec[i], pred7)
+    push!(spec[i], pred8)
+    push!(spec[i], pred9)
 end
 for i=k_max-5:k_max
     push!(spec[i], pred10)
-    push!(spec[i], pred11a)
-    push!(spec[i], pred11b)
-    #push!(spec[i], pred12a)
-    #push!(spec[i], pred12b)
+    push!(spec[i], pred11)
 end
 
 for i = 1:k_max
@@ -111,8 +104,9 @@ for i = 1:k_max
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
         @info pred
-        bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
-        apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
+        apply_predicate!(pred, actors, i, ψ)
+        #bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
+        #apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
     end
 
     # propagate convex set to get next time step

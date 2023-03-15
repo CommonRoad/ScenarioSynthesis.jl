@@ -74,8 +74,40 @@ function centroid(cs::ConvexSet)
     for i=2:length(cs.vertices)-1
         centroid_temp = (cs.vertices[i+1] + cs.vertices[i] + cs.vertices[1]) / 3
         area_twice_temp = cross(cs.vertices[i] - cs.vertices[1], cs.vertices[i+1] - cs.vertices[1])
-        centroid = (centroid * area_twice + centroid_temp * area_twice_temp) /(area_twice + area_twice_temp)
+        centroid = (centroid * area_twice + centroid_temp * area_twice_temp) / (area_twice + area_twice_temp)
         area_twice += area_twice_temp
     end
     return centroid # also return area? 
+end
+
+function centroid_and_direction(cs::ConvexSet) # returns main axis of intertia ("Hauptflächenträgheitsmoment") -- this can be unsafe, as two actors an be at the same position at the same time (just with different velocities)
+    centr = centroid(cs)
+    Iyy = 0.0
+    Izz = 0.0
+    Iyz = 0.0
+
+    # init with step i=n
+    dir = cs.vertices[end] - centr
+    dir_next = cs.vertices[1] - centr
+    a = dir[1] * dir_next[2] - dir_next[1] * dir[2]
+    Iyy += (dir[2]^2 + dir[2]*dir_next[2] + dir_next[2]^2) * a
+    Izz += (dir[1]^2 + dir[1]*dir_next[1] + dir_next[1]^2) * a
+    Iyz += (dir[1]*dir_next[2] + 2*dir[1]*dir[2] + 2*dir_next[1]*dir_next[2] + dir_next[1]*dir[2]) * a
+
+    # iterate
+    for i=1:length(cs.vertices)-1
+        dir = cs.vertices[i] - centr
+        dir_next = cs.vertices[i+1] - centr
+        a = dir[1] * dir_next[2] - dir_next[1] * dir[2]
+        Iyy += (dir[2]^2 + dir[2]*dir_next[2] + dir_next[2]^2) * a
+        Izz += (dir[1]^2 + dir[1]*dir_next[1] + dir_next[1]^2) * a
+        Iyz += (dir[1]*dir_next[2] + 2*dir[1]*dir[2] + 2*dir_next[1]*dir_next[2] + dir_next[1]*dir[2]) * a
+    end
+
+    Iyy /= 12
+    Izz /= 12
+    Iyz /= -24
+
+    ϕ = atan(-2 * Iyz, (Iyy - Izz)) / 2
+    return centr, ϕ # *180/π
 end

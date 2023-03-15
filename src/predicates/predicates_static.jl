@@ -1,5 +1,16 @@
 abstract type StaticPredicate <: BasicPredicate end
 
+function apply_predicate!(
+    predicate::StaticPredicate, 
+    actors::ActorsDict, 
+    k::TimeStep,
+    unnecessary...
+)
+    bounds = Bounds(predicate, actors)
+    apply_bounds!(actors.actors[predicate.actor_ego].states[k], bounds)
+    return nothing
+end
+
 struct OnLanelet <: StaticPredicate
     actor_ego::ActorID
     lanelet::Set{LaneletID} # Lanelet IDs must be sequential -- TODO add specific constructor? 
