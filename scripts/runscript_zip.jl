@@ -1,7 +1,6 @@
 using ScenarioSynthesis
 using StaticArrays
 using Plots; plotly()
-using BenchmarkTools
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
@@ -116,6 +115,19 @@ for i = 1:k_max
     end
 end
 
+actor_id = 3
+actor = actors.actors[actor_id];
+plot(actor.states[2])
+for i in reverse(5:k_max-1)
+    @info actor_id, i
+    backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
+    intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
+    actor.states[i] = intersect
+end
+i = 1
+backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
+intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
+actor.states[i] = intersect
 #=
 if !@isdefined actor1_states_copy
     actor1_states_copy = deepcopy(actor1.states)
@@ -132,6 +144,7 @@ end
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
+        @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
         intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
@@ -148,7 +161,7 @@ for i=1:10:length(actor1.states)
 end
 plot!(; xlabel = "s", ylabel = "v")
 
-traj = synthesize_trajectories(actors, k_max, Δt; relax=3.0)
+traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
 
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);

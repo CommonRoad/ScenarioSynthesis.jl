@@ -30,8 +30,13 @@ function upper_lim!(cs::ConvexSet, dir::Integer, lim::Real)
             end
         end
     end
+    
+    fix_convex_polygon!(input_set)
+    
+    is_counterclockwise_convex(input_set) || throw(error("input set not counterclockwise convex: $input_set"))
 
     length(input_set) ≥ 2 || throw(error("Less than two states."))
+    
     return nothing
 end
 
@@ -68,7 +73,12 @@ function lower_lim!(cs::ConvexSet, dir::Integer, lim::Real)
         end
     end
 
-    length(input_set) ≥ 2 || throw(error("Less than two states."))
+    # fix_convex_polygon!(input_set)
+    
+    # is_counterclockwise_convex(input_set) || throw(error("input set not counterclockwise convex: $input_set"))
+
+    # length(input_set) ≥ 2 || throw(error("Less than two states."))
+    
     return nothing
 end
 
@@ -91,16 +101,17 @@ end
 end
 
 @inline function is_within(state::State, cs::ConvexSet)
+    cs.is_empty && return false
     lencon = length(cs.vertices)
     rotmat = SMatrix{2, 2, Float64, 4}(0, 1, -1, 0)
     vec_to_next = cs.vertices[1] - cs.vertices[end]
     dotprod = dot(state - cs.vertices[end], rotmat * vec_to_next)
-    dotprod < 0 && return false # < 0 allows state to be on edge; ≤ does not allow state on edge
+    dotprod ≤ 0 && return false # < 0 allows state to be on edge; ≤ does not allow state on edge
 
     @inbounds for i in 1:lencon-1
         vec_to_next = cs.vertices[i+1] - cs.vertices[i]
         dotprod = dot(state - cs.vertices[i], rotmat * vec_to_next)
-        dotprod < 0 && return false
+        dotprod ≤ 0 && return false
     end
     return true
 end
@@ -150,8 +161,8 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
     output_set[1], output_set[left_bottom_ind] = output_set[left_bottom_ind], output_set[1]
 
     i=2
-    while i < length(output_set) # remove duplicate points (which are almost identical to the left bottom point)
-        if norm(output_set[i]-left_bottom) ≤ 1e-3 
+    while i ≤ length(output_set) # remove duplicate points (which are almost identical to the left bottom point)
+        if norm(output_set[i] - left_bottom) ≤ 1e-6 
             deleteat!(output_set, i)
         else
             i += 1 
@@ -160,14 +171,7 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
 
     partialsort!(output_set, 2:length(output_set), by = st -> (st[2]-left_bottom[2])/(st[1]-left_bottom[1]), rev=false)
 
-    i = 1
-    while i < length(output_set) # remove duplicate points (which are almost identical)
-        if norm(output_set[i+1]-output_set[i]) < 1e-3
-            deleteat!(output_set, i+1)
-        else
-            i += 1
-        end
-    end
-    
-    return ConvexSet(output_set, false)
+    fix_convex_polygon!(output_set)
+
+    return ConvexSet(output_set)
 end

@@ -1,7 +1,6 @@
 using ScenarioSynthesis
 using StaticArrays
 using Plots; plotly()
-using BenchmarkTools
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
@@ -13,65 +12,65 @@ using BenchmarkTools
 #ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
 #ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
 ln = ln_from_xml("example_files/ZAM_Tjunction-edit.xml");
-process!(ln)
-plot_lanelet_network(ln; annotate_id=true)
+process!(ln);
+plot_lanelet_network(ln; annotate_id=true);
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
 ### define Actors
-route1 = Route(LaneletID.([50195, 50209, 50203]), ln, lenwid); plot_route(route1)
-route2 = Route(LaneletID.([50201, 50213, 50197]), ln, lenwid); plot_route(route2)
-route3 = Route(LaneletID.([50205, 50217, 50199]), ln, lenwid); plot_route(route3)
+route1 = Route(LaneletID.([50195, 50209, 50203]), ln, lenwid); plot_route(route1);
+route2 = Route(LaneletID.([50201, 50213, 50197]), ln, lenwid); plot_route(route2);
+route3 = Route(LaneletID.([50205, 50217, 50199]), ln, lenwid); plot_route(route3);
 
 
 cs1 = ConvexSet([
-    State(120, 12),
     State(130, 12),
+    State(140, 12),
+    State(140, 14),
     State(130, 14),
-    State(120, 14),
 ])
 
 cs2 = ConvexSet([
-    State(110, 12),
-    State(120, 12),
-    State(120, 14),
-    State(110, 14),
+    State(80, 12),
+    State(90, 12),
+    State(90, 14),
+    State(80, 14),
 ])
 
 cs3 = ConvexSet([
-    State(20, 12),
-    State(60, 12),
-    State(60, 14),
-    State(20, 14),
+    State(40, 12),
+    State(50, 12),
+    State(50, 14),
+    State(40, 14),
 ])
 
 cs4 = ConvexSet([
-    State(25, 12),
-    State(40, 12),
-    State(40, 14),
-    State(25, 14),
+    State(10, 12),
+    State(20, 12),
+    State(20, 14),
+    State(10, 14),
 ])
 
 cs5 = ConvexSet([
-    State(140, 12),
-    State(150, 12),
-    State(150, 14),
-    State(140, 14),
-])
-
-cs6 = ConvexSet([
     State(120, 12),
     State(130, 12),
     State(130, 14),
     State(120, 14),
 ])
 
-actor1 = Actor(route1, cs1; a_lb = -4.0, v_lb = 0.0);
-actor2 = Actor(route1, cs2; a_lb = -4.0, v_lb = 0.0);
-actor3 = Actor(route2, cs3; a_lb = -4.0, v_lb = 0.0);
-actor4 = Actor(route2, cs4; a_lb = -4.0, v_lb = 0.0);
-actor5 = Actor(route3, cs5; a_lb = -4.0, v_lb = 0.0);
-actor6 = Actor(route3, cs6; a_lb = -4.0, v_lb = 0.0);
+cs6 = ConvexSet([
+    State(100, 12),
+    State(110, 12),
+    State(110, 14),
+    State(100, 14),
+])
+
+actor1 = Actor(route1, cs1; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
+actor2 = Actor(route1, cs2; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
+actor3 = Actor(route2, cs3; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
+actor4 = Actor(route2, cs4; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
+actor5 = Actor(route3, cs5; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
+actor6 = Actor(route3, cs6; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
  
 actors = ActorsDict([actor1, actor2, actor3, actor4, actor5, actor6], ln);
 
@@ -87,12 +86,12 @@ empty_set = Set{Predicate}()
 
 ψ = 0.5
 
-spec = Vector{Set{Predicate}}(undef, k_max)
+spec = Vector{Set{Predicate}}(undef, k_max);
 for i=1:k_max
     spec[i] = copy(empty_set)
-    push!(spec[i], BehindActor(2, 1))
-    push!(spec[i], BehindActor(4, 3))
-    push!(spec[i], BehindActor(6, 5))
+    #push!(spec[i], BehindActor(2, 1))
+    #push!(spec[i], BehindActor(4, 3))
+    #push!(spec[i], BehindActor(6, 5))
     push!(spec[i], VelocityLimits(1))
     push!(spec[i], VelocityLimits(1))
     push!(spec[i], VelocityLimits(2))
@@ -100,21 +99,41 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(4))
     push!(spec[i], VelocityLimits(5))
     push!(spec[i], VelocityLimits(6))
-    push!(spec[i], SlowerActor(1, 2))
-    push!(spec[i], SlowerActor(3, 4))
-    push!(spec[i], SlowerActor(5, 6))
-    #push!(spec[i], BehindActor(3, 1))
-    #push!(spec[i], BehindActor(5, 3))
 end
 
-push!(spec[15], BehindConflictSection(1, 1))
-push!(spec[15], BeforeConflictSection(2, 2))
-push!(spec[15], BeforeConflictSection(3, 9))
-push!(spec[15], BeforeConflictSection(5, 6))
+push!(spec[10], BehindConflictSection(1, 1));
+push!(spec[10], BeforeConflictSection(2, 2));
+push!(spec[10], BeforeConflictSection(3, 9));
+push!(spec[10], BeforeConflictSection(5, 6));
 
-push!(spec[35], BehindConflictSection(3, 8))
-push!(spec[35], BeforeConflictSection(2, 2))
-push!(spec[35], BeforeConflictSection(5, 6))
+push!(spec[16], BehindConflictSection(3, 8));
+push!(spec[16], BeforeConflictSection(4, 9));
+push!(spec[16], BeforeConflictSection(2, 2));
+push!(spec[16], BeforeConflictSection(5, 6));
+
+push!(spec[22], BehindConflictSection(5, 5));
+push!(spec[22], BeforeConflictSection(6, 6));
+push!(spec[22], BeforeConflictSection(2, 2));
+push!(spec[22], BeforeConflictSection(4, 9));
+
+push!(spec[28], BehindConflictSection(2, 1));
+push!(spec[28], BeforeConflictSection(4, 9));
+push!(spec[28], BeforeConflictSection(6, 6));
+
+push!(spec[34], BehindConflictSection(4, 8));
+push!(spec[34], BeforeConflictSection(6, 6));
+
+push!(spec[34], SlowerActor(1, 2));
+push!(spec[34], SlowerActor(3, 4));
+push!(spec[34], SlowerActor(5, 6));
+
+push!(spec[34], BehindActor(2, 1));
+push!(spec[34], BehindActor(4, 3));
+push!(spec[34], BehindActor(6, 5));
+
+#push!(spec[35], SlowerActor(1, 2))
+#push!(spec[35], SlowerActor(3, 4))
+#push!(spec[35], SlowerActor(5, 6))
 
 for i = 1:k_max
     @info i
@@ -122,8 +141,6 @@ for i = 1:k_max
     for pred in sort([spec[i]...], lt=type_ranking)
         @info pred
         apply_predicate!(pred, actors, i, ψ)
-        #bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
-        #apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
     end
 
     # propagate convex set to get next time step
@@ -150,6 +167,7 @@ end
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
+        @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
         intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
@@ -168,7 +186,7 @@ for i=1:10:length(actor1.states)
 end
 plot!(; xlabel = "s", ylabel = "v")
 
-traj = synthesize_trajectories(actors, k_max, Δt; relax=3.0)
+traj = synthesize_trajectories(actors, k_max, Δt; relax=200.0)
 
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);

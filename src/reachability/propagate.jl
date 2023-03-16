@@ -51,7 +51,9 @@ function propagate(
         counter += 1
     end
 
-    return ConvexSet(output_set, false, false)
+    fix_convex_polygon!(output_set)
+
+    return ConvexSet(output_set)
 end
 
 function propagate!( # more readable implementation in previous commit -- this one is optimized for few allocations
@@ -113,6 +115,10 @@ function propagate!( # more readable implementation in previous commit -- this o
         i==1 ? first_correction = previous_correction : nothing
     end
 
+    fix_convex_polygon!(output_set)
+
+    is_counterclockwise_convex(output_set) || throw(error("output set not counterclockwise convex: $output_set"))
+
     return nothing
 end
 
@@ -166,7 +172,9 @@ function propagate_backward(
         output_set[i] = fundamental_matrix_inv * output_set[i]
     end
 
-    return ConvexSet(output_set, false, false)
+    fix_convex_polygon!(output_set)
+
+    return ConvexSet(output_set)
 end
 
 function propagate_backward!(
@@ -227,6 +235,10 @@ function propagate_backward!(
     @inbounds for i in eachindex(output_set)
         output_set[i] = fundamental_matrix_inv * output_set[i]
     end
+
+    fix_convex_polygon!(output_set)
+
+    is_counterclockwise_convex(output_set) || throw(error("output set not counterclockwise convex: $output_set"))
 
     return nothing
 end

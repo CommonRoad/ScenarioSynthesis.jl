@@ -34,7 +34,7 @@ function is_counterclockwise_convex(vertices::Union{Vector{SVector{2, Float64}},
     @inbounds for i in 1:lenvert-1
         vec_to_next = vertices[i+1] - vertices[i] 
         @inbounds for j = i+2:lenvert
-            dot(rotmat * vec_to_next, vertices[j] - vertices[i]) < 0 && return false # ≤ 0 would mean, that vertices cannot lay on a straight line
+            dot(rotmat * vec_to_next, vertices[j] - vertices[i]) < 0 && (@info i,j; return false) # ≤ 0 would mean, that vertices cannot lay on a straight line
         end
     end
     return true
@@ -109,5 +109,51 @@ function centroid_and_direction(cs::ConvexSet) # returns main axis of intertia (
     Iyz /= -24
 
     ϕ = atan(-2 * Iyz, (Iyy - Izz)) / 2
-    return centr, ϕ # *180/π
+    return centr, ϕ
+end
+
+"""
+    fix_convex_polygon
+
+Remove possible numeric problems which might occur after polygon operations.
+"""
+function fix_convex_polygon!(vertices::Vector{T}) where {T<:Union{State, SVector}}
+    i = 1
+    while i ≤ length(vertices) # remove succeeding duplicate points, which are almost identical
+        if norm(cycle(vertices, i+1) - vertices[i]) < 1e-6
+            @info "fixing - succeeding points almost identical"
+            deleteat!(vertices, mod1(i+1, length(vertices)))
+        else
+            i += 1
+        end
+    end
+    
+    i = 1
+    while i ≤ length(vertices) # remove points whose vectors are almost collinear
+        prev = cycle(vertices, i-1)
+        this = vertices[i]
+        next = cycle(vertices, i+1)
+
+        vec_to_this = this-prev
+        vec_to_next = next-this
+
+        vec_to_this_norm = vec_to_this/norm(vec_to_this)
+        vec_to_next_norm = vec_to_next/norm(vec_to_next)
+
+        dotprod = dot(rotate_ccw90(vec_to_this_norm), vec_to_next_norm)
+        dotprod < -1e-6 && throw(error("vertices non-convex. $dotprod"))
+        if dotprod < 1e-6 
+            @info "fixing - dotproduct: $dotprod"
+            deleteat!(vertices, i) # about straight
+        else
+            i+=1 # convex vertices
+        end
+    end
+
+    return nothing
+end
+
+function rotate_ccw90(vec::T) where {T<:Union{State, SVector{2, Float64}}}
+    @assert length(vec) == 2
+    return T(-vec[2], vec[1])
 end
