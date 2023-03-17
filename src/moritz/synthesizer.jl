@@ -92,7 +92,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
         for pred in scene.relations
             if typeof(pred) == OnLanelet
                 lb, ub, _ = scenario.actors.actors[pred.actor_ego].route.lanelet_interval[first(pred.lanelet)] # TODO using first from set causes problems if there are more than one lanelets in the set. -- upgrade!
-                @info pred, lb, ub
+                # @info pred, lb, ub
                 for i=1:N
                     @constraint(model, lb - bigM * (1 - scene_active[i, scene_id]) ≤ state[i, pred.actor_ego, 1])
                     @constraint(model, state[i, pred.actor_ego, 1] ≤ ub + bigM * (1 - scene_active[i, scene_id]))
@@ -101,55 +101,5 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
         end
     end
 
-    #=
-    # determine conflict section occupation
-    conflict_section_table = Matrix{Int64}(undef, n_conlict_sections, 3)
-    cursor = 0
-    for actor_id = 1:n_actors
-        for (cs_id, cs) in scenario.actors.actors[actor_id].route.conflict_sections
-            cursor += 1
-            conflict_section_table[cursor, 1] = cursor
-            conflict_section_table[cursor, 2] = actor_id
-            conflict_section_table[cursor, 3] = cs_id
-
-            for i=1:N+1
-                # @constraint(model, in_cs[i, cursor] ≥ ((state[i, actor_id, 1] - cs[1]) * (cs[2] - state[i, actor_id, 1]) / bigM)) # true for positive values
-            end
-        end
-    end
-    @assert cursor == n_conlict_sections
-
-    # limit conflict section occupation
-    for (cs_id, cs) in scenario.ln.conflict_sections
-        conflicting = findall(x -> x == cs_id, conflict_section_table[:,3])
-        length(conflicting) ≤ 1 && continue
-        # @constraint(model, sum(in_cs[conflicting]) ≤ 1)
-    end
-
-
-    # constraints from predicates (scene specific)
-    for (scene_id, scene) in scenario.scenes.scenes
-        for rel in scene.relations
-            # constraint_id += 1
-            
-            # TODO generalize and organize as function add_constraints!(rel, ...)
-            #=
-            if typeof(rel) == Relation{IsBehind}
-                @info("IsBehind")
-                for i=1:N+1
-                    @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1], state[i, rel.actor2, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
-                end
-            end
-
-            if typeof(rel) == Relation{IsOnLanelet}
-                @info("IsOnLanelet")
-                for i=1:N+1
-                    @constraint(model, robustness(rel, scenario, state[i, rel.actor1, 1]) ≥ bigM * (scene_active[i, scene_id] - 1))
-                end
-            end
-            =#
-        end
-    end
-    =#
     return model
 end

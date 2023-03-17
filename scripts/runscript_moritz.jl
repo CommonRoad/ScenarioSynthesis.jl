@@ -109,14 +109,29 @@ scenes = ScenesDict([
 
 scenario = Scenario(actors, scenes, ln);
 
-optimization_problem = synthesize_optimization_problem(scenario, 0.25)
-
-import JuMP
-
-JuMP.optimize!(optimization_problem)
+using BenchmarkTools
+Δt = 0.25
+optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem)
 
 plot(JuMP.value.(optimization_problem.obj_dict[:scene_active]))
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1]); xlabel="step [1]", ylabel="s [m]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2]); xlabel="step [1]", ylabel="v [m/s]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3]); xlabel="step [1]", ylabel="a [m/s²]")
 
+last_scene_activated_at = findfirst(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[:, end])
+last_scene_duration = findlast(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[last_scene_activated_at:end, end])
+k_max = last_scene_activated_at + last_scene_duration - 1
+
+import ScenarioSynthesis.ActorID
+
+traj = Dict{ActorID, Trajectory}()
+for (actor_id, actor) in actors.actors
+    traj[actor_id] = Trajectory(Vector{State}(undef, k_max))
+    counter = 0
+    for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,actor_id,1:2])[1:k_max,:])
+        counter += 1
+        traj[actor_id][counter] = State(val[1], val[2])
+    end
+end
+
+animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
