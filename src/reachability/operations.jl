@@ -135,14 +135,14 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
             q1 = cs2.vertices[j]
             q2 = cycle(cs2.vertices, j+1)
             λ, μ = intersection_point(p1, p2, q1, q2)
-            if (0 < λ < 1) && (0 < μ < 1) 
+            if (0 < λ ≤ 1) && (0 < μ ≤ 1) 
                 next_state = p1 + λ * (p2 - p1)
                 !in(next_state, output_set) && push!(output_set, next_state)
             end
         end
     end
 
-    length(output_set) < 3 && return ConvexSet(output_set, true, false)
+    length(output_set) < 3 && return ConvexSet(output_set)
 
     # find left-bottom-state
     left = Inf

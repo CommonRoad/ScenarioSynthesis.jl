@@ -19,7 +19,10 @@ struct ConvexSet
     is_empty::Bool
 
     function ConvexSet(vertices::Union{Vector{SVector{2, Float64}}, Vector{State}}, is_empty::Union{Bool, Nothing}=nothing, check_properties::Bool=true)
-        isa(is_empty, Nothing) ? is_empty = length(vertices)==0 : nothing
+        for state in vertices
+            (isnan(state[1]) || isnan(state[2])) && throw(error("NaN not a valid state."))
+        end
+        isa(is_empty, Nothing) ? is_empty = length(vertices)<3 : nothing
         if check_properties && !is_empty
             is_counterclockwise_convex(vertices) || throw(error("Vertices are not counter-clockwise convex. $vertices"))
         end

@@ -80,7 +80,7 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate function
 
 ### define formal specifications
 Δt = 0.25
-k_max = 35 # → scene duration: Δt * (k_max - 1) = 4 sec
+k_max = 41 # → scene duration: Δt * (k_max - 1) = 4 sec
 
 empty_set = Set{Predicate}()
 
@@ -89,9 +89,6 @@ empty_set = Set{Predicate}()
 spec = Vector{Set{Predicate}}(undef, k_max);
 for i=1:k_max
     spec[i] = copy(empty_set)
-    #push!(spec[i], BehindActor(2, 1))
-    #push!(spec[i], BehindActor(4, 3))
-    #push!(spec[i], BehindActor(6, 5))
     push!(spec[i], VelocityLimits(1))
     push!(spec[i], VelocityLimits(1))
     push!(spec[i], VelocityLimits(2))
@@ -123,6 +120,8 @@ push!(spec[28], BeforeConflictSection(6, 6));
 push!(spec[34], BehindConflictSection(4, 8));
 push!(spec[34], BeforeConflictSection(6, 6));
 
+push!(spec[40], BehindConflictSection(6, 7));
+
 push!(spec[34], SlowerActor(1, 2));
 push!(spec[34], SlowerActor(3, 4));
 push!(spec[34], SlowerActor(5, 6));
@@ -130,10 +129,6 @@ push!(spec[34], SlowerActor(5, 6));
 push!(spec[34], BehindActor(2, 1));
 push!(spec[34], BehindActor(4, 3));
 push!(spec[34], BehindActor(6, 5));
-
-#push!(spec[35], SlowerActor(1, 2))
-#push!(spec[35], SlowerActor(3, 4))
-#push!(spec[35], SlowerActor(5, 6))
 
 for i = 1:k_max
     @info i
@@ -165,6 +160,7 @@ end
 =#
 
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
+
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
         @info actor_id, i
@@ -186,7 +182,7 @@ for i=1:10:length(actor1.states)
 end
 plot!(; xlabel = "s", ylabel = "v")
 
-traj = synthesize_trajectories(actors, k_max, Δt; relax=200.0)
+traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
 
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
@@ -199,9 +195,6 @@ plot!(; xlabel = "s", ylabel = "v")
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
 
 
-
-cs = ConvexSet(vertices, false, false)
-plot(cs)
 
 ### corner cutting # TODO move to tests
 using BenchmarkTools

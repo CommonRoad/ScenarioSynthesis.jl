@@ -98,6 +98,10 @@ for i=k_max-5:k_max
     push!(spec[i], pred11)
 end
 
+push!(spec[k_max], SlowerActor(4, 1))
+push!(spec[k_max], SlowerActor(3, 2))
+#push!(spec[k_max], SlowerActor(4, 1))
+
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
@@ -115,19 +119,6 @@ for i = 1:k_max
     end
 end
 
-actor_id = 3
-actor = actors.actors[actor_id];
-plot(actor.states[2])
-for i in reverse(5:k_max-1)
-    @info actor_id, i
-    backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
-    intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
-    actor.states[i] = intersect
-end
-i = 1
-backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
-intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
-actor.states[i] = intersect
 #=
 if !@isdefined actor1_states_copy
     actor1_states_copy = deepcopy(actor1.states)
