@@ -1,7 +1,6 @@
 import DataStructures.PriorityQueue, DataStructures.enqueue!, DataStructures.dequeue_pair!
 import Base.Iterators.product
 import Memoize.@memoize
-import ScenarioSynthesis.ActorID, ScenarioSynthesis.is_within
 
 const CostType = Float64
 
@@ -10,14 +9,16 @@ struct SearchState
     identifier::Int64
 end
 
+const Trajectory = Vector{State}
+
 @memoize function sampling_states(cs::ConvexSet, n_pos::Integer, n_vel::Integer)
     itr_pos = range(min(cs, 1), max(cs, 1), n_pos)
     itr_vel = range(min(cs, 2), max(cs, 2), n_vel)
     return product(itr_pos, itr_vel) 
 end
 
-function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real)
-    trajectories = Dict{ActorID, Vector{State}}()
+function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real; relax::Real=1.0)
+    trajectories = Dict{ActorID, Trajectory}()
     for (actor_id, actor) in actors.actors
         @assert length(actor.states) ≥ k_max # TODO == ? required to be backwards propagated? 
 
@@ -52,15 +53,19 @@ function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real)
             end
 
             counter = 0
-            for (pos, vel) in sampling_states(actor.states[prev_state.k+1], 10, 10)
+            for (pos, vel) in sampling_states(actor.states[prev_state.k+1], 20, 20)
                 counter += 1
                 temp_state = State(pos, vel)
                 if is_within(temp_state, actor.states[prev_state.k+1])
                     a_vel = (temp_state.vel - state_dict[prev_state].vel) / Δt
                     a_pos = (temp_state.pos - state_dict[prev_state].pos - state_dict[prev_state].vel * Δt) * 2 / Δt^2
-                    if (actor.a_lb ≤ a_vel/10 ≤ actor.a_ub) && (actor.a_lb ≤ a_pos/10 ≤ actor.a_ub)
+                    # isapprox(a_vel, a_pos; atol=1e-2, rtol=1e-2) || @warn "a_vel: $a_vel, a_pos: $a_pos"
+                    if (actor.a_lb ≤ a_vel/relax ≤ actor.a_ub) && (actor.a_lb ≤ a_pos/relax ≤ actor.a_ub)
                         a_max_sq = max(a_vel^2, a_pos^2)
-                        temp_cost = prev_cost + a_max_sq
+                        add_cost = a_max_sq # a_max_sq # + 2.0 * max(0.0, (20.0-vel)^2) 
+                        add_cost = max(add_cost, 0.0)
+                        temp_cost = prev_cost + add_cost
+                        temp_cost = max(temp_cost, 0.0)
                         search_state = SearchState(prev_state.k+1, counter)
                         if !haskey(cost_dict, search_state) || temp_cost < cost_dict[search_state]
                             state_dict[search_state] = temp_state
@@ -85,8 +90,3 @@ function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real)
     end
     return trajectories
 end
-
-traj = synthesize_trajectories(actors, 21, Δt)
-
-plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:])
-plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:])

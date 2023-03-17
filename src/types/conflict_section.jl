@@ -1,3 +1,4 @@
+# TODO replace by: cost ConflictSectionManager = Dict{Tuple{LaneletID, LaneletID}, ConflictSectionID}
 struct ConflictSectionManager
     csm::Dict{Tuple{LaneletID, LaneletID}, ConflictSectionID}
 

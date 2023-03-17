@@ -73,6 +73,10 @@ end
     @test isapprox(centroid(states_ref), State(4, 1))
 end
 
+@testset "centroid and direction" begin    
+    @test true # TODO add tests
+end
+
 @testset "propagate" begin
     states_forward = propagate(states_ref, A, a_max, a_min, Δt)
     @test isapprox(states_forward.vertices, states_ref_forward.vertices)

@@ -1,3 +1,4 @@
+# TODO replace by: const Lane = Set{LaneletID}
 struct Lane
     lanelets::Set{LaneletID}
 end

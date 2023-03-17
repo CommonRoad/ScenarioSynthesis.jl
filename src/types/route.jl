@@ -34,11 +34,13 @@ struct Route
         merged_center_line = Vector{Pos{FCart}}()
         lanelet_entry_pos = Vector{Pos{FCart}}()
         transition_angle = Vector{Float64}()
-        for i = 1:lenroute-1
+        i = 1
+        while i ≤ lenroute-1
             if transition_type[i] == :succeeding
                 append!(merged_center_line, ln.lanelets[route[i]].frame.ref_pos)
                 push!(lanelet_entry_pos, ln.lanelets[route[i]].frame.ref_pos[1])
                 push!(transition_angle, 0.0)
+                i += 1
             elseif transition_type[i] == :lane_change_rght
                 # handle lane change right
                 lt1 = ln.lanelets[route[i]]
@@ -58,7 +60,7 @@ struct Route
                 # second quarter support point
                 cum_dst_rght_bound = cumsum(norm.(diff(lt1.boundRght.vertices)))
                 pushfirst!(cum_dst_rght_bound, 0.0)
-                trid = findlast(x -> x ≤ 0.5 * cum_dst_rght_bound[end], lt1.cum_dst_rght_bound)
+                trid = findlast(x -> x ≤ 0.5 * cum_dst_rght_bound[end], cum_dst_rght_bound)
                 s_remain = 0.5 * cum_dst_rght_bound[end] - cum_dst_rght_bound[trid]
                 vec_to_next = lt1.boundRght.vertices[trid+1] - lt1.boundRght.vertices[trid]
                 angle_bound = atan(vec_to_next...)
@@ -71,7 +73,7 @@ struct Route
                 trid = findlast(x -> x ≤ 0.75 * lt2.frame.cum_dst[end], lt2.frame.cum_dst)
                 s_remain = 0.75 * lt2.frame.cum_dst[end] - lt2.frame.cum_dst[trid]
                 vec_to_next = lt2.frame.ref_pos[trid+1] - lt2.frame.ref_pos[trid]
-                support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / nomr(vec_to_next))
+                support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / norm(vec_to_next))
                 push!(merged_center_line, support_point)
                 angle_cross = atan((merged_center_line[end]-merged_center_line[end-2])...)
                 angle_transition = abs(rem2pi(angle_bound-angle_cross, RoundNearest))
@@ -79,7 +81,7 @@ struct Route
 
                 # remainder
                 append!(merged_center_line, lt2.frame.ref_pos[trid+1:end])
-
+                i += 2
             elseif transition_type[i] == :lane_change_left
                 # handle lane change left
                 lt1 = ln.lanelets[route[i]]
@@ -99,7 +101,7 @@ struct Route
                 # second quarter support point
                 cum_dst_left_bound = cumsum(norm.(diff(lt1.boundLeft.vertices)))
                 pushfirst!(cum_dst_left_bound, 0.0)
-                trid = findlast(x -> x ≤ 0.5 * cum_dst_left_bound[end], lt1.cum_dst_left_bound)
+                trid = findlast(x -> x ≤ 0.5 * cum_dst_left_bound[end], cum_dst_left_bound)
                 s_remain = 0.5 * cum_dst_left_bound[end] - cum_dst_left_bound[trid]
                 vec_to_next = lt1.boundLeft.vertices[trid+1] - lt1.boundLeft.vertices[trid]
                 angle_bound = atan(vec_to_next...)
@@ -112,7 +114,7 @@ struct Route
                 trid = findlast(x -> x ≤ 0.75 * lt2.frame.cum_dst[end], lt2.frame.cum_dst)
                 s_remain = 0.75 * lt2.frame.cum_dst[end] - lt2.frame.cum_dst[trid]
                 vec_to_next = lt2.frame.ref_pos[trid+1] - lt2.frame.ref_pos[trid]
-                support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / nomr(vec_to_next))
+                support_point = lt2.frame.ref_pos[trid] + vec_to_next * (s_remain / norm(vec_to_next))
                 push!(merged_center_line, support_point)
                 angle_cross = atan((merged_center_line[end]-merged_center_line[end-2])...)
                 angle_transition = abs(rem2pi(angle_bound-angle_cross, RoundNearest))
@@ -120,11 +122,14 @@ struct Route
 
                 # remainder
                 append!(merged_center_line, lt2.frame.ref_pos[trid+1:end])
+                i += 2
             end
         end
 
         (length(route) == 1 || transition_type[end] == :succeeding) && (append!(merged_center_line, ln.lanelets[route[end]].frame.ref_pos); push!(lanelet_entry_pos, ln.lanelets[route[end]].frame.ref_pos[1]); push!(transition_angle, 0.0))
         
+        # return plot(map(x -> x[1], merged_center_line), map(x -> x[2], merged_center_line))#; aspect_ratio=:equal)
+
         ### resampling center line
         temp_frame = TransFrame(FRoute, merged_center_line)
         resampled_center_line = [merged_center_line[1]]
@@ -224,13 +229,13 @@ function reference_pos(r1::Route, r2::Route, ln::LaneletNetwork)
         ltid_iter = ltid
         while ln.lanelets[ltid_iter].adjRght.is_exist && ln.lanelets[ltid_iter].adjRght.is_same_direction
             ltid_iter = ln.lanelets[ltid_iter].adjRght.lanelet_id
-            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid_iter].ref_pos[1], true
+            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid_iter].frame.ref_pos[1], true
         end
 
         ltid_iter = ltid
         while ln.lanelets[ltid_iter].adjLeft.is_exist && ln.lanelets[ltid_iter].adjLeft.is_same_direction
             ltid_iter = ln.lanelets[ltid_iter].adjLeft.lanelet_id
-            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid_iter].ref_pos[1], true
+            in(ltid_iter, r2.route) && return ln.lanelets[ltid].frame.ref_pos[1], ln.lanelets[ltid_iter].frame.ref_pos[1], true
         end
 
         # lt does collide with route2?

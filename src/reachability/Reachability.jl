@@ -1,5 +1,5 @@
 include("convex_set.jl")
-export ConvexSet, State, is_counterclockwise_convex, area, centroid
+export ConvexSet, State, is_counterclockwise_convex, area, centroid, centroid_and_direction, fix_convex_polygon!, rotate_ccw90
 
 include("propagate.jl")
 export propagate, propagate!, propagate_backward, propagate_backward!
@@ -8,4 +8,4 @@ include("operations.jl")
 export upper_lim!, lower_lim!, get_upper_lim, get_lower_lim, intersection
 
 include("visualization.jl")
-export plot, plot!
+export plot_data, plot!

@@ -17,7 +17,7 @@ function Bounds(
 end
 =#
 
-function apply_bounds!( # TODO are there faster algorithms than sequential processing
+function apply_bounds!( # TODO are there faster algorithms than sequential processing ?
     cs::ConvexSet,
     bounds::Bounds
 )

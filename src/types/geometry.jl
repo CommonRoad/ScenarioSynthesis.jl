@@ -76,6 +76,8 @@ function pos_intersect(
     return Pos(F, Float64, Float64), false
 end
 
+# TODO replace by: const Polygon{F} = Vector{Pos{F}}
+# function Polygon(::Type{F}, matrix::AbstractMatrix{<:Real}) where {F<:FCart} as constructor
 struct Polygon{F}
     vertices::Vector{Pos{F}} # TODO change to Matrix oder SMatrix? 
 
