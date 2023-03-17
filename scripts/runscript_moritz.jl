@@ -28,17 +28,38 @@ route2.lanelet_interval[27] = ScenarioSynthesis.LaneletInterval(175, 320, -2.5)
 route3 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
 route4 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
 
-cs = ConvexSet([
-    State(0, 0),
-    State(1, 0),
-    State(1, 1),
-    State(0, 1),
+cs1 = ConvexSet([
+    State(110, 12),
+    State(114, 12),
+    State(114, 20),
+    State(110, 20),
 ])
 
-actor1 = Actor(route1, cs; a_lb = -4.0, v_lb = 0.0);
-actor2 = Actor(route2, cs; a_lb = -2.0, v_lb = 0.0);
-actor3 = Actor(route3, cs; a_lb = -2.0, v_lb = 0.0);
-actor4 = Actor(route4, cs; a_lb = -2.0, v_lb = 10.0);
+cs2 = ConvexSet([
+    State(50, 20),
+    State(58, 20),
+    State(58, 28),
+    State(50, 28),
+])
+
+cs3 = ConvexSet([
+    State(50, 16),
+    State(55, 16),
+    State(55, 20),
+    State(50, 20),
+])
+
+cs4 = ConvexSet([
+    State(40, 16),
+    State(45, 16),
+    State(45, 24),
+    State(40, 24),
+])
+
+actor1 = Actor(route1, cs1; a_lb = -4.0, v_lb = 0.0);
+actor2 = Actor(route2, cs2; a_lb = -2.0, v_lb = 0.0);
+actor3 = Actor(route3, cs3; a_lb = -2.0, v_lb = 0.0);
+actor4 = Actor(route4, cs4; a_lb = -2.0, v_lb = 10.0);
 
 actors = ActorsDict([
     actor1,
@@ -60,7 +81,7 @@ scene1 = Scene(
 
 scene2 = Scene(
     0.1, 
-    4.0,
+    6.0,
     Vector{Predicate}()
 )
 

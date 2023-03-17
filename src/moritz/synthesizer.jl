@@ -8,7 +8,6 @@ const Jerk = Float64
 const bigM = 1e6 # TODO Inf64?
 
 # synthesize longitudinal optimization problem
-# TODO use initial convex set as "hint" / constraint 
 function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     model = Model(Gurobi.Optimizer)
     duration_max = sum([scene.δ_max for (scene_id, scene) in scenario.scenes.scenes])
@@ -86,6 +85,15 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     for j=1:n_scenes
         @constraint(model, n_low_lims[j] ≤ sum(scene_active[:,j]) ≤ n_upp_lims[j]) # keep scene durations within limits
     end
+
+    # use inital convex sets as "hint" / constraint
+    for (actor_id, actor) in scenario.actors.actors
+        @constraint(model, min(actor.states[1], 1) ≤ state[1, actor_id, 1])
+        @constraint(model, state[1, actor_id, 1] ≤ max(actor.states[1], 1))
+        @constraint(model, min(actor.states[1], 2) ≤ state[1, actor_id, 2])
+        @constraint(model, state[1, actor_id, 2] ≤ max(actor.states[1], 2))
+    end
+
 
     # constraints from predicates (scene specific)
     for (scene_id, scene) in scenario.scenes.scenes
