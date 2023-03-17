@@ -8,5 +8,6 @@ include("types/Types.jl") # TODO rename to CommonRoad? Map? LaneletNetwork? Envi
 include("predicates/Predicates.jl")
 include("synthesis/Synthesis.jl")
 include("visualization/Visualization.jl")
+include("moritz/Moritz.jl")
 
 end

@@ -5,7 +5,7 @@ using Plots; plotly()
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
 # 2. define Actors (incl. their routes)
-# 3. define fornal specifications / sequence of Predicates
+# 3. define formal specifications / sequence of Predicates
 # 4. synthesis
 
 ### load LaneletNetwork
