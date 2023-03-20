@@ -160,4 +160,4 @@ plot!(hcat(traj[3]...)[1,:], hcat(traj[3]...)[2,:]);
 plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]); @warn "not offset-corrected"
 plot!(; xlabel = "s", ylabel = "v")
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
+animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_zip")

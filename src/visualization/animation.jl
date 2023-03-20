@@ -7,7 +7,8 @@ function animate_scenario(
     Δt::Real,
     k_max::Integer; 
     fps::Real=20,
-    playback_speed::Real=1.0
+    playback_speed::Real=1.0,
+    filename::String="animation"
 ) # TODO where to store Δt?
     Plots.gr()
     size = (600, 400)
@@ -43,7 +44,7 @@ function animate_scenario(
         Plots.frame(animation)
     end
     
-    gif(animation, joinpath(@__DIR__, "..", "..", "output", "animation.gif"), fps=fps)
+    gif(animation, joinpath(@__DIR__, "..", "..", "output", string(filename ,".gif")), fps=fps)
     return nothing
 end
 

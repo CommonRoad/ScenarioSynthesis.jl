@@ -192,7 +192,7 @@ plot!(hcat(traj[5]...)[1,:], hcat(traj[5]...)[2,:]);
 plot!(hcat(traj[6]...)[1,:], hcat(traj[6]...)[2,:]); @warn "not offset-corrected"
 plot!(; xlabel = "s", ylabel = "v")
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
+animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1 ,filename="reach_tjunction")
 
 
 

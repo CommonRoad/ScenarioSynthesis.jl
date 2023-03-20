@@ -25,10 +25,14 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     @variable(model, cost_var[1:N, 1:n_actors])
 
     
-    for i=1:N
-        @constraint(model, cost_var[i,:] .== jerk[i,:] .* (1 - scene_seen[i, n_scenes+1]))
-    end
+    #for i=1:N
+    #    @constraint(model, cost_var[i,:] .== jerk[i,:] .* (1 - scene_seen[i, n_scenes+1]))
+    #end
   
+    for i=1:N
+        @constraint(model, cost_var[i,:] .== state[i,:,3] .* (1 - scene_seen[i, n_scenes+1]))
+    end
+
     ### set up objective function 
     @objective(model, Min, sum(cost_var.^2)) # use acc instead?
     
@@ -58,7 +62,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     # static and dynamic limits of vehicle
     for i=1:N+1
         for j=1:n_actors
-            @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints?
+            # @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints?
             @constraint(model, v_low_lims[j] ≤ state[i,j,2] ≤ v_upp_lims[j])
             @constraint(model, a_low_lims[j] ≤ state[i,j,3] ≤ a_upp_lims[j])
         end
@@ -105,6 +109,18 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
                     @constraint(model, lb - bigM * (1 - scene_active[i, scene_id]) ≤ state[i, pred.actor_ego, 1])
                     @constraint(model, state[i, pred.actor_ego, 1] ≤ ub + bigM * (1 - scene_active[i, scene_id]))
                 end
+            
+            elseif typeof(pred) == BehindActor
+                for i=1:N
+                    @constraint(model, state[i, pred.actor_ego, 1] + scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 + scenario.actors.offset[pred.actor_ego, pred.actor_other] ≤ state[i, pred.actor_other, 1] - scenario.actors.actors[pred.actor_other].lenwid[1] / 2 + bigM * (1 - scene_active[i, scene_id])) # TODO lenwid[1] / 2 -- currently, additional safety distance # + scenario.actors.offset[pred.actor_ego, pred.actor_other]
+                end
+
+            elseif typeof(pred) == SlowerActor
+                for i=1:N
+                    @constraint(model, state[i, pred.actor_ego, 2] ≤ state[i, pred.actor_other, 2] + bigM * (1 - scene_active[i, scene_id]))
+                end
+            else
+                @warn "type $(typeof(pred)) not supported yet."
             end
         end
     end

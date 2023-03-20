@@ -1,6 +1,7 @@
 using ScenarioSynthesis
 using StaticArrays
 using Plots; plotly()
+using JuMP
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
@@ -24,7 +25,7 @@ route2 = Route(LaneletID.([25, 26, 27, 24]), ln, lenwid); plot_route(route2);
 route2.lanelet_interval[25] = ScenarioSynthesis.LaneletInterval(0, 100, 0)
 route2.lanelet_interval[26] = ScenarioSynthesis.LaneletInterval(80, 165, 80)
 route2.lanelet_interval[27] = ScenarioSynthesis.LaneletInterval(160, 180, -2.5)
-route2.lanelet_interval[27] = ScenarioSynthesis.LaneletInterval(175, 320, -2.5)
+route2.lanelet_interval[24] = ScenarioSynthesis.LaneletInterval(175, 320, -2.5)
 route3 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
 route4 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
 
@@ -56,10 +57,10 @@ cs4 = ConvexSet([
     State(40, 24),
 ])
 
-actor1 = Actor(route1, cs1; a_lb = -4.0, v_lb = 0.0);
-actor2 = Actor(route2, cs2; a_lb = -2.0, v_lb = 0.0);
-actor3 = Actor(route3, cs3; a_lb = -2.0, v_lb = 0.0);
-actor4 = Actor(route4, cs4; a_lb = -2.0, v_lb = 10.0);
+actor1 = Actor(route1, cs1);
+actor2 = Actor(route2, cs2; v_lb=8.0);
+actor3 = Actor(route3, cs3);
+actor4 = Actor(route4, cs4);
 
 actors = ActorsDict([
     actor1,
@@ -69,52 +70,99 @@ actors = ActorsDict([
 ], ln);
 
 scene1 = Scene(
-    0.2, 
-    0.4, 
+    0.25, 
+    4.0, 
     [
         OnLanelet(1, Set(25)),
         OnLanelet(2, Set(25)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3)
     ]
 )
 
 scene2 = Scene(
-    0.1, 
-    6.0,
-    Vector{Predicate}()
+    0.25, 
+    8.0, 
+    [
+        OnLanelet(1, Set(25)),
+        OnLanelet(2, Set(26)),
+        OnLanelet(3, Set(26)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3)
+    ]
 )
 
 scene3 = Scene(
-    0.2,
-    2.0, 
+    0.25,
+    4.0,
     [
         OnLanelet(1, Set(25)),
-        OnLanelet(2, Set(24)),
-        OnLanelet(3, Set(27)),
-        OnLanelet(4, Set(26))
+        OnLanelet(2, Set(27)),
+        OnLanelet(3, Set(26)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3)
     ]
 )
 
 scene4 = Scene(
-    0.2, 
-    0.4, 
+    0.25, 
+    4.0, 
     [
         OnLanelet(1, Set(25)),
         OnLanelet(2, Set(24)),
-        OnLanelet(3, Set(24)),
-        OnLanelet(4, Set(27))
+        OnLanelet(3, Set(27)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3)
     ]
 )
 
 scene5 = Scene(
-    0.2,
-    0.4,
+    0.25,
+    4.0,
+    [
+        OnLanelet(1, Set(28)),
+        OnLanelet(2, Set(24)),
+        OnLanelet(3, Set(24)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(1, 3),
+        BehindActor(4, 1)
+    ]
+)
+
+scene6 = Scene(
+    0.25, 
+    4.0, 
     [
         OnLanelet(1, Set(24)),
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
-        OnLanelet(4, Set(24))
+        OnLanelet(4, Set(27)),
+        BehindActor(3, 2),
+        BehindActor(1, 3),
+        BehindActor(4, 1)
+    ]
+)
+
+scene7 = Scene(
+    0.25, 
+    4.0, 
+    [
+        OnLanelet(1, Set(24)),
+        OnLanelet(2, Set(24)),
+        OnLanelet(3, Set(24)),
+        OnLanelet(4, Set(24)),
+        BehindActor(3, 2),
+        BehindActor(1, 3),
+        BehindActor(4, 1),
+        SlowerActor(2, 4),
+        SlowerActor(4, 1),
+        SlowerActor(3, 2)
     ]
 )
 
@@ -122,10 +170,10 @@ scenes = ScenesDict([
     scene1, 
     scene2, 
     scene3, 
-    scene2,
     scene4,
-    scene2, 
-    scene5
+    scene5,
+    scene6,
+    scene7
 ]);
 
 scenario = Scenario(actors, scenes, ln);
@@ -134,14 +182,14 @@ using BenchmarkTools
 Δt = 0.25
 optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem)
 
-plot(JuMP.value.(optimization_problem.obj_dict[:scene_active]))
-plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1]); xlabel="step [1]", ylabel="s [m]")
-plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2]); xlabel="step [1]", ylabel="v [m/s]")
-plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3]); xlabel="step [1]", ylabel="a [m/s²]")
-
 last_scene_activated_at = findfirst(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[:, end])
 last_scene_duration = findlast(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[last_scene_activated_at:end, end])
 k_max = last_scene_activated_at + last_scene_duration - 1
+
+plot(JuMP.value.(optimization_problem.obj_dict[:scene_active][1:k_max, :]))
+plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1][1:k_max, :]); xlabel="step [1]", ylabel="s [m]")
+plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2][1:k_max, :]); xlabel="step [1]", ylabel="v [m/s]")
+plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :]); xlabel="step [1]", ylabel="a [m/s²]")
 
 import ScenarioSynthesis.ActorID
 
@@ -155,4 +203,4 @@ for (actor_id, actor) in actors.actors
     end
 end
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1)
+animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="milp_zip")
