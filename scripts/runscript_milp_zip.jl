@@ -69,6 +69,7 @@ actors = ActorsDict([
     actor4
 ], ln);
 
+# define formal specifications
 scene1 = Scene(
     0.25, 
     4.0, 
@@ -178,7 +179,6 @@ scenes = ScenesDict([
 
 scenario = Scenario(actors, scenes, ln);
 
-using BenchmarkTools
 Δt = 0.25
 optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem)
 

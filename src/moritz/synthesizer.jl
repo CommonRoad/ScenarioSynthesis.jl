@@ -41,7 +41,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
 
     ### set up constraints
     # store lims -- TODO dicts instead of vectors?
-    s_low_lims = zeros(Float64, 5)
+    s_low_lims = zeros(Float64, length(scenario.actors.actors))
     s_upp_lims = [actor.route.frame.cum_dst[end] for (k, actor) in scenario.actors.actors]
     v_low_lims = [actor.v_lb for (k, actor) in scenario.actors.actors]
     v_upp_lims = [actor.v_ub for (k, actor) in scenario.actors.actors]
@@ -62,7 +62,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     # static and dynamic limits of vehicle
     for i=1:N+1
         for j=1:n_actors
-            # @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints?
+            @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints?
             @constraint(model, v_low_lims[j] ≤ state[i,j,2] ≤ v_upp_lims[j])
             @constraint(model, a_low_lims[j] ≤ state[i,j,3] ≤ a_upp_lims[j])
         end
@@ -119,6 +119,17 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
                 for i=1:N
                     @constraint(model, state[i, pred.actor_ego, 2] ≤ state[i, pred.actor_other, 2] + bigM * (1 - scene_active[i, scene_id]))
                 end
+
+            elseif typeof(pred) == BeforeConflictSection
+                for i=1:N
+                    @constraint(model, state[i, pred.actor_ego, 1] ≤ scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][1] + bigM * (1 - scene_active[i, scene_id]))
+                end
+
+            elseif typeof(pred) == BehindConflictSection
+                for i=1:N
+                    @constraint(model, scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][2] - bigM * (1 - scene_active[i, scene_id]) ≤ state[i, pred.actor_ego, 1])
+                end
+
             else
                 @warn "type $(typeof(pred)) not supported yet."
             end
