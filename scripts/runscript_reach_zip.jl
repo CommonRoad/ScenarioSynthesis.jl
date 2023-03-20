@@ -161,3 +161,48 @@ plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]); @warn "not offset-corrected
 plot!(; xlabel = "s", ylabel = "v")
 
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_zip")
+
+function foo(spec, actors_input, ψ)
+    actors = deepcopy(actors_input)
+    for i = 1:k_max
+        # @info i
+        # restrict convex set to match specifications
+        for pred in sort([spec[i]...], lt=type_ranking)
+            # @info pred
+            apply_predicate!(pred, actors, i, ψ)
+            #bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
+            #apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
+        end
+    
+        # propagate convex set to get next time step
+        for (actor_id, actor) in actors.actors
+            @assert length(actor.states) == i 
+            prop = propagate(actor.states[i], A, actor.a_ub, actor.a_lb, Δt)
+            push!(actor.states, prop)
+        end
+    end
+
+    for (actor_id, actor) in actors.actors
+        for i in reverse(1:k_max-1)
+            #@info actor_id, i
+            backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
+            intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
+            actor.states[i] = intersect
+        end
+    end
+
+    traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+
+    return nothing
+end
+
+actors_input = deepcopy(actors);
+
+using BenchmarkTools
+foo(spec, actors_input, 0.5)
+
+@profview for i=1:10
+    foo(spec, actors_input, 0.5)
+end
+
+@benchmark foo(spec, actors_input, 0.5)
