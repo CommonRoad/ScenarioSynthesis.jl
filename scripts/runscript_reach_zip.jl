@@ -155,7 +155,7 @@ plot!(; xlabel = "s", ylabel = "v")
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_zip")
 
 # prevoius trajectory synthesis approach
-traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+traj = synthesize_trajectories(actors, k_max, Δt; relax=4.0)
 
 # benchmarking
 function foo(spec, actors_input, ψ)
@@ -185,7 +185,20 @@ function foo(spec, actors_input, ψ)
         end
     end
 
-    traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+    #traj = synthesize_trajectories(actors, k_max, Δt; relax=4.0)
+
+    traj = Dict{ActorID, Trajectory}()
+    #grb_env = Gurobi.Env()
+    for (actor_id, actor) in actors.actors
+        optim = synthesize_optimization_problem(actor, Δt, grb_env)
+        optimize!(optim)
+        traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
+        counter = 0 
+        for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
+            counter += 1
+            traj[actor_id][counter] = State(val[1], val[2])
+        end
+    end
 
     return nothing
 end

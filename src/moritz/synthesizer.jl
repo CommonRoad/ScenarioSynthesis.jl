@@ -40,16 +40,6 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     # @objective(model, Min, sum(jerk.^2))
 
     ### set up constraints
-    # store lims -- TODO dicts instead of vectors?
-    s_low_lims = zeros(Float64, length(scenario.actors.actors))
-    s_upp_lims = [actor.route.frame.cum_dst[end] for (k, actor) in scenario.actors.actors]
-    v_low_lims = [actor.v_lb for (k, actor) in scenario.actors.actors]
-    v_upp_lims = [actor.v_ub for (k, actor) in scenario.actors.actors]
-    a_low_lims = [actor.a_lb for (k, actor) in scenario.actors.actors]
-    a_upp_lims = [actor.a_ub for (k, actor) in scenario.actors.actors]
-    n_low_lims = [ceil(Int64, scene.δ_min / Δt) for (k, scene) in scenario.scenes.scenes]
-    n_upp_lims = [floor(Int64, scene.δ_max / Δt) for (k, scene) in scenario.scenes.scenes]
-
     # vehicle model
     for i=1:N
         for j=1:n_actors
@@ -62,9 +52,9 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     # static and dynamic limits of vehicle
     for i=1:N+1
         for j=1:n_actors
-            @constraint(model, s_low_lims[j] ≤ state[i,j,1] ≤ s_upp_lims[j]) # TODO should be handeled by other constraints?
-            @constraint(model, v_low_lims[j] ≤ state[i,j,2] ≤ v_upp_lims[j])
-            @constraint(model, a_low_lims[j] ≤ state[i,j,3] ≤ a_upp_lims[j])
+            @constraint(model, 0.0 ≤ state[i,j,1] ≤ scenario.actors.actors[j].route.frame.cum_dst[end])
+            @constraint(model, scenario.actors.actors[j].v_lb ≤ state[i,j,2] ≤ scenario.actors.actors[j].v_ub)
+            @constraint(model, scenario.actors.actors[j].a_lb ≤ state[i,j,3] ≤ scenario.actors.actors[j].a_ub)
         end
     end
 
@@ -87,9 +77,11 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     end
 
     for j=1:n_scenes
-        @constraint(model, n_low_lims[j] ≤ sum(scene_active[:,j]) ≤ n_upp_lims[j]) # keep scene durations within limits
+        @constraint(model, ceil(Int64, scenario.scenes.scenes[j].δ_min / Δt) ≤ sum(scene_active[:,j]) ≤ floor(Int64, scenario.scenes.scenes[j].δ_max / Δt)) # keep scene durations within limits
     end
 
+    @warn "initial conves set as constraint deactivated."
+    #=
     # use inital convex sets as "hint" / constraint
     for (actor_id, actor) in scenario.actors.actors
         @constraint(model, min(actor.states[1], 1) ≤ state[1, actor_id, 1])
@@ -97,7 +89,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
         @constraint(model, min(actor.states[1], 2) ≤ state[1, actor_id, 2])
         @constraint(model, state[1, actor_id, 2] ≤ max(actor.states[1], 2))
     end
-
+    =#
 
     # constraints from predicates (scene specific)
     for (scene_id, scene) in scenario.scenes.scenes
