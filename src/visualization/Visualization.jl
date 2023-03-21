@@ -3,3 +3,6 @@ export plot_lanelet, plot_lanelet_network, plot_polygon, plot_route # TODO simpl
 
 include("animation.jl")
 export animate_scenario
+
+include("tum_colors.jl")
+export tum_colors

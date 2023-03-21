@@ -41,9 +41,11 @@ function animate_scenario(
                 actor_id;
                 label=actor_id,
                 size=size,
-                color = :darkrainbow,
+                color = false,
                 #fillcolor = :darkrainbow,
                 #fillalpha = 0.5,
+                fill = true,
+                fillcolor = tum_colors.lightblue
                 #fill_z = actor_id
             )
         end

@@ -99,7 +99,7 @@ for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
-        @info pred
+        # @info pred
         apply_predicate!(pred, actors, i, ψ)
     end
 
@@ -113,7 +113,7 @@ end
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
-        @info actor_id, i
+        # @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
         intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
