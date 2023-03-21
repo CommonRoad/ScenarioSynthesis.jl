@@ -27,7 +27,13 @@ function animate_scenario(
 
         for (actor_id, actor) in actors.actors
             state = trajectories[actor_id][ind+1] * itp + trajectories[actor_id][ind] * (1-itp)
-            vertices = state_to_vertices(state, actor)
+            vertices = SMatrix{5, 2, Float64, 10}(zeros(10))
+            try 
+                vertices = state_to_vertices(state, actor)
+            catch e
+                @warn t, actor_id
+                rethrow(e)
+            end
             plot!(
                 plt,
                 vertices[:,1],

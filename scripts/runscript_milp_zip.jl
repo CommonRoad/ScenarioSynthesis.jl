@@ -58,7 +58,7 @@ cs4 = ConvexSet([
 ])
 
 actor1 = Actor(route1, cs1);
-actor2 = Actor(route2, cs2; v_lb=8.0);
+actor2 = Actor(route2, cs2);
 actor3 = Actor(route3, cs3);
 actor4 = Actor(route4, cs4);
 
@@ -190,8 +190,6 @@ plot(JuMP.value.(optimization_problem.obj_dict[:scene_active][1:k_max, :]))
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1][1:k_max, :]); xlabel="step [1]", ylabel="s [m]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2][1:k_max, :]); xlabel="step [1]", ylabel="v [m/s]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :]); xlabel="step [1]", ylabel="a [m/s²]")
-
-import ScenarioSynthesis.ActorID
 
 traj = Dict{ActorID, Trajectory}()
 for (actor_id, actor) in actors.actors

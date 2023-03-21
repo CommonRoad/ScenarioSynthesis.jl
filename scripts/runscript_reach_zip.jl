@@ -51,10 +51,10 @@ cs4 = ConvexSet([
     State(40, 24),
 ])
 
-actor1 = Actor(route1, cs1; a_lb = -4.0, v_lb = 0.0);
-actor2 = Actor(route2, cs2; a_lb = -2.0, v_lb = 0.0);
-actor3 = Actor(route3, cs3; a_lb = -2.0, v_lb = 0.0);
-actor4 = Actor(route4, cs4; a_lb = -2.0, v_lb = 10.0);
+actor1 = Actor(route1, cs1);
+actor2 = Actor(route2, cs2);
+actor3 = Actor(route3, cs3);
+actor4 = Actor(route4, cs4);
  
 #actors = ActorsDict([actor1, actor2, actor3, actor4], ln);
 actors = ActorsDict([actor1, actor2, actor3, actor4], ln);
@@ -65,7 +65,7 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate function
 
 ### define formal specifications
 Δt = 0.25
-k_max = 35 # → scene duration: Δt * (k_max - 1) = 4 sec
+k_max = 41 # → scene duration: Δt * (k_max - 1) = 4 sec
 
 empty_set = Set{Predicate}()
 
@@ -80,9 +80,7 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(4))
     push!(spec[i], BehindActor(4, 3))
 end
-for i=1:5
-    push!(spec[i], BehindActor(2, 1))
-end
+push!(spec[1], BehindActor(2, 1))
 for i=15:k_max
     push!(spec[i], BehindActor(1, 2))
 end
@@ -91,12 +89,11 @@ for i=k_max-10:k_max
     push!(spec[i], BehindActor(1, 3))
     push!(spec[i], BehindActor(4, 1))
 end
-for i=k_max-5:k_max
-    push!(spec[i], OnLanelet(1, Set([24])))
-    push!(spec[i], SlowerActor(2, 4));
-end
-push!(spec[k_max], SlowerActor(4, 1));
-push!(spec[k_max], SlowerActor(3, 2));
+push!(spec[k_max], OnLanelet(1, Set([24])));
+push!(spec[k_max], OnLanelet(2, Set(24)));
+push!(spec[k_max], SlowerActor(2, 3));
+push!(spec[k_max], SlowerActor(3, 1));
+push!(spec[k_max], SlowerActor(1, 4));
 
 for i = 1:k_max
     @info i
@@ -169,8 +166,6 @@ function foo(spec, actors_input, ψ)
         for pred in sort([spec[i]...], lt=type_ranking)
             # @info pred
             apply_predicate!(pred, actors, i, ψ)
-            #bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
-            #apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
         end
     
         # propagate convex set to get next time step

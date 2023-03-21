@@ -67,12 +67,12 @@ cs6 = ConvexSet([
     State(100, 14),
 ])
 
-actor1 = Actor(route1, cs1; a_lb = -8.0, a_ub=4.0, v_lb = 4.0, v_ub=20.0);
-actor2 = Actor(route1, cs2; a_lb = -8.0, a_ub=4.0, v_lb = 4.0, v_ub=20.0);
-actor3 = Actor(route2, cs3; a_lb = -8.0, a_ub=4.0, v_lb = 4.0, v_ub=20.0);
-actor4 = Actor(route2, cs4; a_lb = -8.0, a_ub=4.0, v_lb = 4.0, v_ub=20.0);
-actor5 = Actor(route3, cs5; a_lb = -8.0, a_ub=4.0, v_lb = 4.0, v_ub=20.0);
-actor6 = Actor(route3, cs6; a_lb = -8.0, a_ub=4.0, v_lb = 4.0, v_ub=20.0);
+actor1 = Actor(route1, cs1);
+actor2 = Actor(route1, cs2);
+actor3 = Actor(route2, cs3);
+actor4 = Actor(route2, cs4);
+actor5 = Actor(route3, cs5);
+actor6 = Actor(route3, cs6);
  
 actors = ActorsDict([actor1, actor2, actor3, actor4, actor5, actor6], ln);
 

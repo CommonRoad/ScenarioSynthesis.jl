@@ -65,22 +65,20 @@ cs6 = ConvexSet([
     State(100, 14),
 ])
 
-actor1 = Actor(route1, cs1; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
-actor2 = Actor(route1, cs2; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
-actor3 = Actor(route2, cs3; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
-actor4 = Actor(route2, cs4; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
-actor5 = Actor(route3, cs5; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
-actor6 = Actor(route3, cs6; a_lb = -8.0, a_ub=4.0, v_lb = 0.0, v_ub=20.0);
+actor1 = Actor(route1, cs1);
+actor2 = Actor(route1, cs2);
+actor3 = Actor(route2, cs3);
+actor4 = Actor(route2, cs4);
+actor5 = Actor(route3, cs5);
+actor6 = Actor(route3, cs6);
  
 actors = ActorsDict([actor1, actor2, actor3, actor4, actor5, actor6], ln);
-
-actors.offset
 
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate functions? 
 
 ### define formal specifications
 Δt = 0.25
-k_max = 41 # → scene duration: Δt * (k_max - 1) = 4 sec
+k_max = 41 # → scene duration: Δt * (k_max - 1) = 10 sec
 
 empty_set = Set{Predicate}()
 
@@ -134,7 +132,7 @@ for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
-        @info pred
+        # @info pred
         apply_predicate!(pred, actors, i, ψ)
     end
 
@@ -148,7 +146,7 @@ end
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
-        @info actor_id, i
+        # @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
         intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
@@ -194,4 +192,4 @@ plot!(; xlabel = "s", ylabel = "v")
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1 ,filename="reach_tjunction")
 
 # prevoius trajectory synthesis approach
-traj = synthesize_trajectories(actors, k_max, Δt; relax=2.3)
+traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
