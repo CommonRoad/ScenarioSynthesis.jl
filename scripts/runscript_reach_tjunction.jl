@@ -145,22 +145,7 @@ for i = 1:k_max
     end
 end
 
-#=
-if !@isdefined actor1_states_copy
-    actor1_states_copy = deepcopy(actor1.states)
-end 
-if !@isdefined actor2_states_copy
-    actor2_states_copy = deepcopy(actor2.states)
-end
-
-if true # true to reload states
-    actor1.states[:] = deepcopy.(actor1_states_copy)
-    actor2.states[:] = deepcopy.(actor2_states_copy)
-end
-=#
-
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
-
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
         @info actor_id, i
@@ -170,7 +155,7 @@ for (actor_id, actor) in actors.actors
     end
 end
 
-# plot
+# plot reachable sets
 plot(); colors = palette(:tab10);
 for i=1:10:length(actor1.states)
     plot!(plot_data(actor1.states[i]); color=colors[1]); 
@@ -182,7 +167,21 @@ for i=1:10:length(actor1.states)
 end
 plot!(; xlabel = "s", ylabel = "v")
 
-traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+# synthesize trajectories using milp
+using JuMP, Gurobi
+
+traj = Dict{ActorID, Trajectory}()
+grb_env = Gurobi.Env()
+for (actor_id, actor) in actors.actors
+    optim = synthesize_optimization_problem(actor, Δt, grb_env)
+    optimize!(optim)
+    traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
+    counter = 0 
+    for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
+        counter += 1
+        traj[actor_id][counter] = State(val[1], val[2])
+    end
+end
 
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
@@ -194,41 +193,5 @@ plot!(; xlabel = "s", ylabel = "v")
 
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1 ,filename="reach_tjunction")
 
-
-
-### corner cutting # TODO move to tests
-using BenchmarkTools
-using Plots
-ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
-@benchmark corner_cutting($ls, 1)
-
-ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
-ls = corner_cutting(ls, 1)
-plot(hcat(ls...)'[:,1], hcat(ls...)'[:,2])
-
-### MTL
-using ScenarioSynthesis
-
-pred1 = OnLanelet(1, Set([143]))
-pred2 = OnConflictSection(1, 75)
-pred3 = BehindActor(1, 2)
-pred4 = SlowerActor(1, 2)
-
-mtl = MTLPredicate(
-    Globally, 
-    Absolute, 
-    And, 
-    UnitRange(1, 4), [
-        MTLPredicate(
-            Globally,
-            Relative,
-            And,
-            UnitRange(2, 7), [
-                pred1,
-                pred2
-            ]
-        ), 
-        pred3,
-    ])
-
-result = mtl2config(mtl, 10)
+# prevoius trajectory synthesis approach
+traj = synthesize_trajectories(actors, k_max, Δt; relax=2.3)

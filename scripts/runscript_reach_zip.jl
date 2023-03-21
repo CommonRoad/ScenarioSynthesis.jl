@@ -68,39 +68,35 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate function
 k_max = 35 # → scene duration: Δt * (k_max - 1) = 4 sec
 
 empty_set = Set{Predicate}()
-pred1 = VelocityLimits(1); pred2 = VelocityLimits(2); pred3 = VelocityLimits(3); pred4 = VelocityLimits(4); pred5 = BehindActor(4, 3);
-pred6 = BehindActor(2, 1);
-pred7 = BehindActor(3, 2); pred8 = BehindActor(1, 3); pred9 = BehindActor(4, 1);
-pred10 = OnLanelet(1, Set([24]));
-pred11 = SlowerActor(2, 4);
 
 ψ = 0.5
 
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
     spec[i] = copy(empty_set)
-    push!(spec[i], pred1)
-    push!(spec[i], pred2)
-    push!(spec[i], pred3)
-    push!(spec[i], pred4)
-    push!(spec[i], pred5)
+    push!(spec[i], VelocityLimits(1))
+    push!(spec[i], VelocityLimits(2))
+    push!(spec[i], VelocityLimits(3))
+    push!(spec[i], VelocityLimits(4))
+    push!(spec[i], BehindActor(4, 3))
 end
 for i=1:5
-    push!(spec[i], pred6)
+    push!(spec[i], BehindActor(2, 1))
+end
+for i=15:k_max
+    push!(spec[i], BehindActor(1, 2))
 end
 for i=k_max-10:k_max
-    push!(spec[i], pred7)
-    push!(spec[i], pred8)
-    push!(spec[i], pred9)
+    push!(spec[i], BehindActor(3, 2))
+    push!(spec[i], BehindActor(1, 3))
+    push!(spec[i], BehindActor(4, 1))
 end
 for i=k_max-5:k_max
-    push!(spec[i], pred10)
-    push!(spec[i], pred11)
+    push!(spec[i], OnLanelet(1, Set([24])))
+    push!(spec[i], SlowerActor(2, 4));
 end
-
-push!(spec[k_max], SlowerActor(4, 1))
-push!(spec[k_max], SlowerActor(3, 2))
-#push!(spec[k_max], SlowerActor(4, 1))
+push!(spec[k_max], SlowerActor(4, 1));
+push!(spec[k_max], SlowerActor(3, 2));
 
 for i = 1:k_max
     @info i
@@ -108,8 +104,6 @@ for i = 1:k_max
     for pred in sort([spec[i]...], lt=type_ranking)
         @info pred
         apply_predicate!(pred, actors, i, ψ)
-        #bounds = Bounds(pred, actors, i, ψ) # TODO first apply static constraints, subseqeuntly dynamic ones (ordering can influence result)
-        #apply_bounds!(actors.actors[pred.actor_ego].states[i], bounds)
     end
 
     # propagate convex set to get next time step
@@ -119,19 +113,6 @@ for i = 1:k_max
     end
 end
 
-#=
-if !@isdefined actor1_states_copy
-    actor1_states_copy = deepcopy(actor1.states)
-end 
-if !@isdefined actor2_states_copy
-    actor2_states_copy = deepcopy(actor2.states)
-end
-
-if true # true to reload states
-    actor1.states[:] = deepcopy.(actor1_states_copy)
-    actor2.states[:] = deepcopy.(actor2_states_copy)
-end
-=#
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
@@ -152,7 +133,21 @@ for i=1:10:length(actor1.states)
 end
 plot!(; xlabel = "s", ylabel = "v")
 
-traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+# synthesize trajectories using milp
+using JuMP, Gurobi
+
+traj = Dict{ActorID, Trajectory}()
+grb_env = Gurobi.Env()
+for (actor_id, actor) in actors.actors
+    optim = synthesize_optimization_problem(actor, Δt, grb_env)
+    optimize!(optim)
+    traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
+    counter = 0 
+    for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
+        counter += 1
+        traj[actor_id][counter] = State(val[1], val[2])
+    end
+end
 
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
@@ -162,6 +157,10 @@ plot!(; xlabel = "s", ylabel = "v")
 
 animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_zip")
 
+# prevoius trajectory synthesis approach
+traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+
+# benchmarking
 function foo(spec, actors_input, ψ)
     actors = deepcopy(actors_input)
     for i = 1:k_max

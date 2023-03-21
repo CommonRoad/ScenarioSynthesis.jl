@@ -26,7 +26,7 @@ include("route.jl")
 export Route, reference_pos, corner_cutting
 
 include("actor.jl")
-export Actor, Vehicle, ActorsDict, run_timestep, lon_distance
+export Actor, Vehicle, ActorsDict, run_timestep, lon_distance, ActorID
 
 include("lane.jl")
 export Lane, expand_lane!
