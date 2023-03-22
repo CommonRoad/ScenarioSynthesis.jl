@@ -14,15 +14,15 @@ using JuMP
 #ln = ln_from_xml("example_files/DEU_Cologne-9_6_I-1.cr.xml");
 #ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
 ln = ln_from_xml("example_files/ZAM_Tjunction-edit.xml");
-process!(ln);
+process!(ln)
 plot_lanelet_network(ln; annotate_id=true)
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
 ### define Actors
-route1 = Route(LaneletID.([50195, 50209, 50203]), ln, lenwid); plot_route(route1)
-route2 = Route(LaneletID.([50201, 50213, 50197]), ln, lenwid); plot_route(route2)
-route3 = Route(LaneletID.([50205, 50217, 50199]), ln, lenwid); plot_route(route3)
+route1 = Route(LaneletID.([50195, 50209, 50203]), ln, lenwid); plot_route(route1);
+route2 = Route(LaneletID.([50201, 50213, 50197]), ln, lenwid); plot_route(route2);
+route3 = Route(LaneletID.([50205, 50217, 50199]), ln, lenwid); plot_route(route3);
 
 
 cs1 = ConvexSet([
@@ -77,54 +77,52 @@ actor6 = Actor(route3, cs6);
 actors = ActorsDict([actor1, actor2, actor3, actor4, actor5, actor6], ln);
 
 ### define formal specifications
-scene_free = Scene(
-    2.0, 
-    3.0,
-    [
-        BehindActor(2, 1), 
-        BehindActor(4, 3),
-        BehindActor(6, 5),
-    ]
-)
-
 scene1 = Scene(
     0.25, 
-    5.0, 
+    2.5, 
     [
-        OnLanelet(1, Set(50195)),
+        BeforeConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        BeforeConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BeforeConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
         BehindActor(2, 1),
-        OnLanelet(3, Set(50201)),
         BehindActor(4, 3),
-        OnLanelet(5, Set(50205)),
         BehindActor(6, 5),
-        BeforeConflictSection(1, 2),
-        BeforeConflictSection(3, 9),
-        BeforeConflictSection(5, 6),
     ]
 )
 
 scene2 = Scene(
     0.25, 
-    5.0, 
+    2.5, 
     [
-       OnConflictSection(1, 2),
-       BeforeConflictSection(2, 2),
-       BeforeConflictSection(3, 9),
-       BehindActor(4, 3),
-       BeforeConflictSection(5, 6),
-       BehindActor(6, 5)
+        OnConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        BeforeConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BeforeConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
+        BehindActor(2, 1),
+        BehindActor(4, 3),
+        BehindActor(6, 5),
     ]
 )
+
 
 scene3 = Scene(
     0.25, 
     2.5, 
     [
-        BeforeConflictSection(2, 2),
-        BehindConflictSection(3, 8),
-        BeforeConflictSection(4, 9),
-        BeforeConflictSection(5, 6),
-        BehindActor(6, 5)
+        BehindConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        BeforeConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BeforeConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
+        BehindActor(2, 1),
+        BehindActor(4, 3),
+        BehindActor(6, 5),
     ]
 )
 
@@ -132,10 +130,15 @@ scene4 = Scene(
     0.25,
     2.5, 
     [
-        BeforeConflictSection(2, 2),
-        BeforeConflictSection(4, 9),
-        BehindConflictSection(5, 5),
-        BeforeConflictSection(6, 6)
+        BehindConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        OnConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BeforeConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
+        BehindActor(2, 1),
+        BehindActor(4, 3),
+        BehindActor(6, 5),
     ]
 )
 
@@ -143,123 +146,148 @@ scene5 = Scene(
     0.25, 
     2.5, 
     [
-        BehindConflictSection(2, 1),
-        BehindActor(2, 1), 
-        BeforeConflictSection(4, 9),
-        BeforeConflictSection(6, 6)
+        BehindConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BeforeConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
+        BehindActor(2, 1),
+        BehindActor(4, 3),
+        BehindActor(6, 5),
     ]
 )
 
 scene6 = Scene(
     0.25, 
-    0.25, 
+    2.5, 
     [
+        BehindConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        OnConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
         BehindActor(2, 1),
-        BehindConflictSection(4, 8),
         BehindActor(4, 3),
-        BeforeConflictSection(6, 6)
+        BehindActor(6, 5),
     ]
 )
 
 scene7 = Scene(
     0.25, 
-    0.25, 
+    2.5, 
     [
+        BehindConflictSection(1, 50233),
+        BeforeConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
         BehindActor(2, 1),
         BehindActor(4, 3),
-        BehindConflictSection(6, 5), 
-        BehindActor(6, 5)
+        BehindActor(6, 5),
     ]
 )
 
-scenes = ScenesDict([
-    scene1,
-    scene_free, 
-    scene2, 
-    scene_free, 
-    scene3,
-    scene_free, 
-    scene4,
-    scene_free, 
-    scene5,
-    scene_free, 
-    scene6,
-    scene_free, 
-    scene7
-]);
+scene8 = Scene(
+    0.25, 
+    2.5, 
+    [
+        BehindConflictSection(1, 50233),
+        OnConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
+        BehindActor(2, 1),
+        BehindActor(4, 3),
+        BehindActor(6, 5),
+    ]
+)
+
+scene9 = Scene(
+    0.25, 
+    2.5, 
+    [
+        BehindConflictSection(1, 50233),
+        BehindConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BeforeConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
+        BehindActor(2, 1),
+        BehindActor(4, 3),
+        BehindActor(6, 5),
+    ]
+)
 
 scene10 = Scene(
     0.25, 
-    2.5,
+    2.5, 
     [
-        OnLanelet(1, 50195),
-        OnLanelet(2, 50195),
+        BehindConflictSection(1, 50233),
+        BehindConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        OnConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
         BehindActor(2, 1),
-        OnLanelet(3, 50201),
-        OnLanelet(4, 50201),
         BehindActor(4, 3),
-        OnLanelet(5, 50205),
-        OnLanelet(6, 50205),
-        BehindActor(6, 5)
+        BehindActor(6, 5),
     ]
 )
 
 scene11 = Scene(
     0.25, 
-    2.5,
+    2.5, 
     [
-        OnLanelet(1, 50195),
-        OnLanelet(2, 50195),
+        BehindConflictSection(1, 50233),
+        BehindConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BehindConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        BeforeConflictSection(6, 50233),
         BehindActor(2, 1),
-        OnLanelet(3, 50201),
-        OnLanelet(4, 50201),
         BehindActor(4, 3),
-        OnLanelet(5, 50217),
-        OnLanelet(6, 50205),
         BehindActor(6, 5),
-        BeforeConflictSection(5, 6)
     ]
 )
 
 scene12 = Scene(
     0.25, 
-    2.5,
+    2.5, 
     [
-        OnLanelet(1, 50195),
-        OnLanelet(2, 50195),
+        BehindConflictSection(1, 50233),
+        BehindConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BehindConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        OnConflictSection(6, 50233),
         BehindActor(2, 1),
-        OnLanelet(3, 50213),
-        OnLanelet(4, 50201),
         BehindActor(4, 3),
-        OnLanelet(5, 50217),
-        OnLanelet(6, 50205),
         BehindActor(6, 5),
-        OnConflictSection(5, 7),
-        BeforeConflictSection(1, 2),
-        BeforeConflictSection(3, 7),
     ]
 )
 
 scene13 = Scene(
     0.25, 
-    2.5,
+    2.5, 
     [
-        OnLanelet(1, 50195),
-        OnLanelet(2, 50195),
+        BehindConflictSection(1, 50233),
+        BehindConflictSection(2, 50233),
+        BehindConflictSection(3, 50233),
+        BehindConflictSection(4, 50233),
+        BehindConflictSection(5, 50233),
+        BehindConflictSection(6, 50233),
         BehindActor(2, 1),
-        OnLanelet(3, 50201),
-        OnLanelet(4, 50201),
         BehindActor(4, 3),
-        OnLanelet(5, 50217),
-        OnLanelet(6, 50205),
         BehindActor(6, 5),
-        OnConflictSection(5, 7),
-        BeforeConflictSection(1, 2),
-        BeforeConflictSection(3, 7),
     ]
 )
 
-scenes = ScenesDict([scene1, scene2])
+scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5, scene6, scene7, scene8, scene9, scene10, scene11, scene12, scene13]) # with "idle" between succeeding actors on intersection 
+scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, scene13]) # no "idle" between succeeding actors on intersection 
 
 scenario = Scenario(actors, scenes, ln);
 
@@ -276,14 +304,23 @@ plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1][1:k_max, :]); xlab
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2][1:k_max, :]); xlabel="step [1]", ylabel="v [m/s]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :]); xlabel="step [1]", ylabel="a [m/s²]")
 
-traj = Dict{ActorID, Trajectory}()
+traj_milp = Dict{ActorID, Trajectory}()
 for (actor_id, actor) in actors.actors
-    traj[actor_id] = Trajectory(Vector{State}(undef, k_max))
+    traj_milp[actor_id] = Trajectory(Vector{State}(undef, k_max))
     counter = 0
     for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,actor_id,1:2])[1:k_max,:])
         counter += 1
-        traj[actor_id][counter] = State(val[1], val[2])
+        traj_milp[actor_id][counter] = State(val[1], val[2])
     end
 end
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="milp_tjunction")
+plotly()
+plot(hcat(traj_milp[1]...)[1,:], hcat(traj_milp[1]...)[2,:]);
+plot!(hcat(traj_milp[2]...)[1,:], hcat(traj_milp[2]...)[2,:]);
+plot!(hcat(traj_milp[3]...)[1,:], hcat(traj_milp[3]...)[2,:]);
+plot!(hcat(traj_milp[4]...)[1,:], hcat(traj_milp[4]...)[2,:]);
+plot!(hcat(traj_milp[5]...)[1,:], hcat(traj_milp[5]...)[2,:]);
+plot!(hcat(traj_milp[6]...)[1,:], hcat(traj_milp[6]...)[2,:]); @warn "not offset-corrected"
+plot!(; xlabel = "s", ylabel = "v", legend=false, title = "MIQP")
+
+animate_scenario(ln, actors, traj_milp, Δt, k_max; playback_speed=1, filename="milp_tjunction")

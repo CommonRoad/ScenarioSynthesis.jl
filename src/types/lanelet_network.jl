@@ -253,6 +253,7 @@ function process!(ln::LaneletNetwork)
 
     # conflict sections
     csm = ConflictSectionManager()
+
     for (own, own_lt) in ln.lanelets
         for obs in own_lt.merging_with
             conflict_section, does_conflict = conflict_section_merging(ln, own, obs)
@@ -280,6 +281,38 @@ function process!(ln::LaneletNetwork)
     for (k, v) in csm.csm
         ln.conflict_sections[v] = k
     end
+
+    # the following section reduces the lanelet vs. lanelet conflicts to lanelt vs. intersection conflicts
+    for (intersection_id, intersection) in ln.intersections
+        this_intersection = Set{LaneletID}()
+        for (incoming_id, incoming) in intersection.incomings
+            union!(this_intersection, incoming.succRight)
+            union!(this_intersection, incoming.succStraight)
+            union!(this_intersection, incoming.succLeft)
+        end
+
+        for (lanelet_id, lanelet) in ln.lanelets
+            this_lanelet = Set{LaneletID}()
+            for k in keys(lanelet.conflict_sections)
+                union!(this_lanelet, Set(ln.conflict_sections[k]))
+            end
+            isempty(intersect(this_lanelet, this_intersection)) && continue
+            in(intersection_id, this_lanelet) && throw(error("conflict section id not unique.")) # can be solved by excluding intersection ids from conflict section manager id counting
+
+            # @info lanelet_id, intersect(this_lanelet, this_intersection)
+            lanelet.conflict_sections[intersection_id] = (Inf, -Inf)
+            for lanelet_id_other in intersect(this_lanelet, this_intersection) # this preocedure is correct if the assumption that a lanelet (succRight, succStraight, succLeft) is part of exclusively one intersection holds. 
+                # @info lanelet_id, lanelet_id_other
+                lanelet_id == lanelet_id_other && continue
+                conflict_section_id = csm.csm[min(lanelet_id, lanelet_id_other), max(lanelet_id, lanelet_id_other)]
+                lanelet.conflict_sections[intersection_id] = (min(lanelet.conflict_sections[intersection_id][1], lanelet.conflict_sections[conflict_section_id][1]), max(lanelet.conflict_sections[intersection_id][2], lanelet.conflict_sections[conflict_section_id][2]))
+                delete!(lanelet.conflict_sections, conflict_section_id)
+            end
+            @assert lanelet.conflict_sections[intersection_id][1] < lanelet.conflict_sections[intersection_id][2]
+        end
+    end
+
+    return nothing
 end
 
 function conflict_section_merging(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)

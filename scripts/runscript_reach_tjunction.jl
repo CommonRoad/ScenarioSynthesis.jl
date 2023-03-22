@@ -78,7 +78,7 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate function
 
 ### define formal specifications
 Δt = 0.25
-k_max = 41 # → scene duration: Δt * (k_max - 1) = 10 sec
+k_max = 50 # → scene duration: Δt * (k_max - 1) = 10 sec
 
 empty_set = Set{Predicate}()
 
@@ -87,52 +87,87 @@ empty_set = Set{Predicate}()
 spec = Vector{Set{Predicate}}(undef, k_max);
 for i=1:k_max
     spec[i] = copy(empty_set)
-    push!(spec[i], VelocityLimits(1))
-    push!(spec[i], VelocityLimits(1))
-    push!(spec[i], VelocityLimits(2))
-    push!(spec[i], VelocityLimits(3))
-    push!(spec[i], VelocityLimits(4))
-    push!(spec[i], VelocityLimits(5))
-    push!(spec[i], VelocityLimits(6))
+    push!(spec[i], StateLimits(1))
+    push!(spec[i], StateLimits(2))
+    push!(spec[i], StateLimits(3))
+    push!(spec[i], StateLimits(4))
+    push!(spec[i], StateLimits(5))
+    push!(spec[i], StateLimits(6))
+    push!(spec[i], BehindActor(2, 1))
+    push!(spec[i], BehindActor(4, 3))
+    push!(spec[i], BehindActor(6, 5))
 end
 
-push!(spec[10], BehindConflictSection(1, 1));
-push!(spec[10], BeforeConflictSection(2, 2));
-push!(spec[10], BeforeConflictSection(3, 9));
-push!(spec[10], BeforeConflictSection(5, 6));
+begin i=1
+    push!(spec[i], BeforeConflictSection(1, 50233));
+    push!(spec[i], BeforeConflictSection(2, 50233));
+    push!(spec[i], BeforeConflictSection(3, 50233));
+    push!(spec[i], BeforeConflictSection(4, 50233));
+    push!(spec[i], BeforeConflictSection(5, 50233));
+    push!(spec[i], BeforeConflictSection(6, 50233));
+end
 
-push!(spec[16], BehindConflictSection(3, 8));
-push!(spec[16], BeforeConflictSection(4, 9));
-push!(spec[16], BeforeConflictSection(2, 2));
-push!(spec[16], BeforeConflictSection(5, 6));
+begin i=9
+    push!(spec[i], BehindConflictSection(1, 50233));
+    push!(spec[i], BeforeConflictSection(2, 50233));
+    push!(spec[i], BeforeConflictSection(3, 50233));
+    push!(spec[i], BeforeConflictSection(4, 50233));
+    push!(spec[i], BeforeConflictSection(5, 50233));
+    push!(spec[i], BeforeConflictSection(6, 50233));
+end
 
-push!(spec[22], BehindConflictSection(5, 5));
-push!(spec[22], BeforeConflictSection(6, 6));
-push!(spec[22], BeforeConflictSection(2, 2));
-push!(spec[22], BeforeConflictSection(4, 9));
+begin i=17
+    push!(spec[i], BehindConflictSection(1, 50233));
+    push!(spec[i], BeforeConflictSection(2, 50233));
+    push!(spec[i], BehindConflictSection(3, 50233));
+    push!(spec[i], BeforeConflictSection(4, 50233));
+    push!(spec[i], BeforeConflictSection(5, 50233));
+    push!(spec[i], BeforeConflictSection(6, 50233));
+end
 
-push!(spec[28], BehindConflictSection(2, 1));
-push!(spec[28], BeforeConflictSection(4, 9));
-push!(spec[28], BeforeConflictSection(6, 6));
+begin i=25
+    push!(spec[i], BehindConflictSection(1, 50233));
+    push!(spec[i], BeforeConflictSection(2, 50233));
+    push!(spec[i], BehindConflictSection(3, 50233));
+    push!(spec[i], BeforeConflictSection(4, 50233));
+    push!(spec[i], BehindConflictSection(5, 50233));
+    push!(spec[i], BeforeConflictSection(6, 50233));
+end
 
-push!(spec[34], BehindConflictSection(4, 8));
-push!(spec[34], BeforeConflictSection(6, 6));
+begin i=33
+    push!(spec[i], BehindConflictSection(1, 50233));
+    push!(spec[i], BehindConflictSection(2, 50233));
+    push!(spec[i], BehindConflictSection(3, 50233));
+    push!(spec[i], BeforeConflictSection(4, 50233));
+    push!(spec[i], BehindConflictSection(5, 50233));
+    push!(spec[i], BeforeConflictSection(6, 50233));
+end
 
-push!(spec[40], BehindConflictSection(6, 7));
+begin i=41
+    push!(spec[i], BehindConflictSection(1, 50233));
+    push!(spec[i], BehindConflictSection(2, 50233));
+    push!(spec[i], BehindConflictSection(3, 50233));
+    push!(spec[i], BehindConflictSection(4, 50233));
+    push!(spec[i], BehindConflictSection(5, 50233));
+    push!(spec[i], BeforeConflictSection(6, 50233));
+end
 
-push!(spec[34], SlowerActor(1, 2));
-push!(spec[34], SlowerActor(3, 4));
-push!(spec[34], SlowerActor(5, 6));
+begin i=49
+    push!(spec[i], BehindConflictSection(1, 50233));
+    push!(spec[i], BehindConflictSection(2, 50233));
+    push!(spec[i], BehindConflictSection(3, 50233));
+    push!(spec[i], BehindConflictSection(4, 50233));
+    push!(spec[i], BehindConflictSection(5, 50233));
+    push!(spec[i], BehindConflictSection(6, 50233));
+end
 
-push!(spec[34], BehindActor(2, 1));
-push!(spec[34], BehindActor(4, 3));
-push!(spec[34], BehindActor(6, 5));
+actors_input = deepcopy(actors);
 
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
-        # @info pred
+        @info pred
         apply_predicate!(pred, actors, i, ψ)
     end
 
@@ -155,7 +190,7 @@ end
 
 # plot reachable sets
 plot(); colors = palette(:tab10);
-for i=1:10:length(actor1.states)
+for i=1:10:length(actor1.states)-1
     plot!(plot_data(actor1.states[i]); color=colors[1]); 
     plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors[2]); 
     plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors[3]);
@@ -163,7 +198,7 @@ for i=1:10:length(actor1.states)
     plot!(plot_data(actor5.states[i] + State(actors.offset[5, 1], 0)); color=colors[5]);
     plot!(plot_data(actor6.states[i] + State(actors.offset[6, 1], 0)); color=colors[6]);
 end
-plot!(; xlabel = "s", ylabel = "v")
+plot!(; xlabel = "s", ylabel = "v", legend=false)
 
 # synthesize trajectories using milp
 using JuMP, Gurobi
@@ -181,15 +216,20 @@ for (actor_id, actor) in actors.actors
     end
 end
 
+plotly()
 plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
 plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
 plot!(hcat(traj[3]...)[1,:], hcat(traj[3]...)[2,:]);
 plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]);
 plot!(hcat(traj[5]...)[1,:], hcat(traj[5]...)[2,:]);
 plot!(hcat(traj[6]...)[1,:], hcat(traj[6]...)[2,:]); @warn "not offset-corrected"
-plot!(; xlabel = "s", ylabel = "v")
+plot!(; xlabel = "s", ylabel = "v", legend=false, title = "Reachability")
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1 ,filename="reach_tjunction")
+animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
 
-# prevoius trajectory synthesis approach
-traj = synthesize_trajectories(actors, k_max, Δt; relax=2.0)
+# performance evaluation 
+using BenchmarkTools
+using Gurobi
+
+grb_env = Gurobi.Env()
+@time benchmark(1000, spec, 50, Δt, actors_input, grb_env, 0.5; synthesize_trajectories = true)

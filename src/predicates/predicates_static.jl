@@ -91,3 +91,32 @@ function Bounds(
 )
     return Bounds(-Inf, Inf, actors.actors[predicate.actor_ego].v_lb, actors.actors[predicate.actor_ego].v_ub)
 end
+
+struct PositionLimits <: StaticPredicate
+    actor_ego::ActorID
+end
+
+function Bounds(
+    predicate::PositionLimits,
+    actors::ActorsDict,
+    unnecessary...
+)
+    return Bounds(actors.actors[predicate.actor_ego].route.frame.cum_dst[1], actors.actors[predicate.actor_ego].route.frame.cum_dst[end], -Inf, Inf)
+end
+
+struct StateLimits <: StaticPredicate
+    actor_ego::ActorID
+end
+
+function Bounds(
+    predicate::StateLimits,
+    actors::ActorsDict,
+    unnecessary...
+)
+    return Bounds(
+        actors.actors[predicate.actor_ego].route.frame.cum_dst[1], 
+        actors.actors[predicate.actor_ego].route.frame.cum_dst[end],
+        actors.actors[predicate.actor_ego].v_lb,
+        actors.actors[predicate.actor_ego].v_ub
+    )
+end

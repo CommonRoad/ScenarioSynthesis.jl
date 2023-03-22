@@ -80,16 +80,17 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
         @constraint(model, ceil(Int64, scenario.scenes.scenes[j].δ_min / Δt) ≤ sum(scene_active[:,j]) ≤ floor(Int64, scenario.scenes.scenes[j].δ_max / Δt)) # keep scene durations within limits
     end
 
-    @warn "initial conves set as constraint deactivated."
-    #=
-    # use inital convex sets as "hint" / constraint
-    for (actor_id, actor) in scenario.actors.actors
-        @constraint(model, min(actor.states[1], 1) ≤ state[1, actor_id, 1])
-        @constraint(model, state[1, actor_id, 1] ≤ max(actor.states[1], 1))
-        @constraint(model, min(actor.states[1], 2) ≤ state[1, actor_id, 2])
-        @constraint(model, state[1, actor_id, 2] ≤ max(actor.states[1], 2))
+    if true
+        # use inital convex sets as "hint" / constraint
+        for (actor_id, actor) in scenario.actors.actors
+            @constraint(model, min(actor.states[1], 1) ≤ state[1, actor_id, 1])
+            @constraint(model, state[1, actor_id, 1] ≤ max(actor.states[1], 1))
+            @constraint(model, min(actor.states[1], 2) ≤ state[1, actor_id, 2])
+            @constraint(model, state[1, actor_id, 2] ≤ max(actor.states[1], 2))
+        end
+    else
+        @warn "initial conves set as constraint deactivated."
     end
-    =#
 
     # constraints from predicates (scene specific)
     for (scene_id, scene) in scenario.scenes.scenes
@@ -114,12 +115,18 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
 
             elseif typeof(pred) == BeforeConflictSection
                 for i=1:N
-                    @constraint(model, state[i, pred.actor_ego, 1] ≤ scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][1] + bigM * (1 - scene_active[i, scene_id]))
+                    @constraint(model, state[i, pred.actor_ego, 1] + scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 ≤ scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][1] + bigM * (1 - scene_active[i, scene_id]))
                 end
 
             elseif typeof(pred) == BehindConflictSection
                 for i=1:N
-                    @constraint(model, scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][2] - bigM * (1 - scene_active[i, scene_id]) ≤ state[i, pred.actor_ego, 1])
+                    @constraint(model, scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][2] - bigM * (1 - scene_active[i, scene_id]) ≤ state[i, pred.actor_ego, 1] - scenario.actors.actors[pred.actor_ego].lenwid[1] / 2)
+                end
+
+            elseif typeof(pred) == OnConflictSection
+                for i=1:N
+                    @constraint(model, scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][1] - scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 - bigM * (1 - scene_active[i, scene_id]) ≤ state[i, pred.actor_ego, 1])
+                    @constraint(model, state[i, pred.actor_ego, 1] ≤ scenario.actors.actors[pred.actor_ego].route.conflict_sections[pred.conflict_section][2] + scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 + bigM * (1 - scene_active[i, scene_id]))
                 end
 
             else

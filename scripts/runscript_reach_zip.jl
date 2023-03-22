@@ -133,83 +133,23 @@ plot!(; xlabel = "s", ylabel = "v")
 # synthesize trajectories using milp
 using JuMP, Gurobi
 
-traj = Dict{ActorID, Trajectory}()
+traj_reach = Dict{ActorID, Trajectory}()
 grb_env = Gurobi.Env()
 for (actor_id, actor) in actors.actors
     optim = synthesize_optimization_problem(actor, Δt, grb_env)
     optimize!(optim)
-    traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
+    traj_reach[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
         counter += 1
-        traj[actor_id][counter] = State(val[1], val[2])
+        traj_reach[actor_id][counter] = State(val[1], val[2])
     end
 end
 
-plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
-plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
-plot!(hcat(traj[3]...)[1,:], hcat(traj[3]...)[2,:]);
-plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]); @warn "not offset-corrected"
+plot(hcat(traj_reach[1]...)[1,:], hcat(traj_reach[1]...)[2,:]);
+plot!(hcat(traj_reach[2]...)[1,:], hcat(traj_reach[2]...)[2,:]);
+plot!(hcat(traj_reach[3]...)[1,:], hcat(traj_reach[3]...)[2,:]);
+plot!(hcat(traj_reach[4]...)[1,:], hcat(traj_reach[4]...)[2,:]); @warn "not offset-corrected"
 plot!(; xlabel = "s", ylabel = "v")
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_zip")
-
-# prevoius trajectory synthesis approach
-traj = synthesize_trajectories(actors, k_max, Δt; relax=4.0)
-
-# benchmarking
-function foo(spec, actors_input, ψ)
-    actors = deepcopy(actors_input)
-    for i = 1:k_max
-        # @info i
-        # restrict convex set to match specifications
-        for pred in sort([spec[i]...], lt=type_ranking)
-            # @info pred
-            apply_predicate!(pred, actors, i, ψ)
-        end
-    
-        # propagate convex set to get next time step
-        for (actor_id, actor) in actors.actors
-            @assert length(actor.states) == i 
-            prop = propagate(actor.states[i], A, actor.a_ub, actor.a_lb, Δt)
-            push!(actor.states, prop)
-        end
-    end
-
-    for (actor_id, actor) in actors.actors
-        for i in reverse(1:k_max-1)
-            #@info actor_id, i
-            backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
-            intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
-            actor.states[i] = intersect
-        end
-    end
-
-    #traj = synthesize_trajectories(actors, k_max, Δt; relax=4.0)
-
-    traj = Dict{ActorID, Trajectory}()
-    #grb_env = Gurobi.Env()
-    for (actor_id, actor) in actors.actors
-        optim = synthesize_optimization_problem(actor, Δt, grb_env)
-        optimize!(optim)
-        traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
-        counter = 0 
-        for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
-            counter += 1
-            traj[actor_id][counter] = State(val[1], val[2])
-        end
-    end
-
-    return nothing
-end
-
-actors_input = deepcopy(actors);
-
-using BenchmarkTools
-foo(spec, actors_input, 0.5)
-
-@profview for i=1:10
-    foo(spec, actors_input, 0.5)
-end
-
-@benchmark foo(spec, actors_input, 0.5)
+animate_scenario(ln, actors, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")

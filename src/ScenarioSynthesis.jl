@@ -9,5 +9,6 @@ include("predicates/Predicates.jl")
 include("synthesis/Synthesis.jl")
 include("visualization/Visualization.jl")
 include("moritz/Moritz.jl")
+include("benchmarking/Benchmarking.jl")
 
 end
