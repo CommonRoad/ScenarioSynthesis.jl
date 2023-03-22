@@ -9,6 +9,8 @@ const bigM = 1e6 # TODO Inf64?
 
 # synthesize longitudinal optimization problem
 function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
+    safety_margin = 10.0
+    @info "keeping a safety margin of $(safety_margin)m between actors."
     model = Model(Gurobi.Optimizer)
     duration_max = sum([scene.δ_max for (scene_id, scene) in scenario.scenes.scenes])
     N = floor(Int64, duration_max/Δt)
@@ -105,7 +107,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
             
             elseif typeof(pred) == BehindActor
                 for i=1:N
-                    @constraint(model, state[i, pred.actor_ego, 1] + scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 + scenario.actors.offset[pred.actor_ego, pred.actor_other] ≤ state[i, pred.actor_other, 1] - scenario.actors.actors[pred.actor_other].lenwid[1] / 2 + bigM * (1 - scene_active[i, scene_id])) # TODO lenwid[1] / 2 -- currently, additional safety distance # + scenario.actors.offset[pred.actor_ego, pred.actor_other]
+                    @constraint(model, state[i, pred.actor_ego, 1] + scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 + scenario.actors.offset[pred.actor_ego, pred.actor_other] + safety_margin ≤ state[i, pred.actor_other, 1] - scenario.actors.actors[pred.actor_other].lenwid[1] / 2 + bigM * (1 - scene_active[i, scene_id]))
                 end
 
             elseif typeof(pred) == SlowerActor

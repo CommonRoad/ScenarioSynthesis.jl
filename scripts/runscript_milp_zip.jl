@@ -72,33 +72,33 @@ actors = ActorsDict([
 # define formal specifications
 scene1 = Scene(
     0.25, 
-    4.0, 
+    2.5, 
     [
         OnLanelet(1, Set(25)),
         OnLanelet(2, Set(25)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
+        BehindActor(2, 1),
         BehindActor(4, 3)
     ]
 )
 
 scene2 = Scene(
     0.25, 
-    8.0, 
+    2.5, 
     [
         OnLanelet(1, Set(25)),
         OnLanelet(2, Set(26)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
         BehindActor(3, 2),
-        BehindActor(4, 3)
+        BehindActor(4, 3),
     ]
 )
 
 scene3 = Scene(
     0.25,
-    4.0,
+    2.5,
     [
         OnLanelet(1, Set(25)),
         OnLanelet(2, Set(27)),
@@ -109,9 +109,35 @@ scene3 = Scene(
     ]
 )
 
-scene4 = Scene(
+scene4a = Scene(
     0.25, 
-    4.0, 
+    2.5, 
+    [
+        OnLanelet(1, Set(25)),
+        OnLanelet(2, Set(27)),
+        OnLanelet(3, Set(27)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3)
+    ]
+)
+
+scene4b = Scene(
+    0.25, 
+    2.5, 
+    [
+        OnLanelet(1, Set(25)),
+        OnLanelet(2, Set(24)),
+        OnLanelet(3, Set(26)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3)
+    ]
+)
+
+scene5 = Scene(
+    0.25, 
+    2.5, 
     [
         OnLanelet(1, Set(25)),
         OnLanelet(2, Set(24)),
@@ -122,48 +148,76 @@ scene4 = Scene(
     ]
 )
 
-scene5 = Scene(
-    0.25,
-    4.0,
+scene6 = Scene(
+    0.25, 
+    2.5, 
     [
-        OnLanelet(1, Set(28)),
+        OnLanelet(1, Set(25)),
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
         BehindActor(3, 2),
-        BehindActor(1, 3),
-        BehindActor(4, 1)
-    ]
-)
-
-scene6 = Scene(
-    0.25, 
-    4.0, 
-    [
-        OnLanelet(1, Set(24)),
-        OnLanelet(2, Set(24)),
-        OnLanelet(3, Set(24)),
-        OnLanelet(4, Set(27)),
-        BehindActor(3, 2),
-        BehindActor(1, 3),
+        BehindActor(4, 3),
         BehindActor(4, 1)
     ]
 )
 
 scene7 = Scene(
     0.25, 
-    4.0, 
+    2.5, 
+    [
+        OnLanelet(1, Set(28)),
+        OnLanelet(2, Set(24)),
+        OnLanelet(3, Set(24)),
+        OnLanelet(4, Set(26)),
+        BehindActor(3, 2),
+        BehindActor(4, 3),
+        BehindActor(4, 1)
+    ]
+)
+
+scene8a = Scene(
+    0.25, 
+    2.5, 
     [
         OnLanelet(1, Set(24)),
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
-        OnLanelet(4, Set(24)),
+        OnLanelet(4, Set(26)),
         BehindActor(3, 2),
-        BehindActor(1, 3),
+        BehindActor(4, 3),
+        BehindActor(4, 1)
+    ]
+)
+
+scene8b = Scene(
+    0.25, 
+    2.5, 
+    [
+        OnLanelet(1, Set(28)),
+        OnLanelet(2, Set(24)),
+        OnLanelet(3, Set(24)),
+        OnLanelet(4, Set(27)),
+        BehindActor(3, 2),
+        BehindActor(4, 3),
+        BehindActor(4, 1)
+    ]
+)
+
+scene9 = Scene(
+    0.25, 
+    2.5, 
+    [
+        OnLanelet(1, Set(24)),
+        OnLanelet(2, Set(24)),
+        OnLanelet(3, Set(24)),
+        OnLanelet(4, Set(27)),
+        BehindActor(3, 2),
+        BehindActor(4, 3),
         BehindActor(4, 1),
-        SlowerActor(2, 4),
         SlowerActor(4, 1),
-        SlowerActor(3, 2)
+        SlowerActor(2, 4),
+        #SlowerActor(3, 2)
     ]
 )
 
@@ -171,16 +225,21 @@ scenes = ScenesDict([
     scene1, 
     scene2, 
     scene3, 
-    scene4,
+    #scene4a,
+    #scene4b,
     scene5,
     scene6,
-    scene7
+    scene7,
+    #scene8a,
+    #scene8b, 
+    scene9
 ]);
 
 scenario = Scenario(actors, scenes, ln);
 
 Δt = 0.25
-optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem)
+optimization_problem = synthesize_optimization_problem(scenario, Δt); 
+JuMP.optimize!(optimization_problem)
 
 last_scene_activated_at = findfirst(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[:, end])
 last_scene_duration = findlast(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[last_scene_activated_at:end, end])

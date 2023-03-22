@@ -74,13 +74,13 @@ empty_set = Set{Predicate}()
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
     spec[i] = copy(empty_set)
-    push!(spec[i], VelocityLimits(1))
-    push!(spec[i], VelocityLimits(2))
-    push!(spec[i], VelocityLimits(3))
-    push!(spec[i], VelocityLimits(4))
+    push!(spec[i], StateLimits(1))
+    push!(spec[i], StateLimits(2))
+    push!(spec[i], StateLimits(3))
+    push!(spec[i], StateLimits(4))
     push!(spec[i], BehindActor(4, 3))
 end
-push!(spec[1], BehindActor(2, 1))
+push!(spec[1], BehindActor(2, 1));
 for i=15:k_max
     push!(spec[i], BehindActor(1, 2))
 end
@@ -89,17 +89,17 @@ for i=k_max-10:k_max
     push!(spec[i], BehindActor(1, 3))
     push!(spec[i], BehindActor(4, 1))
 end
-push!(spec[k_max], OnLanelet(1, Set([24])));
+push!(spec[k_max], OnLanelet(1, Set(24)));
 push!(spec[k_max], OnLanelet(2, Set(24)));
-push!(spec[k_max], SlowerActor(2, 3));
-push!(spec[k_max], SlowerActor(3, 1));
-push!(spec[k_max], SlowerActor(1, 4));
+push!(spec[k_max], SlowerActor(2, 4));
+push!(spec[k_max], SlowerActor(4, 1));
+#push!(spec[k_max], SlowerActor(3, 2));
 
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
-        # @info pred
+        @info pred
         apply_predicate!(pred, actors, i, ψ)
     end
 
