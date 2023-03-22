@@ -21,11 +21,6 @@ lenwid = SVector{2, Float64}(5.0, 2.2)
 ### define Actors
 route1 = Route(LaneletID.([25, 28, 24]), ln, lenwid); plot_route(route1);
 route2 = Route(LaneletID.([25, 26, 27, 24]), ln, lenwid); plot_route(route2);
-@warn "TODO -- fix lanlet interval calculation"
-route2.lanelet_interval[25] = ScenarioSynthesis.LaneletInterval(0, 100, 0)
-route2.lanelet_interval[26] = ScenarioSynthesis.LaneletInterval(80, 165, 80)
-route2.lanelet_interval[27] = ScenarioSynthesis.LaneletInterval(160, 180, -2.5)
-route2.lanelet_interval[24] = ScenarioSynthesis.LaneletInterval(175, 320, -2.5)
 route3 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
 route4 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
 
