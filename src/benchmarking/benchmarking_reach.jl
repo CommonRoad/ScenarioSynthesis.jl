@@ -1,10 +1,12 @@
 import Gurobi.Env
 import StaticArrays.SMatrix
+import Base.Threads.@threads
 
 function benchmark(
     n_iter::Integer,
     spec::Vector{Set{Predicate}},
     k_max::Integer,
+    Δt::Real,
     actors_input::ActorsDict,
     grb_env::Env, 
     ψ::Real=0.5; 
@@ -40,7 +42,9 @@ function benchmark(
 
         if synthesize_trajectories
             traj_reach = Dict{ActorID, Trajectory}()
-            for (actor_id, actor) in actors.actors
+            @threads for i in 1:length(actors.actors)
+                actor_id = i
+                actor = actors.actors[i]
                 optim = synthesize_optimization_problem(actor, Δt, grb_env)
                 optimize!(optim)
                 traj_reach[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
