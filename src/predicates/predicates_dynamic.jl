@@ -34,6 +34,7 @@ function apply_predicate!(
     s_ego_max = min(s_ego_max, s_other_max)
     s_other_min = max(s_ego_min, s_other_min)
 
+    # TODO one should consider the length of the actors -- matters if actors' length substantially differs
     centr = (1-ψ) * s_ego_max + ψ * s_other_min
 
     s_ego_ub = centr - actor_ego.lenwid[1] / 2 - actor_other.lenwid[1] / 2

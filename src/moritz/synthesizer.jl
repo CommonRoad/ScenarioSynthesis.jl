@@ -8,7 +8,7 @@ const Jerk = Float64
 const bigM = 1e6 # TODO Inf64?
 
 # synthesize longitudinal optimization problem
-function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
+function synthesize_optimization_problem(scenario::Scenario, Δt::Number; position_limit::Bool=false)
     safety_margin = 10.0
     @info "keeping a safety margin of $(safety_margin)m between actors."
     model = Model(Gurobi.Optimizer)
@@ -54,7 +54,7 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number)
     # static and dynamic limits of vehicle
     for i=1:N+1
         for j=1:n_actors
-            @constraint(model, 0.0 ≤ state[i,j,1] ≤ scenario.actors.actors[j].route.frame.cum_dst[end])
+            position_limit && @constraint(model, 0.0 ≤ state[i,j,1] ≤ scenario.actors.actors[j].route.frame.cum_dst[end])
             @constraint(model, scenario.actors.actors[j].v_lb ≤ state[i,j,2] ≤ scenario.actors.actors[j].v_ub)
             @constraint(model, scenario.actors.actors[j].a_lb ≤ state[i,j,3] ≤ scenario.actors.actors[j].a_ub)
         end
