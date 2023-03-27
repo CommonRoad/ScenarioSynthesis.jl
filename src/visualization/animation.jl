@@ -42,10 +42,8 @@ function animate_scenario(
                 label=actor_id,
                 size=size,
                 color = false,
-                #fillcolor = :darkrainbow,
-                #fillalpha = 0.5,
                 fill = true,
-                fillcolor = tum_colors.lightblue
+                fillcolor = tum_colors.tum_blue_brand
                 #fill_z = actor_id
             )
         end

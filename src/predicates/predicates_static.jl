@@ -46,6 +46,8 @@ function Bounds(
     unnecessary...
 )
     s_lb, s_ub = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
+    s_lb -= actors.actors[predicate.actor_ego].lenwid[1] / 2
+    s_ub += actors.actors[predicate.actor_ego].lenwid[1] / 2
 
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
@@ -61,6 +63,7 @@ function Bounds(
     unnecessary...
 )
     s_ub, _ = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
+    s_ub -= actors.actors[predicate.actor_ego].lenwid[1] / 2
  
     return Bounds(-Inf, s_ub, -Inf, Inf)
 end
@@ -76,6 +79,7 @@ function Bounds(
     unnecessary...
 )
     _, s_lb = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
+    s_lb += actors.actors[predicate.actor_ego].lenwid[1] / 2
  
     return Bounds(s_lb, Inf, -Inf, Inf)
 end
