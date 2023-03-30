@@ -167,12 +167,14 @@ begin i=49
     push!(spec[i], BehindConflictSection(6, 50233));
 end
 
+specvec = [sort([specs...], lt=type_ranking) for specs in spec]
 actors_input = deepcopy(actors);
+actors = deepcopy(actors_input);
 
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
-    for pred in sort([spec[i]...], lt=type_ranking)
+    for pred in specvec[i] #sort([spec[i]...], lt=type_ranking)
         @info pred
         apply_predicate!(pred, actors, i, ψ)
     end
@@ -187,7 +189,7 @@ end
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (actor_id, actor) in actors.actors
     for i in reverse(1:k_max-1)
-        # @info actor_id, i
+        @info actor_id, i
         backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
         intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
         actor.states[i] = intersect
@@ -195,7 +197,7 @@ for (actor_id, actor) in actors.actors
 end
 
 # plot reachable sets
-plot(); colors = palette(:tab10);
+plot(); colors = tum_colors_alternating;
 for i=1:10:length(actor1.states)-1
     plot!(plot_data(actor1.states[i]); color=colors[1]); 
     plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors[2]); 
@@ -238,4 +240,4 @@ using BenchmarkTools
 using Gurobi
 
 grb_env = Gurobi.Env()
-@time benchmark(1, spec, 50, Δt, actors_input, grb_env, 0.5; synthesize_trajectories = true)
+@benchmark benchmark(10, $specvec, 50, $Δt, $actors_input, $grb_env, 0.5; synthesize_trajectories = true)

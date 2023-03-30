@@ -4,7 +4,7 @@ import Base.Threads.@threads
 
 function benchmark(
     n_iter::Integer,
-    spec::Vector{Set{Predicate}},
+    specvec::Vector{<:Vector{<:Predicate}},
     k_max::Integer,
     Δt::Real,
     actors_input::ActorsDict,
@@ -19,7 +19,7 @@ function benchmark(
         # forward propagation
         for i=1:k_max
             # restrict convex set to match specifications
-            for pred in sort([spec[i]...], lt=type_ranking)
+            for pred in specvec[i]
                 apply_predicate!(pred, actors, i, ψ)
             end
 
