@@ -121,14 +121,18 @@ for (actor_id, actor) in actors.actors
 end
 
 # plot
+using LaTeXStrings
+pgfplotsx()
 plot();
+colors = tum_colors_alternating;
 for i=1:10:length(actor1.states)
-    plot!(plot_data(actor1.states[i]); color=:blue); 
-    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=:green); 
-    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=:orange);
-    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=:brown);
+    plot!(plot_data(actor1.states[i]); color=colors[1]); 
+    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors[2]); 
+    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors[3]);
+    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors[4]);
 end
-plot!(; xlabel = "s", ylabel = "v")
+plot!(; xlabel = "s [m]", ylabel = "v [m/s]", legend=false, grid=false, framestyle=:box)
+savefig("test.tikz")
 
 # synthesize trajectories using milp
 using JuMP, Gurobi

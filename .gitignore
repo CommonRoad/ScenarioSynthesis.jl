@@ -3,4 +3,5 @@ __pycache__
 foo.jl
 *.log
 *.lp
+*.tikz
 output/*

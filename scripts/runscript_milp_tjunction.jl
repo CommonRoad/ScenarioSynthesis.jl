@@ -287,13 +287,11 @@ scene13 = Scene(
 )
 
 scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5, scene6, scene7, scene8, scene9, scene10, scene11, scene12, scene13]) # with "idle" between succeeding actors on intersection 
-scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, scene13]) # no "idle" between succeeding actors on intersection 
+scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, scene13])#, scene6, scene8, scene10, scene12, scene13]); # no "idle" between succeeding actors on intersection 
 
 scenario = Scenario(actors, scenes, ln);
-
 Δt = 0.25
-optimization_problem = synthesize_optimization_problem(scenario, Δt)
-JuMP.optimize!(optimization_problem)
+@benchmark begin optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem) end
 
 last_scene_activated_at = findfirst(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[:, end])
 last_scene_duration = findlast(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[last_scene_activated_at:end, end])
