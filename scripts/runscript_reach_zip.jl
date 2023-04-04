@@ -74,26 +74,21 @@ empty_set = Set{Predicate}()
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
     spec[i] = copy(empty_set)
-    push!(spec[i], StateLimits(1))
-    push!(spec[i], StateLimits(2))
-    push!(spec[i], StateLimits(3))
-    push!(spec[i], StateLimits(4))
-    push!(spec[i], BehindActor(4, 3))
+    push!(spec[i], VelocityLimits(1))
+    push!(spec[i], VelocityLimits(2))
+    push!(spec[i], VelocityLimits(3))
+    push!(spec[i], VelocityLimits(4))
+    push!(spec[i], BehindActor([4, 3]))
 end
-push!(spec[1], BehindActor(2, 1));
-for i=15:k_max
-    push!(spec[i], BehindActor(1, 2))
+push!(spec[1], BehindActor([2, 1]));
+for i=15:k_max-10
+    push!(spec[i], BehindActor([1, 2]))
 end
 for i=k_max-10:k_max
-    push!(spec[i], BehindActor(3, 2))
-    push!(spec[i], BehindActor(1, 3))
-    push!(spec[i], BehindActor(4, 1))
+    push!(spec[i], BehindActor([4, 1, 3, 2]))
 end
 push!(spec[k_max], OnLanelet(1, Set(24)));
-push!(spec[k_max], OnLanelet(2, Set(24)));
-push!(spec[k_max], SlowerActor(2, 4));
-push!(spec[k_max], SlowerActor(4, 1));
-#push!(spec[k_max], SlowerActor(3, 2));
+push!(spec[k_max], SlowerActor([2, 1]))
 
 for i = 1:k_max
     @info i
@@ -122,17 +117,27 @@ end
 
 # plot
 using LaTeXStrings
+using PGFPlotsX
 pgfplotsx()
 plot();
 colors = tum_colors_alternating;
+colors_cont = tum_colors_harmonic;
+counter = 1
 for i=1:10:length(actor1.states)
-    plot!(plot_data(actor1.states[i]); color=colors[1]); 
-    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors[2]); 
-    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors[3]);
-    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors[4]);
+    counter+=1
+    @info i
+    plot!(plot_data(actor1.states[i]); color=colors_cont[counter], fill=true, fillcolor=colors[1], fillalpha=0.3); 
+    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[2], fillalpha=0.3); 
+    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[3], fillalpha=0.3);
+    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[4], fillalpha=0.3);
 end
-plot!(; xlabel = "s [m]", ylabel = "v [m/s]", legend=false, grid=false, framestyle=:box)
-savefig("test.tikz")
+plt = plot!(; xlabel = L"s [\textrm{m}]", ylabel = L"v [\frac{\textrm{m}}{\textrm{s}}]", legend=false, grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
+p = @pgf plt
+
+
+
+savefig(p, "test.tikz")
+
 
 # synthesize trajectories using milp
 using JuMP, Gurobi
@@ -142,6 +147,7 @@ grb_env = Gurobi.Env()
 for (actor_id, actor) in actors.actors
     optim = synthesize_optimization_problem(actor, Δt, grb_env)
     optimize!(optim)
+    @info actor_id, objective_value(optim)
     traj_reach[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
@@ -150,10 +156,13 @@ for (actor_id, actor) in actors.actors
     end
 end
 
-plot(hcat(traj_reach[1]...)[1,:], hcat(traj_reach[1]...)[2,:]);
-plot!(hcat(traj_reach[2]...)[1,:], hcat(traj_reach[2]...)[2,:]);
-plot!(hcat(traj_reach[3]...)[1,:], hcat(traj_reach[3]...)[2,:]);
-plot!(hcat(traj_reach[4]...)[1,:], hcat(traj_reach[4]...)[2,:]); @warn "not offset-corrected"
-plot!(; xlabel = "s", ylabel = "v")
+plot!(hcat(traj_reach[1]...)[1,1:end-1], hcat(traj_reach[1]...)[2,1:end-1]; color=colors[1]);
+plot!(hcat(traj_reach[2]...)[1,1:end-1], hcat(traj_reach[2]...)[2,1:end-1]; color=colors[2]);
+plot!(hcat(traj_reach[3]...)[1,1:end-1], hcat(traj_reach[3]...)[2,1:end-1]; color=colors[3]);
+plot!(hcat(traj_reach[4]...)[1,1:end-1], hcat(traj_reach[4]...)[2,1:end-1]; color=colors[4]); @warn "not offset-corrected"
+plot!()
 
 animate_scenario(ln, actors, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
+
+plot_lanelet_network(ln; ylims=(-5, 20), size=(1000, 150))
+plot!(aspect_ratio=:equal, frame=:box, yticks=false, xticks=false)

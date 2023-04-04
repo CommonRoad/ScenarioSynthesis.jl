@@ -106,13 +106,15 @@ function synthesize_optimization_problem(scenario::Scenario, Δt::Number; positi
                 end
             
             elseif typeof(pred) == BehindActor
+                @assert length(pred.actors) == 2 # more complex predicates can be split into multiple easier ones.
                 for i=1:N
-                    @constraint(model, state[i, pred.actor_ego, 1] + scenario.actors.actors[pred.actor_ego].lenwid[1] / 2 + scenario.actors.offset[pred.actor_ego, pred.actor_other] + safety_margin ≤ state[i, pred.actor_other, 1] - scenario.actors.actors[pred.actor_other].lenwid[1] / 2 + bigM * (1 - scene_active[i, scene_id]))
+                    @constraint(model, state[i, pred.actors[1], 1] + scenario.actors.actors[pred.actors[1]].lenwid[1] / 2 + scenario.actors.offset[pred.actors[1], pred.actors[2]] + safety_margin ≤ state[i, pred.actors[2], 1] - scenario.actors.actors[pred.actors[2]].lenwid[1] / 2 + bigM * (1 - scene_active[i, scene_id]))
                 end
 
             elseif typeof(pred) == SlowerActor
+                @assert length(pred.actors) == 2 # more complex predicates can be split into multiple easier ones.
                 for i=1:N
-                    @constraint(model, state[i, pred.actor_ego, 2] ≤ state[i, pred.actor_other, 2] + bigM * (1 - scene_active[i, scene_id]))
+                    @constraint(model, state[i, pred.actors[1], 2] ≤ state[i, pred.actors[2], 2] + bigM * (1 - scene_active[i, scene_id]))
                 end
 
             elseif typeof(pred) == BeforeConflictSection

@@ -60,6 +60,8 @@ function plot_lanelet_network(
         plot!(p, plot_lanelet(lt, id, p; draw_direction=draw_direction, annotate_id=annotate_id, size=size))
     end
 
+    plot!(p, aspect_ratio=:equal)
+
     return p 
 end
 

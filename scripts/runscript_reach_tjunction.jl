@@ -206,7 +206,7 @@ for i=1:10:length(actor1.states)-1
     plot!(plot_data(actor5.states[i] + State(actors.offset[5, 1], 0)); color=colors[5]);
     plot!(plot_data(actor6.states[i] + State(actors.offset[6, 1], 0)); color=colors[6]);
 end
-plot!(; xlabel = "s", ylabel = "v", legend=false)
+plot!(; xlabel = "s", ylabel = "v", legend=true)
 
 # synthesize trajectories using milp
 using JuMP, Gurobi

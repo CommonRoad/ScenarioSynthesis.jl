@@ -73,8 +73,8 @@ scene1 = Scene(
         OnLanelet(2, Set(25)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor(2, 1),
-        BehindActor(4, 3)
+        BehindActor([2, 1]),
+        BehindActor([4, 3])
     ]
 )
 
@@ -86,8 +86,8 @@ scene2 = Scene(
         OnLanelet(2, Set(26)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3),
+        BehindActor([3, 2]),
+        BehindActor([4, 3]),
     ]
 )
 
@@ -99,8 +99,8 @@ scene3 = Scene(
         OnLanelet(2, Set(27)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3)
+        BehindActor([3, 2]),
+        BehindActor([4, 3])
     ]
 )
 
@@ -112,8 +112,8 @@ scene4a = Scene(
         OnLanelet(2, Set(27)),
         OnLanelet(3, Set(27)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3)
+        BehindActor([3, 2]),
+        BehindActor([4, 3])
     ]
 )
 
@@ -125,8 +125,8 @@ scene4b = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3)
+        BehindActor([3, 2]),
+        BehindActor([4, 3])
     ]
 )
 
@@ -138,8 +138,8 @@ scene5 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(27)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3)
+        BehindActor([3, 2]),
+        BehindActor([4, 3])
     ]
 )
 
@@ -151,9 +151,9 @@ scene6 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3),
-        BehindActor(4, 1)
+        BehindActor([3, 2]),
+        BehindActor([4, 3]),
+        BehindActor([4, 1])
     ]
 )
 
@@ -165,9 +165,9 @@ scene7 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3),
-        BehindActor(4, 1)
+        BehindActor([3, 2]),
+        BehindActor([4, 3]),
+        BehindActor([4, 1])
     ]
 )
 
@@ -179,9 +179,9 @@ scene8a = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
-        BehindActor(3, 2),
-        BehindActor(4, 3),
-        BehindActor(4, 1)
+        BehindActor([3, 2]),
+        BehindActor([4, 3]),
+        BehindActor([4, 1])
     ]
 )
 
@@ -193,9 +193,9 @@ scene8b = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(27)),
-        BehindActor(3, 2),
-        BehindActor(4, 3),
-        BehindActor(4, 1)
+        BehindActor([3, 2]),
+        BehindActor([4, 3]),
+        BehindActor([4, 1])
     ]
 )
 
@@ -207,11 +207,11 @@ scene9 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(27)),
-        BehindActor(3, 2),
-        BehindActor(4, 3),
-        BehindActor(4, 1),
-        SlowerActor(4, 1),
-        SlowerActor(2, 4),
+        BehindActor([3, 2]),
+        BehindActor([4, 3]),
+        BehindActor([4, 1]),
+        #SlowerActor([4, 1]),
+        #SlowerActor([2, 4]),
         #SlowerActor(3, 2)
     ]
 )
@@ -244,6 +244,11 @@ plot(JuMP.value.(optimization_problem.obj_dict[:scene_active][1:k_max, :]))
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1][1:k_max, :]); xlabel="step [1]", ylabel="s [m]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2][1:k_max, :]); xlabel="step [1]", ylabel="v [m/s]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :]); xlabel="step [1]", ylabel="a [m/s²]")
+
+acc = JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :])
+for i=1:4
+    @info sum(acc[:,i] .^2)
+end
 
 traj = Dict{ActorID, Trajectory}()
 for (actor_id, actor) in actors.actors

@@ -2,6 +2,9 @@ using ScenarioSynthesis
 using Plots
 using LaTeXStrings
 
+const COLUMNWIDTH = 245.71811
+const GOLDEN_RATIO = (1+sqrt(5))/2
+
 plot_font = "Computer Modern"
 default(
     fontfamily=plot_font,
