@@ -13,8 +13,12 @@ function benchmark(
     synthesize_trajectories::Bool=true
 )
     A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0)
+    actors = deepcopy(actors_input)
     for j=1:n_iter
-        actors = deepcopy(actors_input)
+        for (actor_id, actor) in actors_input.actors
+            empty!(actors.actors[actor_id].states)
+            push!(actors.actors[actor_id].states, actor.states[1])
+        end
 
         # forward propagation
         for i=1:k_max

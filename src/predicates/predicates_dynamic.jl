@@ -33,12 +33,12 @@ function apply_predicate!(
         min_this = max(min_prev, min_this)
         max_prev = min(max_prev, max_this)
 
-        @info min_prev, max_prev, min_this, max_this
+        # @info min_prev, max_prev, min_this, max_this
         if min_this + actors.actors[predicate.actors[i]].lenwid[1] / 2 < max_prev - actors.actors[predicate.actors[i+1]].lenwid[1] / 2
             ψ = i / length(predicate.actors)
             # TODO one should consider the length of the actors -- matters if actors' length substantially differs
             threshold = ψ * (max_prev - actors.actors[predicate.actors[i+1]].lenwid[1] / 2) + (1-ψ) * (min_this + actors.actors[predicate.actors[i]].lenwid[1] / 2)
-            @info threshold
+            # @info threshold
         
             bounds_prev = Bounds(-Inf, threshold + offsets[i] - actors.actors[predicate.actors[i]].lenwid[1] / 2, -Inf, Inf)
             bounds_this = Bounds(threshold + offsets[i+1] + actors.actors[predicate.actors[i+1]].lenwid[1] / 2, Inf, -Inf, Inf)
@@ -49,7 +49,7 @@ function apply_predicate!(
             min_prev = threshold
             max_prev = max_this
         else
-            @info "no handling necessary"
+            # @info "no handling necessary"
             min_prev = min_this
             max_prev = max_this
         end

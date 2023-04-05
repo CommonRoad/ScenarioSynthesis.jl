@@ -115,31 +115,7 @@ for (actor_id, actor) in actors.actors
     end
 end
 
-# plot
-using LaTeXStrings
-using PGFPlotsX
-pgfplotsx()
-plot();
-colors = tum_colors_alternating;
-colors_cont = tum_colors_harmonic;
-counter = 1
-for i=1:10:length(actor1.states)
-    counter+=1
-    @info i
-    plot!(plot_data(actor1.states[i]); color=colors_cont[counter], fill=true, fillcolor=colors[1], fillalpha=0.3); 
-    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[2], fillalpha=0.3); 
-    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[3], fillalpha=0.3);
-    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[4], fillalpha=0.3);
-end
-plt = plot!(; xlabel = L"s [\textrm{m}]", ylabel = L"v [\frac{\textrm{m}}{\textrm{s}}]", legend=false, grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
-p = @pgf plt
-
-
-
-savefig(p, "test.tikz")
-
-
-# synthesize trajectories using milp
+# synthesize trajectories using QP
 using JuMP, Gurobi
 
 traj_reach = Dict{ActorID, Trajectory}()
@@ -156,13 +132,78 @@ for (actor_id, actor) in actors.actors
     end
 end
 
+# animation
+# animate_scenario(ln, actors, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
+
+# plot reachable sets
+using LaTeXStrings
+using PGFPlotsX; pgfplotsx()
+plot();
+colors = tum_colors_alternating;
+colors_cont = tum_colors_harmonic;
+counter = 1
+for i=1:10:41
+    counter+=1
+    @info i
+    plot!(plot_data(actor1.states[i]); color=colors_cont[counter], fill=true, fillcolor=colors[1], fillalpha=0.3); 
+    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[2], fillalpha=0.3); 
+    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[3], fillalpha=0.3);
+    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[4], fillalpha=0.3);
+end
+plot!(; xlabel = L"s [\textrm{m}]", ylabel = L"v [\frac{\textrm{m}}{\textrm{s}}]", legend=false, grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
+
+# add trajectories reach
 plot!(hcat(traj_reach[1]...)[1,1:end-1], hcat(traj_reach[1]...)[2,1:end-1]; color=colors[1]);
 plot!(hcat(traj_reach[2]...)[1,1:end-1], hcat(traj_reach[2]...)[2,1:end-1]; color=colors[2]);
 plot!(hcat(traj_reach[3]...)[1,1:end-1], hcat(traj_reach[3]...)[2,1:end-1]; color=colors[3]);
 plot!(hcat(traj_reach[4]...)[1,1:end-1], hcat(traj_reach[4]...)[2,1:end-1]; color=colors[4]); @warn "not offset-corrected"
 plot!()
 
-animate_scenario(ln, actors, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
+# add trajectories miqp
+# @isdefined traj_miqp || throw(error("run runscript_milp_zip.jl first"))
+plot!(hcat(traj_miqp[1]...)[1,1:end], hcat(traj_miqp[1]...)[2,1:end]; color=colors[1]);
+plot!(hcat(traj_miqp[2]...)[1,1:end], hcat(traj_miqp[2]...)[2,1:end]; color=colors[2]);
+plot!(hcat(traj_miqp[3]...)[1,1:end], hcat(traj_miqp[3]...)[2,1:end]; color=colors[3]);
+plot!(hcat(traj_miqp[4]...)[1,1:end], hcat(traj_miqp[4]...)[2,1:end]; color=colors[4]); @warn "not offset-corrected"
+plot!()
 
-plot_lanelet_network(ln; ylims=(-5, 20), size=(1000, 150))
+savefig("output/tikz/zip_reachable_sets.tikz")
+
+# plot lanelet network + routes
+plot_lanelet_network(ln; ylims=(-5, 20), xlims=(-150, 100), size=(1000, 200), draw_direction=false)
 plot!(aspect_ratio=:equal, frame=:box, yticks=false, xticks=false)
+
+traj_x_cart = Dict{ActorID, Vector{Float64}}()
+traj_y_cart = Dict{ActorID, Vector{Float64}}()
+
+for (actor_id, traj) in traj_reach
+    traj_x_cart[actor_id] = Vector{Float64}()
+    traj_y_cart[actor_id] = Vector{Float64}()
+    for st in traj
+        x, y = transform(Pos(FRoute, st[1], 0), actors.actors[actor_id].route.frame)
+        push!(traj_x_cart[actor_id], x)
+        push!(traj_y_cart[actor_id], y)
+    end
+end
+
+for (actor_id, traj) in traj_reach
+    plot!(traj_x_cart[actor_id], traj_y_cart[actor_id])
+end
+
+plot!()
+
+for (actor_id, traj) in traj_reach
+    vertices = ScenarioSynthesis.state_to_vertices(traj_reach[actor_id][1], actors.actors[actor_id])
+    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=tum_colors.tum_blue_brand)
+end
+
+plot!()
+
+for (actor_id, traj) in traj_reach
+    y = (traj_y_cart[actor_id][1] > 7 ? 15.0 : -1.0)
+    annotate!(traj_x_cart[actor_id][1], y, text(actor_id))
+end
+
+plot!()
+
+savefig("output/tikz/zip_ln_traj.tikz")

@@ -87,9 +87,9 @@ scene1 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -103,9 +103,9 @@ scene2 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -120,9 +120,9 @@ scene3 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -136,9 +136,9 @@ scene4 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -152,9 +152,9 @@ scene5 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -168,9 +168,9 @@ scene6 = Scene(
         BeforeConflictSection(4, 50233),
         OnConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -184,9 +184,9 @@ scene7 = Scene(
         BeforeConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -200,9 +200,9 @@ scene8 = Scene(
         BeforeConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -216,9 +216,9 @@ scene9 = Scene(
         BeforeConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -232,9 +232,9 @@ scene10 = Scene(
         OnConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -248,9 +248,9 @@ scene11 = Scene(
         BehindConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -264,9 +264,9 @@ scene12 = Scene(
         BehindConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         OnConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
@@ -280,45 +280,43 @@ scene13 = Scene(
         BehindConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BehindConflictSection(6, 50233),
-        BehindActor(2, 1),
-        BehindActor(4, 3),
-        BehindActor(6, 5),
+        BehindActor([2, 1]),
+        BehindActor([4, 3]),
+        BehindActor([6, 5]),
     ]
 )
 
-scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5, scene6, scene7, scene8, scene9, scene10, scene11, scene12, scene13]) # with "idle" between succeeding actors on intersection 
+# scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5, scene6, scene7, scene8, scene9, scene10, scene11, scene12, scene13]) # with "idle" between succeeding actors on intersection 
 scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, scene13])#, scene6, scene8, scene10, scene12, scene13]); # no "idle" between succeeding actors on intersection 
 
 scenario = Scenario(actors, scenes, ln);
 Δt = 0.25
-@benchmark begin optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem) end
+optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem)
 
 last_scene_activated_at = findfirst(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[:, end])
 last_scene_duration = findlast(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[last_scene_activated_at:end, end])
 k_max = last_scene_activated_at + last_scene_duration - 1
 
+acc = JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :])
+for i=1:6
+    @info sum(acc[:,i] .^2)
+end
+
+#=
 plot(JuMP.value.(optimization_problem.obj_dict[:scene_active][1:k_max, :]); label=false)
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,1][1:k_max, :]); xlabel="step [1]", ylabel="s [m]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2][1:k_max, :]); xlabel="step [1]", ylabel="v [m/s]")
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :]); xlabel="step [1]", ylabel="a [m/s²]")
+=#
 
-traj_milp = Dict{ActorID, Trajectory}()
+traj_miqp = Dict{ActorID, Trajectory}()
 for (actor_id, actor) in actors.actors
-    traj_milp[actor_id] = Trajectory(Vector{State}(undef, k_max))
+    traj_miqp[actor_id] = Trajectory(Vector{State}(undef, k_max))
     counter = 0
     for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,actor_id,1:2])[1:k_max,:])
         counter += 1
-        traj_milp[actor_id][counter] = State(val[1], val[2])
+        traj_miqp[actor_id][counter] = State(val[1], val[2])
     end
 end
 
-plotly()
-plot(hcat(traj_milp[1]...)[1,:], hcat(traj_milp[1]...)[2,:]);
-plot!(hcat(traj_milp[2]...)[1,:], hcat(traj_milp[2]...)[2,:]);
-plot!(hcat(traj_milp[3]...)[1,:], hcat(traj_milp[3]...)[2,:]);
-plot!(hcat(traj_milp[4]...)[1,:], hcat(traj_milp[4]...)[2,:]);
-plot!(hcat(traj_milp[5]...)[1,:], hcat(traj_milp[5]...)[2,:]);
-plot!(hcat(traj_milp[6]...)[1,:], hcat(traj_milp[6]...)[2,:]); @warn "not offset-corrected"
-plot!(; xlabel = "s", ylabel = "v", legend=false, title = "MIQP")
-
-animate_scenario(ln, actors, traj_milp, Δt, k_max; playback_speed=1, filename="milp_tjunction")
+animate_scenario(ln, actors, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_tjunction")

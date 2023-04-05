@@ -78,7 +78,7 @@ A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate function
 
 ### define formal specifications
 Δt = 0.25
-k_max = 50 # → scene duration: Δt * (k_max - 1) = 10 sec
+k_max = 49 # → scene duration: Δt * (k_max - 1) = 10 sec
 
 empty_set = Set{Predicate}()
 
@@ -99,9 +99,9 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(4))
     push!(spec[i], VelocityLimits(5))
     push!(spec[i], VelocityLimits(6))
-    push!(spec[i], BehindActor(2, 1))
-    push!(spec[i], BehindActor(4, 3))
-    push!(spec[i], BehindActor(6, 5))
+    push!(spec[i], BehindActor([2, 1]))
+    push!(spec[i], BehindActor([4, 3]))
+    push!(spec[i], BehindActor([6, 5]))
 end
 
 begin i=1
@@ -196,19 +196,7 @@ for (actor_id, actor) in actors.actors
     end
 end
 
-# plot reachable sets
-plot(); colors = tum_colors_alternating;
-for i=1:10:length(actor1.states)-1
-    plot!(plot_data(actor1.states[i]); color=colors[1]); 
-    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors[2]); 
-    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors[3]);
-    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors[4]);
-    plot!(plot_data(actor5.states[i] + State(actors.offset[5, 1], 0)); color=colors[5]);
-    plot!(plot_data(actor6.states[i] + State(actors.offset[6, 1], 0)); color=colors[6]);
-end
-plot!(; xlabel = "s", ylabel = "v", legend=true)
-
-# synthesize trajectories using milp
+# synthesize trajectories using QP
 using JuMP, Gurobi
 
 traj = Dict{ActorID, Trajectory}()
@@ -216,6 +204,7 @@ grb_env = Gurobi.Env()
 for (actor_id, actor) in actors.actors
     optim = synthesize_optimization_problem(actor, Δt, grb_env)
     optimize!(optim)
+    @info objective_value(optim)
     traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
@@ -224,20 +213,113 @@ for (actor_id, actor) in actors.actors
     end
 end
 
-plotly()
-plot(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]);
-plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]);
-plot!(hcat(traj[3]...)[1,:], hcat(traj[3]...)[2,:]);
-plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]);
-plot!(hcat(traj[5]...)[1,:], hcat(traj[5]...)[2,:]);
-plot!(hcat(traj[6]...)[1,:], hcat(traj[6]...)[2,:]); @warn "not offset-corrected"
-plot!(; xlabel = "s", ylabel = "v", legend=false, title = "Reachability")
+# animation
+# animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
 
-animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
+# plot reachable sets
+using LaTeXStrings
+using PGFPlotsX; pgfplotsx()
+plot();
+colors = tum_colors_alternating;
+colors_cont = tum_colors_harmonic;
+counter = 1
+for i=1:8:49
+    counter += 1
+    @info i
+    plot!(plot_data(actors.actors[1].states[i]); color=colors_cont[counter], fill=true, fillcolor=colors[1], fillalpha=0.3); 
+    plot!(plot_data(actors.actors[2].states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[2], fillalpha=0.3); 
+    plot!(plot_data(actors.actors[3].states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[3], fillalpha=0.3);
+    plot!(plot_data(actors.actors[4].states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[4], fillalpha=0.3);
+    plot!(plot_data(actors.actors[5].states[i] + State(actors.offset[5, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[5], fillalpha=0.3);
+    plot!(plot_data(actors.actors[6].states[i] + State(actors.offset[6, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[6], fillalpha=0.3);
+end
+plot!(; xlabel = L"s [\textrm{m}]", ylabel = L"v [\frac{\textrm{m}}{\textrm{s}}]", legend=false, grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
+
+# add trajectories reach
+plot!(hcat(traj[1]...)[1,:], hcat(traj[1]...)[2,:]; color=colors[1]);
+plot!(hcat(traj[2]...)[1,:], hcat(traj[2]...)[2,:]; color=colors[2]);
+plot!(hcat(traj[3]...)[1,:], hcat(traj[3]...)[2,:]; color=colors[3]);
+plot!(hcat(traj[4]...)[1,:], hcat(traj[4]...)[2,:]; color=colors[4]);
+plot!(hcat(traj[5]...)[1,:], hcat(traj[5]...)[2,:]; color=colors[5]);
+plot!(hcat(traj[6]...)[1,:], hcat(traj[6]...)[2,:]; color=colors[6]); @warn "not offset-corrected"
+plot!()
+
+# add trajectories miqp
+# @isdefined traj_miqp || throw(error("run runscript_milp_zip.jl first"))
+plot!(hcat(traj_miqp[1]...)[1,1:end], hcat(traj_miqp[1]...)[2,1:end]; color=colors[1]);
+plot!(hcat(traj_miqp[2]...)[1,1:end], hcat(traj_miqp[2]...)[2,1:end]; color=colors[2]);
+plot!(hcat(traj_miqp[3]...)[1,1:end], hcat(traj_miqp[3]...)[2,1:end]; color=colors[3]);
+plot!(hcat(traj_miqp[4]...)[1,1:end], hcat(traj_miqp[4]...)[2,1:end]; color=colors[4]);
+plot!(hcat(traj_miqp[5]...)[1,1:end], hcat(traj_miqp[5]...)[2,1:end]; color=colors[5]);
+plot!(hcat(traj_miqp[6]...)[1,1:end], hcat(traj_miqp[6]...)[2,1:end]; color=colors[6]); @warn "not offset-corrected"
+plot!()
+
+savefig("output/tikz/tjunction_reachable_sets.tikz")
+
+# plot lanelet network + routes
+using LaTeXStrings
+using PGFPlotsX
+pgfplotsx()
+traj_reach = traj
+plot_lanelet_network(ln; draw_direction=false)
+plot!(aspect_ratio=:equal, frame=:box, yticks=false, xticks=false)
+plot!(aspect_ratio=:equal, frame=:box, xlims=(-80, 105), ylims=(-30, 100))
+
+traj_x_cart = Dict{ActorID, Vector{Float64}}()
+traj_y_cart = Dict{ActorID, Vector{Float64}}()
+
+for (actor_id, traj) in traj_reach
+    traj_x_cart[actor_id] = Vector{Float64}()
+    traj_y_cart[actor_id] = Vector{Float64}()
+    for st in traj
+        try
+            x, y = transform(Pos(FRoute, st[1], 0), actors.actors[actor_id].route.frame)
+            push!(traj_x_cart[actor_id], x)
+            push!(traj_y_cart[actor_id], y)
+        catch e
+        end
+    end
+end
+
+for (actor_id, traj) in traj_reach
+    actor_id in (2, 4, 6) && continue
+    plot!(traj_x_cart[actor_id], traj_y_cart[actor_id])
+end
+
+plot!()
+
+for (actor_id, traj) in traj_reach
+    vertices = ScenarioSynthesis.state_to_vertices(traj_reach[actor_id][1], actors.actors[actor_id])
+    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=tum_colors.tum_blue_brand)
+end
+
+plot!()
+
+for (actor_id, traj) in traj_reach
+    x, y = 0, 0
+    offset = 8
+    if actor_id in (1, 2)
+        x = traj_x_cart[actor_id][1]
+        y = traj_y_cart[actor_id][1] - offset
+    elseif actor_id in (3, 4)
+        x = traj_x_cart[actor_id][1]
+        y = traj_y_cart[actor_id][1] + offset
+    else
+        x = traj_x_cart[actor_id][1] - offset
+        y = traj_y_cart[actor_id][1]
+    end
+    annotate!(x, y, text(actor_id))
+end
+
+plot!()
+
+savefig("output/tikz/tjunction_ln_traj.tikz")
+
+
 
 # performance evaluation 
 using BenchmarkTools
 using Gurobi
 
 grb_env = Gurobi.Env()
-@benchmark benchmark(10, $specvec, 50, $Δt, $actors_input, $grb_env, 0.5; synthesize_trajectories = true)
+@profview benchmark(1000, specvec, 49, Δt, actors_input, grb_env, 0.5; synthesize_trajectories = false)
