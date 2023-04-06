@@ -35,12 +35,12 @@ using StaticArrays
     print(actors.offset)
 
     # BehindActor
-    behind_actor_predicate = BehindActor(1, 2)
+    behind_actor_predicate = BehindActor([1, 2])
     apply_predicate!(behind_actor_predicate, actors, 1, 0.5)
     @test true # "no errors thrown so far"
 
     # SlowerActor
-    slower_actor_predicate = SlowerActor(1, 2)
+    slower_actor_predicate = SlowerActor([1, 2])
     apply_predicate!(slower_actor_predicate, actors, 1, 0.5)
     @test true # "no errors thrown so far"
 end
