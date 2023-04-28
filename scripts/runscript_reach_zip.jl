@@ -139,38 +139,38 @@ end
 using LaTeXStrings
 using PGFPlotsX; pgfplotsx()
 plot();
-colors = tum_colors_alternating;
-colors_cont = tum_colors_harmonic;
+colors_alt = palette(:tab10);# tum_colors_alternating;
+colors_cont = palette(:viridis, 6);#tum_colors_harmonic;
 counter = 1
 for i=1:10:41
     counter+=1
     @info i
-    plot!(plot_data(actor1.states[i]); color=colors_cont[counter], fill=true, fillcolor=colors[1], fillalpha=0.3); 
-    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[2], fillalpha=0.3); 
-    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[3], fillalpha=0.3);
-    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], fill=true, fillcolor=colors[4], fillalpha=0.3);
+    plot!(plot_data(actor1.states[i]); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[1], fillalpha=0.2); 
+    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[2], fillalpha=0.2); 
+    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[3], fillalpha=0.2);
+    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[4], fillalpha=0.2);
 end
-plot!(; xlabel = L"s [\textrm{m}]", ylabel = L"v [\frac{\textrm{m}}{\textrm{s}}]", legend=false, grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
+plot!(; xlabel = L"s \ [\textrm{m}]", ylabel = L"\dot{s} \ [\frac{\textrm{m}}{\textrm{s}}]", grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
 
 # add trajectories reach
-plot!(hcat(traj_reach[1]...)[1,1:end-1], hcat(traj_reach[1]...)[2,1:end-1]; color=colors[1]);
-plot!(hcat(traj_reach[2]...)[1,1:end-1], hcat(traj_reach[2]...)[2,1:end-1]; color=colors[2]);
-plot!(hcat(traj_reach[3]...)[1,1:end-1], hcat(traj_reach[3]...)[2,1:end-1]; color=colors[3]);
-plot!(hcat(traj_reach[4]...)[1,1:end-1], hcat(traj_reach[4]...)[2,1:end-1]; color=colors[4]); @warn "not offset-corrected"
+plot!(hcat(traj_reach[1]...)[1,1:end-1], hcat(traj_reach[1]...)[2,1:end-1]; color=colors_alt[1] );
+plot!(hcat(traj_reach[2]...)[1,1:end-1], hcat(traj_reach[2]...)[2,1:end-1]; color=colors_alt[2], linewidth=2);
+plot!(hcat(traj_reach[3]...)[1,1:end-1], hcat(traj_reach[3]...)[2,1:end-1]; color=colors_alt[3], linewidth=2);
+plot!(hcat(traj_reach[4]...)[1,1:end-1], hcat(traj_reach[4]...)[2,1:end-1]; color=colors_alt[4], linewidth=2); @warn "not offset-corrected"
 plot!()
 
 # add trajectories miqp
 # @isdefined traj_miqp || throw(error("run runscript_milp_zip.jl first"))
-plot!(hcat(traj_miqp[1]...)[1,1:end], hcat(traj_miqp[1]...)[2,1:end]; color=colors[1]);
-plot!(hcat(traj_miqp[2]...)[1,1:end], hcat(traj_miqp[2]...)[2,1:end]; color=colors[2]);
-plot!(hcat(traj_miqp[3]...)[1,1:end], hcat(traj_miqp[3]...)[2,1:end]; color=colors[3]);
-plot!(hcat(traj_miqp[4]...)[1,1:end], hcat(traj_miqp[4]...)[2,1:end]; color=colors[4]); @warn "not offset-corrected"
+plot!(hcat(traj_miqp[1]...)[1,1:end], hcat(traj_miqp[1]...)[2,1:end]; color=colors_alt[1], linestyle=:dash, linewidth=2);
+plot!(hcat(traj_miqp[2]...)[1,1:end], hcat(traj_miqp[2]...)[2,1:end]; color=colors_alt[2], linestyle=:dash, linewidth=2);
+plot!(hcat(traj_miqp[3]...)[1,1:end], hcat(traj_miqp[3]...)[2,1:end]; color=colors_alt[3], linestyle=:dash, linewidth=2);
+plot!(hcat(traj_miqp[4]...)[1,1:end], hcat(traj_miqp[4]...)[2,1:end]; color=colors_alt[4], linestyle=:dash, linewidth=2); @warn "not offset-corrected"
 plot!()
 
 savefig("output/tikz/zip_reachable_sets.tikz")
 
 # plot lanelet network + routes
-plot_lanelet_network(ln; ylims=(-5, 20), xlims=(-150, 100), size=(1000, 200), draw_direction=false)
+plot_lanelet_network(ln; ylims=(-5, 20), xlims=(-150, 80), size=(1000, 400), draw_direction=true)
 plot!(aspect_ratio=:equal, frame=:box, yticks=false, xticks=false)
 
 traj_x_cart = Dict{ActorID, Vector{Float64}}()
@@ -187,14 +187,14 @@ for (actor_id, traj) in traj_reach
 end
 
 for (actor_id, traj) in traj_reach
-    plot!(traj_x_cart[actor_id], traj_y_cart[actor_id])
+    plot!(traj_x_cart[actor_id], traj_y_cart[actor_id], color=colors_alt[actor_id])
 end
 
 plot!()
 
 for (actor_id, traj) in traj_reach
     vertices = ScenarioSynthesis.state_to_vertices(traj_reach[actor_id][1], actors.actors[actor_id])
-    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=tum_colors.tum_blue_brand)
+    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=colors_alt[actor_id])
 end
 
 plot!()
