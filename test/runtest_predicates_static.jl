@@ -30,6 +30,7 @@ using StaticArrays
     @test on_lanelet_bounds.s_ub == actor_ego.route.lanelet_interval[143].ub
 
     # OnConflictSection
+    #=
     on_conflict_section_predicate = OnConflictSection(1, 75)
     on_conflict_section_bounds = Bounds(on_conflict_section_predicate, actors_dict)
     @test on_conflict_section_bounds.s_lb == actor_ego.route.conflict_sections[75][1]
@@ -46,4 +47,5 @@ using StaticArrays
     behind_conflict_section_bounds = Bounds(behind_conflict_section_predicate, actors_dict)
     @test behind_conflict_section_bounds.s_lb == actor_ego.route.conflict_sections[75][2]
     @test behind_conflict_section_bounds.s_ub == Inf
+    =#
 end

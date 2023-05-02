@@ -19,7 +19,7 @@ struct Actor # TODO add type as label or element? or skip? or bool VRU?
         initial_state::ConvexSet;
         len::Number=5.0,
         wid::Number=2.2,
-        v_lb::Number=-1.0,
+        v_lb::Number=0.0,
         v_ub::Number=30.0,
         a_lb::Number=-6.0,
         a_ub::Number=3.0

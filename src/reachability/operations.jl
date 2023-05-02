@@ -116,7 +116,12 @@ end
     return true
 end
 
-function intersection(cs1::ConvexSet, cs2::ConvexSet)
+"""
+
+
+Implementation based on idea from https://www.swtestacademy.com/intersection-convex-polygons-algorithm/
+"""
+function intersection_old(cs1::ConvexSet, cs2::ConvexSet)
     output_set = Vector{State}()
 
     # add all states of cs1, which are inside cs2
@@ -174,4 +179,70 @@ function intersection(cs1::ConvexSet, cs2::ConvexSet)
     fix_convex_polygon!(output_set)
 
     return ConvexSet(output_set)
+end
+
+"""
+    intersection(cs1, cs2)
+
+Return convex intersection set of cs1 and cs2. Implemented using Joseph O'Rourke's algorithm.
+"""
+function intersection(cs1::ConvexSet, cs2::ConvexSet)
+    output_set = Vector{State}()
+    lenvert_cs1 = length(cs1.vertices)
+    lenvert_cs2 = length(cs2.vertices)
+    @assert lenvert_cs1 ≥ 3 && lenvert_cs2 ≥ 3
+
+    inside = 0
+
+    counter = [1, 1]
+
+    counter_cycles = 0
+    first_intersection_found_in_loop = 0
+    while counter_cycles ≤ 2*(lenvert_cs1+lenvert_cs2) # (counter[1] ≤ lenvert_cs1 || counter[2] ≤ lenvert_cs2) && (counter[1] ≤ 2*lenvert_cs1 && counter[2] ≤ 2*lenvert_cs2)
+        counter_cycles += 1
+        p_prev = cycle(cs1.vertices, counter[1]-1)
+        p_curr = cycle(cs1.vertices, counter[1])
+        q_prev = cycle(cs2.vertices, counter[2]-1)
+        q_curr = cycle(cs2.vertices, counter[2])
+        λ, μ = intersection_point(p_prev, p_curr, q_prev, q_curr)
+        if ((0 < λ ≤ 1) && (0 < μ ≤ 1)) && !(p_curr == q_curr)
+            inters_point = p_prev + λ * (p_curr - p_prev)
+            if isempty(output_set) 
+                first_intersection_found_in_loop = counter_cycles
+            else
+                ((counter_cycles - first_intersection_found_in_loop != 1) && (norm(inters_point - output_set[1]) < 1e-6)) && (fix_convex_polygon!(output_set); return ConvexSet(output_set))
+            end
+            push!(output_set, inters_point)
+            
+            if cross((q_curr - q_prev), (p_curr - q_prev)) ≥ 0 # determine inside one
+                inside = 1
+            else
+                inside = 2
+            end
+        end
+        
+        if cross((q_curr - q_prev), (p_curr - p_prev)) ≥ 0
+            if cross((q_curr - q_prev), (p_curr - q_prev)) ≥ 0
+                inside == 2 && push!(output_set, q_curr)
+                counter[2] += 1
+            else
+                inside == 1 && push!(output_set, p_curr)
+                counter[1] += 1
+            end
+        else
+            if cross((p_curr - p_prev), (q_curr - p_prev)) ≥ 0
+                inside == 1 && push!(output_set, p_curr)
+                counter[1] += 1
+            else
+                inside == 2 && push!(output_set, q_curr)
+                counter[2] += 1
+            end
+        end
+    end
+    @info output_set
+
+    # no intersection
+    is_within(cs1.vertices[1], cs2) && return cs1 # cs1 within cs2
+    is_within(cs2.vertices[1], cs1) && return cs2 # cs2 within cs2
+    return ConvexSet(Vector{State}()) # intersection is empty set
 end

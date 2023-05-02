@@ -124,7 +124,7 @@ function fix_convex_polygon!(vertices::Vector{T}) where {T<:Union{State, SVector
     i = 1
     while i ≤ length(vertices) # remove succeeding duplicate points, which are almost identical
         if norm(cycle(vertices, i+1) - vertices[i]) < 1e-6
-            @info "fixing - succeeding points almost identical"
+            # @info "fixing - succeeding points almost identical"
             deleteat!(vertices, mod1(i+1, length(vertices)))
         else
             i += 1
@@ -146,7 +146,7 @@ function fix_convex_polygon!(vertices::Vector{T}) where {T<:Union{State, SVector
         dotprod = dot(rotate_ccw90(vec_to_this_norm), vec_to_next_norm)
         dotprod < -1e-6 && throw(error("vertices non-convex. $dotprod"))
         if dotprod < 1e-6 
-            @info "fixing - dotproduct: $dotprod"
+            # @info "fixing - dotproduct: $dotprod"
             deleteat!(vertices, i) # about straight
         else
             i+=1 # convex vertices

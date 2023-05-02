@@ -8,6 +8,30 @@ struct LaneletNetwork
     conflict_sections::Dict{ConflictSectionID, Tuple{LaneletID, LaneletID}}
 end
 
+# TODO replace by: cost ConflictSectionManager = Dict{Tuple{LaneletID, LaneletID}, ConflictSectionID}
+struct ConflictSectionManager
+    csm::Dict{Tuple{LaneletID, LaneletID}, ConflictSectionID}
+
+    function ConflictSectionManager()
+        return new(Dict{Tuple{LaneletID, LaneletID}, ConflictSectionID}())
+    end
+end
+
+function next_conflict_section_id(csm::ConflictSectionManager, ln::LaneletNetwork)
+    temp = isempty(csm.csm) ? 1 : maximum(values(csm.csm)) + 1
+    while in(temp, keys(ln.lanelets)) || in(temp, keys(ln.intersections)) || in(temp, keys(ln.trafficLights)) || in(temp, keys(ln.trafficSigns))
+        temp += 1
+    end
+    return temp
+end
+
+function get_conflict_section_id!(csm::ConflictSectionManager, ltid1::LaneletID, ltid2::LaneletID, ln::LaneletNetwork)
+    tup = (min(ltid1, ltid2), max(ltid1, ltid2))
+    
+    haskey(csm.csm, tup) ? nothing : csm.csm[tup] = next_conflict_section_id(csm, ln)
+    return csm.csm[tup]
+end
+
 function ln_from_xml(path::String) # path either asolute or relative
     xmlfile = parse_file(path)
     xmlroot = root(xmlfile)
@@ -253,25 +277,26 @@ function process!(ln::LaneletNetwork)
 
     # conflict sections
     csm = ConflictSectionManager()
+
     for (own, own_lt) in ln.lanelets
         for obs in own_lt.merging_with
             conflict_section, does_conflict = conflict_section_merging(ln, own, obs)
             if does_conflict
-                id = get_conflict_section_id!(csm, own, obs)
+                id = get_conflict_section_id!(csm, own, obs, ln)
                 own_lt.conflict_sections[id] = conflict_section
             end
         end
         for obs in own_lt.diverging_with
             conflict_section, does_conflict = conflict_section_diverging(ln, own, obs)
             if does_conflict
-                id = get_conflict_section_id!(csm, own, obs)
+                id = get_conflict_section_id!(csm, own, obs, ln)
                 own_lt.conflict_sections[id] = conflict_section
             end
         end
         for obs in own_lt.intersecting_with
             conflict_section, does_conflict = conflict_section_intersecting(ln, own, obs)
             if does_conflict
-                id = get_conflict_section_id!(csm, own, obs)
+                id = get_conflict_section_id!(csm, own, obs, ln)
                 own_lt.conflict_sections[id] = conflict_section
             end
         end
@@ -280,6 +305,46 @@ function process!(ln::LaneletNetwork)
     for (k, v) in csm.csm
         ln.conflict_sections[v] = k
     end
+
+    # reduce lanelet vs. lanelet conflicts to lanelet vs. intersection ones
+    mapping = Dict{IntersectionID, Set{LaneletID}}()
+    for (intersection_id, intersection) in ln.intersections
+        this_intersection = Set{LaneletID}()
+        for (incoming_id, incoming) in intersection.incomings
+            union!(this_intersection, incoming.succRight)
+            union!(this_intersection, incoming.succStraight)
+            union!(this_intersection, incoming.succLeft)
+        end
+        mapping[intersection_id] = this_intersection
+    end
+    
+    for (lanelet_id, lanelet) in ln.lanelets
+        isempty(lanelet.conflict_sections) && continue
+        
+        # to which intersection does this lanelet belong?
+        intersection_id = 0
+        for (intersect_id, intersection_lanlet_ids) in mapping
+            if in(lanelet_id, intersection_lanlet_ids)
+                intersection_id = intersect_id
+                break
+            end
+        end
+        @assert intersection_id != 0
+    
+        _, cs_interval = pop!(lanelet.conflict_sections)
+        while !isempty(lanelet.conflict_sections)
+            _, cs_interval_temp = pop!(lanelet.conflict_sections)
+            
+            # assert connectivity -- can be removed if error-prone
+            @assert (cs_interval_temp[1] ≤ cs_interval[2]) || (cs_interval[1] ≤ cs_interval_temp[2])
+    
+            cs_interval = (min(cs_interval[1], cs_interval_temp[1]), max(cs_interval[2], cs_interval_temp[2]))
+        end
+    
+        lanelet.conflict_sections[intersection_id] = cs_interval
+    end
+
+    return nothing
 end
 
 function conflict_section_merging(ln::LaneletNetwork, own::LaneletID, obs::LaneletID, n_iter::Integer=8)

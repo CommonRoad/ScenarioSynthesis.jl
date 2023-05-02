@@ -1,94 +1,109 @@
 abstract type DynamicPredicate <: BasicPredicate end
 
 struct BehindActor <: DynamicPredicate 
-    actor_ego::ActorID
-    actor_other::ActorID
+    actors::Vector{ActorID}
+
+    function BehindActor(actors::AbstractVector{ActorID})
+        @assert length(actors) ≥ 2
+        return new(actors)        
+    end
 end
 
 function apply_predicate!(
     predicate::BehindActor,
     actors::ActorsDict,
     k::TimeStep,
-    ψ::Real=0.5 # 0 (cut the one in front) ... 1 (cut the one behind)
+    unnecessary...
 )
-    @assert 0 ≤ ψ ≤ 1
 
-    actor_ego = actors.actors[predicate.actor_ego]
-    actor_other = actors.actors[predicate.actor_other]
-
-    s_ego_min, s_ego_max = Inf, -Inf
-    for vert in actor_ego.states[k].vertices
-        s_ego_min = min(s_ego_min, vert[1])
-        s_ego_max = max(s_ego_max, vert[1])
+    offsets = [actors.offset[predicate.actors[i], predicate.actors[i+1]] for i=1:length(predicate.actors)-1] # TODO check sign!
+    for i = 2:length(offsets)
+        offsets[i] = offsets[i-1] + offsets[i]
     end
-    s_other_min, s_other_max = Inf, -Inf 
-    for vert in actor_other.states[k].vertices
-        s_other_min = min(s_other_min, vert[1])
-        s_other_max = max(s_other_max, vert[1])
+    pushfirst!(offsets, 0)
+
+    max_prev = max(actors.actors[predicate.actors[1]].states[k], 1) # offset 0 for first vehicle
+    min_prev = min(actors.actors[predicate.actors[1]].states[k], 1)
+
+    # TODO consider length of actors
+    for i in 1:length(predicate.actors)-1
+        max_this = max(actors.actors[predicate.actors[i+1]].states[k], 1) - offsets[i+1] 
+        min_this = min(actors.actors[predicate.actors[i+1]].states[k], 1) - offsets[i+1] 
+
+        min_this = max(min_prev, min_this)
+        max_prev = min(max_prev, max_this)
+
+        # @info min_prev, max_prev, min_this, max_this
+        if min_this + actors.actors[predicate.actors[i]].lenwid[1] / 2 < max_prev - actors.actors[predicate.actors[i+1]].lenwid[1] / 2
+            ψ = i / length(predicate.actors)
+            # TODO one should consider the length of the actors -- matters if actors' length substantially differs
+            threshold = ψ * (max_prev - actors.actors[predicate.actors[i+1]].lenwid[1] / 2) + (1-ψ) * (min_this + actors.actors[predicate.actors[i]].lenwid[1] / 2)
+            # @info threshold
+        
+            bounds_prev = Bounds(-Inf, threshold + offsets[i] - actors.actors[predicate.actors[i]].lenwid[1] / 2, -Inf, Inf)
+            bounds_this = Bounds(threshold + offsets[i+1] + actors.actors[predicate.actors[i+1]].lenwid[1] / 2, Inf, -Inf, Inf)
+
+            apply_bounds!(actors.actors[predicate.actors[i]].states[k], bounds_prev)
+            apply_bounds!(actors.actors[predicate.actors[i+1]].states[k], bounds_this)
+
+            min_prev = threshold
+            max_prev = max_this
+        else
+            # @info "no handling necessary"
+            min_prev = min_this
+            max_prev = max_this
+        end
+
     end
-    
-    s_other_min += actors.offset[predicate.actor_other, predicate.actor_ego]
-    s_other_max += actors.offset[predicate.actor_other, predicate.actor_ego]
 
-    s_ego_max < s_other_min && return nothing # no collision at all
-    s_ego_max = min(s_ego_max, s_other_max)
-    s_other_min = max(s_ego_min, s_other_min)
-
-    centr = (1-ψ) * s_ego_max + ψ * s_other_min
-
-    s_ego_ub = centr - actor_ego.lenwid[1] / 2 - actor_other.lenwid[1] / 2
-    s_other_lb = centr + actors.offset[predicate.actor_ego, predicate.actor_other] + actor_ego.lenwid[1] / 2 + actor_other.lenwid[1] / 2
-
-    bounds_ego = Bounds(-Inf, s_ego_ub, -Inf, Inf)
-    bounds_other = Bounds(s_other_lb, Inf, -Inf, Inf)
-
-    apply_bounds!(actor_ego.states[k], bounds_ego)
-    apply_bounds!(actor_other.states[k], bounds_other)
-    
     return nothing
 end
 
 struct SlowerActor <: DynamicPredicate
-    actor_ego::ActorID
-    actor_other::ActorID
+    actors::Vector{ActorID}
+    function SlowerActor(actors::AbstractVector{ActorID})
+        @assert length(actors) ≥ 2
+        return new(actors)
+    end
 end
 
 function apply_predicate!(
     predicate::SlowerActor,
     actors::ActorsDict,
     k::TimeStep,
-    ψ::Real=0.5 # 0 (cut the faster one) ... 1 (cut the slower one)
+    unnecessary...
 )
-    @assert 0 ≤ ψ ≤ 1
+    # @assert length(predicate.actors) ≥ 2 # already checked by constructor!
+    max_prev = max(actors.actors[predicate.actors[1]].states[k], 2)
+    min_prev = min(actors.actors[predicate.actors[1]].states[k], 2)
+    
+    for i in 1:length(predicate.actors)-1
+        max_this = max(actors.actors[predicate.actors[i+1]].states[k], 2)
+        min_this = min(actors.actors[predicate.actors[i+1]].states[k], 2)
 
-    actor_ego = actors.actors[predicate.actor_ego]
-    actor_other = actors.actors[predicate.actor_other]
+        min_this = max(min_prev, min_this)
+        max_prev = min(max_prev, max_this)
 
-    v_ego_min, v_ego_max = Inf, -Inf
-    for vert in actor_ego.states[k].vertices
-        v_ego_min = min(v_ego_min, vert[2])
-        v_ego_max = max(v_ego_max, vert[2])
+        @info min_prev, max_prev, min_this, max_this
+        if min_this < max_prev
+            ψ = i / length(predicate.actors)
+            threshold = ψ * max_prev + (1-ψ) * min_this
+            @info threshold
+        
+            bounds_prev = Bounds(-Inf, Inf, -Inf, threshold)    
+            bounds_this = Bounds(-Inf, Inf, threshold, Inf)  
+
+            apply_bounds!(actors.actors[predicate.actors[i]].states[k], bounds_prev)
+            apply_bounds!(actors.actors[predicate.actors[i+1]].states[k], bounds_this)
+
+            min_prev = threshold
+            max_prev = max_this
+        else
+            min_prev = min_this
+            max_prev = max_this
+        end
+
     end
-    v_other_min, v_other_max = Inf, -Inf 
-    for vert in actor_other.states[k].vertices
-        v_other_min = min(v_other_min, vert[2])
-        v_other_max = max(v_other_max, vert[2])
-    end
-
-    v_ego_max < v_other_min && return nothing
-    v_ego_max = min(v_ego_max, v_other_max)
-    v_other_min = max(v_ego_min, v_other_min)
-
-    centr = (1-ψ) * v_ego_max + ψ * v_other_min
-
-    v_ego_ub = centr
-    v_other_lb = centr
-
-    bounds_ego = Bounds(-Inf, Inf, -Inf, v_ego_ub)
-    bounds_other = Bounds(-Inf, Inf, v_other_lb, Inf)
-
-    apply_bounds!(actor_ego.states[k], bounds_ego)
-    apply_bounds!(actor_other.states[k], bounds_other)
     
     return nothing
 end

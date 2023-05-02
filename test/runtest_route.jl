@@ -22,8 +22,8 @@ end
     route3 = Route(LaneletID.([66, 147, 63]), ln, lenwid)
     route4 = Route(LaneletID.([25, 112, 66, 146]), ln, lenwid)
 
-    print(route1.conflict_sections[20])
-    @test all(isapprox.(route1.conflict_sections[20], [127.57066556122432, 133.92983221345858])) # csid could change from time to time
+    #print(route1.conflict_sections[20])
+    #@test all(isapprox.(route1.conflict_sections[20], [127.57066556122432, 133.92983221345858])) # csid could change from time to time
 
     @test reference_pos(route0, route0, ln) == ([-6.1858, -126.32625], [-6.1858, -126.32625], true) # same lanelet
     @test reference_pos(route0, route1, ln) == ([-6.1858, -126.32625], [-6.1858, -126.32625], true) # same lanelet

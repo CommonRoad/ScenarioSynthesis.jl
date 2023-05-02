@@ -41,14 +41,26 @@ function plot_lanelet(lt::Lanelet, id::LaneletID, p::Plot=plot(); draw_direction
     return p
 end
 
-function plot_lanelet_network(ln::LaneletNetwork; overwrite_backend::Bool=true, draw_direction::Bool=true, annotate_id::Bool=false, size::Tuple{<:Integer,<:Integer}=(800, 600))
+function plot_lanelet_network(
+    ln::LaneletNetwork; 
+    overwrite_backend::Bool=true, 
+    draw_direction::Bool=true, 
+    annotate_id::Bool=false, 
+    size::Tuple{<:Integer,<:Integer}=(800, 600), 
+    xlims::Union{Nothing, Tuple{<:Real, <:Real}}=nothing, 
+    ylims::Union{Nothing, Tuple{<:Real, <:Real}}=nothing
+)
     #overwrite_backend && backend()
 
     p = plot()
+    isnothing(xlims) || plot!(p, xlims=xlims)
+    isnothing(ylims) || plot!(p, ylims=ylims)
 
     for (id, lt) in ln.lanelets
         plot!(p, plot_lanelet(lt, id, p; draw_direction=draw_direction, annotate_id=annotate_id, size=size))
     end
+
+    plot!(p, aspect_ratio=:equal)
 
     return p 
 end

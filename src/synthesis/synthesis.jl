@@ -53,7 +53,7 @@ function synthesize_trajectories(actors::ActorsDict, k_max::Integer, Δt::Real; 
             end
 
             counter = 0
-            for (pos, vel) in sampling_states(actor.states[prev_state.k+1], 20, 20)
+            for (pos, vel) in sampling_states(actor.states[prev_state.k+1], 10, 10)
                 counter += 1
                 temp_state = State(pos, vel)
                 if is_within(temp_state, actor.states[prev_state.k+1])

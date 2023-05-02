@@ -7,7 +7,8 @@ function animate_scenario(
     Δt::Real,
     k_max::Integer; 
     fps::Real=20,
-    playback_speed::Real=1.0
+    playback_speed::Real=1.0,
+    filename::String="animation"
 ) # TODO where to store Δt?
     Plots.gr()
     size = (600, 400)
@@ -26,7 +27,13 @@ function animate_scenario(
 
         for (actor_id, actor) in actors.actors
             state = trajectories[actor_id][ind+1] * itp + trajectories[actor_id][ind] * (1-itp)
-            vertices = state_to_vertices(state, actor)
+            vertices = SMatrix{5, 2, Float64, 10}(zeros(10))
+            try 
+                vertices = state_to_vertices(state, actor)
+            catch e
+                @warn t, actor_id
+                # rethrow(e)
+            end
             plot!(
                 plt,
                 vertices[:,1],
@@ -34,16 +41,16 @@ function animate_scenario(
                 actor_id;
                 label=actor_id,
                 size=size,
-                color = :darkrainbow,
-                #fillcolor = :darkrainbow,
-                #fillalpha = 0.5,
+                color = false,
+                fill = true,
+                fillcolor = tum_colors.tum_blue_brand
                 #fill_z = actor_id
             )
         end
         Plots.frame(animation)
     end
     
-    gif(animation, joinpath(@__DIR__, "..", "..", "output", "animation.gif"), fps=fps)
+    gif(animation, joinpath(@__DIR__, "..", "..", "output", string(filename ,".gif")), fps=fps)
     return nothing
 end
 

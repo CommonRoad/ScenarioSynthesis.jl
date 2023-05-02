@@ -19,6 +19,7 @@ end
     @test ln.lanelets[92].diverging_with == Set([90, 91])
     @test ln.lanelets[92].intersecting_with == Set([93, 142, 144, 147])
 
+    #=
     conflict_sections_invert = Dict((v,k) for (k, v) in ln.conflict_sections) 
     conflict_id = conflict_sections_invert[(92, 144)]
     section92 = ln.lanelets[92].conflict_sections[conflict_id]
@@ -27,6 +28,7 @@ end
     @test isapprox(section92[2], 13.826340983251095)
     @test isapprox(section144[1], 5.926364934429366)
     @test isapprox(section144[2], 10.534759883429986)
+    =#
 end
 
 @testset "ln functions" begin

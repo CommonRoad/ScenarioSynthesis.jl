@@ -153,14 +153,9 @@ struct Route
         push!(transition_point, frame.cum_dst[end])
 
         ### lanelet frame offset
-        lanelet_frame_offset = map(x -> transform(FLanelet, x[1], ln.lanelets[x[2]].frame).c1, zip(lanelet_entry_pos, route))
+        #lanelet_frame_offset = map(x -> transform(FLanelet, x[1], ln.lanelets[x[2]].frame).c1, zip(lanelet_entry_pos, route))
 
         lanelet_interval = Dict{LaneletID, LaneletInterval}()
-        #=
-        if lenroute ≤ 1
-            push!(lanelet_interval, LaneletInterval(0.0, ln.lanelets[route[1]].frame.cum_dst[end], 0.0))
-        end
-        =#
 
         pushfirst!(transition_type, :succeeding)
         push!(transition_type, :succeeding)
@@ -178,13 +173,13 @@ struct Route
             if transition_type[i] == :succeeding 
                 lb_edit = - lenwid[1] / 2
             else
-                lb_edit = - lenwid[2] / 2 / tan(transition_angle[i])
+                lb_edit = - lenwid[2] / 2 / tan(transition_angle[i+1])
             end
 
             if transition_type[i+1] == :succeeding
                 ub_edit = + lenwid[1] / 2
             else
-                ub_edit = + lenwid[2] / 2 / tan(transition_angle[i])
+                ub_edit = + lenwid[2] / 2 / tan(transition_angle[i+2])
             end
 
             lb = transition_point[i] + lb_edit
