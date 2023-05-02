@@ -327,4 +327,4 @@ using BenchmarkTools
 using Gurobi
 
 grb_env = Gurobi.Env()
-@profview benchmark(1000, specvec, 49, Δt, actors_input, grb_env, 0.5; synthesize_trajectories = false)
+@btime benchmark(1, specvec, 49, Δt, actors_input, grb_env, 0.5; synthesize_trajectories = true)
