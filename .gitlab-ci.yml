@@ -2,7 +2,7 @@ image: "julia"
 
 before_script:
   - julia --version
-  - echo ~/.ssh/known_hosts
+  - cat ~/.ssh/known_hosts
 
 stages:          # List of stages for jobs, and their order of execution
   - test
