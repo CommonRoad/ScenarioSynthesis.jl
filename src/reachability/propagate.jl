@@ -7,6 +7,43 @@ Assumptions:
 - A linear system model (state space)
 """
 function propagate(
+    cs::ConvexSet,
+    A::SMatrix,
+    a_lb::Real,
+    a_ub::Real,
+    Δt::Real
+)
+    # time-step forward
+    fundamental_matrix = exp(A*Δt)
+    output = affine_transformation(cs, fundamental_matrix)
+
+    # minkowski
+    minkowski_element = LineSegment(State(a_ub / 2 * Δt^2, a_ub * Δt), State(a_lb / 2 * Δt^2, a_lb * Δt))
+    minkowski_sum!(output, minkowski_element)
+
+    return output
+end
+
+function propagate_backward(
+    cs::ConvexSet,
+    A::SMatrix,
+    a_lb::Real,
+    a_ub::Real,
+    Δt::Real
+)
+    # minkowski
+    minkowski_element = LineSegment(-State(a_ub / 2 * Δt^2, a_ub * Δt), -State(a_lb / 2 * Δt^2, a_lb * Δt))
+    output = minkowski_sum(cs, minkowski_element)
+
+    # time-step backward
+    fundamental_matrix_inv = exp(A*Δt)^-1
+    affine_transformation!(output, fundamental_matrix_inv)
+
+    return output
+end
+
+#=
+function propagate(
     cs::ConvexSet, 
     A::SMatrix, # TODO add SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) as default? 
     a_ub::Real, # TODO change order to match agent defs
@@ -244,3 +281,4 @@ function propagate_backward!(
 end
 
 # TODO add propagate for (initial) State
+=#

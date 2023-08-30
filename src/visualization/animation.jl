@@ -32,7 +32,7 @@ function animate_scenario(
                 vertices = state_to_vertices(state, agent)
             catch e
                 @warn t, agent_id
-                # rethrow(e)
+                rethrow(e)
             end
             plot!(
                 plt,
@@ -55,8 +55,8 @@ function animate_scenario(
 end
 
 function state_to_vertices(state::State, agent::Agent)
-    pos = transform(Pos(FRoute, state.pos, 0), agent.route.frame)
-    ind_route = searchsortedlast(agent.route.frame.cum_dst, state.pos)
+    pos = transform(Pos(FRoute, state[1], 0), agent.route.frame)
+    ind_route = searchsortedlast(agent.route.frame.cum_dst, state[1])
     ind_route = min(ind_route, length(agent.route.frame.cum_dst)-1)
     Θᵣ = atan(reverse(agent.route.frame.ref_pos[ind_route+1]-agent.route.frame.ref_pos[ind_route])...)
     si, co = sincos(Θᵣ)

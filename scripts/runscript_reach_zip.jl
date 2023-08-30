@@ -1,11 +1,12 @@
 using ScenarioSynthesis
+using Polygons
 using StaticArrays
 using Plots; plotly()
 
-# steps of generating scenarios: 
+# steps of synthesizing scenarios: 
 # 1. load LaneletNetwork
 # 2. define Agents (incl. their routes)
-# 3. define formal specifications / sequence of Predicates
+# 3. define formal specifications / sequence of predicates
 # 4. synthesis
 
 ### load LaneletNetwork
@@ -13,7 +14,7 @@ using Plots; plotly()
 ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
 #ln = ln_from_xml("example_files/ZAM_Tjunction-1_55_T-1.xml");
 process!(ln)
-plot_lanelet_network(ln; annotate_id=true)
+plot_lanelet_network(ln; annotate_id=true);
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
@@ -110,8 +111,9 @@ for (agent_id, agent) in agents.agents
     for i in reverse(1:k_max-1)
         # @info agent_id, i
         backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
-        intersect = ScenarioSynthesis.intersection(agent.states[i], backward) 
-        agent.states[i] = intersect
+        intersection!(agent.states[i], backward)
+        # intersect = Polygons.intersection(agent.states[i], backward) 
+        # agent.states[i] = intersect
     end
 end
 
@@ -133,7 +135,7 @@ for (agent_id, agent) in agents.agents
 end
 
 # animation
-# animate_scenario(ln, agents, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
+animate_scenario(ln, agents, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
 
 # plot reachable sets
 using LaTeXStrings
@@ -145,10 +147,10 @@ counter = 1
 for i=1:10:41
     counter+=1
     @info i
-    plot!(plot_data(agent1.states[i]); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[1], fillalpha=0.2); 
-    plot!(plot_data(agent2.states[i] + State(agents.offset[2, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[2], fillalpha=0.2); 
-    plot!(plot_data(agent3.states[i] + State(agents.offset[3, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[3], fillalpha=0.2);
-    plot!(plot_data(agent4.states[i] + State(agents.offset[4, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[4], fillalpha=0.2);
+    plot!(Polygons.plot_data(agent1.states[i]); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[1], fillalpha=0.2); 
+    plot!(Polygons.plot_data(agent2.states[i] + State(agents.offset[2, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[2], fillalpha=0.2); 
+    plot!(Polygons.plot_data(agent3.states[i] + State(agents.offset[3, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[3], fillalpha=0.2);
+    plot!(Polygons.plot_data(agent4.states[i] + State(agents.offset[4, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[4], fillalpha=0.2);
 end
 plot!(; xlabel = L"s \ [\textrm{m}]", ylabel = L"\dot{s} \ [\frac{\textrm{m}}{\textrm{s}}]", grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
 

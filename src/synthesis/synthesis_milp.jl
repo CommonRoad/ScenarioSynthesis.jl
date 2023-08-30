@@ -15,10 +15,10 @@ function synthesize_optimization_problem(agent::Agent, Δt::Real, grb_env::Gurob
     end
 
     for i=1:N
-        agent.states[i].is_empty && throw(error("cannot synthesize trajectory for empty set: $i"))
+        length(agent.states[i].vertices)<3 && throw(error("cannot synthesize trajectory for empty set: $i"))
         prev_vert = agent.states[i].vertices[end]
         for vert in agent.states[i].vertices
-            ref_vec = rotate_ccw90(vert - prev_vert)
+            ref_vec = rotate_90_ccw(vert - prev_vert)
 
             @constraint(model, (state[i, 1] - prev_vert[1]) * ref_vec[1] + (state[i, 2] - prev_vert[2]) * ref_vec[2] >= 0)
             prev_vert = vert
