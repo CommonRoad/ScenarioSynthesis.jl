@@ -4,7 +4,7 @@ before_script:
   - julia --version
   - mkdir -p ~/.ssh
   - chmod 700 ~/.ssh
-  - ssh-keyscan gitlab.lrz.de >> ~/.ssh/known_hosts
+  - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
   - chmod 644 ~/.ssh/knwown_hosts
 
 stages:          # List of stages for jobs, and their order of execution
