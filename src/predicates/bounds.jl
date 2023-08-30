@@ -8,7 +8,7 @@ end
 #=
 function Bounds(
     Predicate::GenericPredicate,
-    actors::ActorsDict,
+    agents::AgentsDict,
     k::TimeStep,
     ψ::Real = 1.0, # min. degree of statisfaction
     unnecessary...

@@ -2,8 +2,8 @@ import Plots.gif
 
 function animate_scenario(
     ln::LaneletNetwork, 
-    actors::ActorsDict,
-    trajectories::Dict{ActorID, Trajectory},
+    agents::AgentsDict,
+    trajectories::Dict{AgentID, Trajectory},
     Δt::Real,
     k_max::Integer; 
     fps::Real=20,
@@ -25,26 +25,26 @@ function animate_scenario(
         ind = min(ind, k_max-1)
         itp = (t - (ind-1) * Δt) /  Δt
 
-        for (actor_id, actor) in actors.actors
-            state = trajectories[actor_id][ind+1] * itp + trajectories[actor_id][ind] * (1-itp)
+        for (agent_id, agent) in agents.agents
+            state = trajectories[agent_id][ind+1] * itp + trajectories[agent_id][ind] * (1-itp)
             vertices = SMatrix{5, 2, Float64, 10}(zeros(10))
             try 
-                vertices = state_to_vertices(state, actor)
+                vertices = state_to_vertices(state, agent)
             catch e
-                @warn t, actor_id
+                @warn t, agent_id
                 # rethrow(e)
             end
             plot!(
                 plt,
                 vertices[:,1],
                 vertices[:,2],
-                actor_id;
-                label=actor_id,
+                agent_id;
+                label=agent_id,
                 size=size,
                 color = false,
                 fill = true,
                 fillcolor = tum_colors.tum_blue_brand
-                #fill_z = actor_id
+                #fill_z = agent_id
             )
         end
         Plots.frame(animation)
@@ -54,12 +54,12 @@ function animate_scenario(
     return nothing
 end
 
-function state_to_vertices(state::State, actor::Actor)
-    pos = transform(Pos(FRoute, state.pos, 0), actor.route.frame)
-    ind_route = searchsortedlast(actor.route.frame.cum_dst, state.pos)
-    ind_route = min(ind_route, length(actor.route.frame.cum_dst)-1)
-    Θᵣ = atan(reverse(actor.route.frame.ref_pos[ind_route+1]-actor.route.frame.ref_pos[ind_route])...)
+function state_to_vertices(state::State, agent::Agent)
+    pos = transform(Pos(FRoute, state.pos, 0), agent.route.frame)
+    ind_route = searchsortedlast(agent.route.frame.cum_dst, state.pos)
+    ind_route = min(ind_route, length(agent.route.frame.cum_dst)-1)
+    Θᵣ = atan(reverse(agent.route.frame.ref_pos[ind_route+1]-agent.route.frame.ref_pos[ind_route])...)
     si, co = sincos(Θᵣ)
-    vertices = SMatrix{5, 2, Float64, 10}(1, -1, -1, 1, 1, 1, 1, -1, -1, 1) * SMatrix{2, 2, Float64, 4}(actor.lenwid[1]/2, 0, 0, actor.lenwid[2]/2) * SMatrix{2, 2, Float64, 4}(co, -si, si, co)
+    vertices = SMatrix{5, 2, Float64, 10}(1, -1, -1, 1, 1, 1, 1, -1, -1, 1) * SMatrix{2, 2, Float64, 4}(agent.lenwid[1]/2, 0, 0, agent.lenwid[2]/2) * SMatrix{2, 2, Float64, 4}(co, -si, si, co)
     return SMatrix{5, 2, Float64, 10}((vertices[:,1].+pos.c1)..., (vertices[:,2].+pos.c2)...)
 end

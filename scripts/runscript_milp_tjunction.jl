@@ -1,12 +1,12 @@
 using ScenarioSynthesis
 using StaticArrays
 using Plots; plotly()
-import ScenarioSynthesis.ActorID
+import ScenarioSynthesis.AgentID
 using JuMP
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
-# 2. define Actors (incl. their routes)
+# 2. define Agents (incl. their routes)
 # 3. define formal specifications / sequence of Predicates
 # 4. synthesis
 
@@ -19,7 +19,7 @@ plot_lanelet_network(ln; annotate_id=true)
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
-### define Actors
+### define Agents
 route1 = Route(LaneletID.([50195, 50209, 50203]), ln, lenwid); plot_route(route1);
 route2 = Route(LaneletID.([50201, 50213, 50197]), ln, lenwid); plot_route(route2);
 route3 = Route(LaneletID.([50205, 50217, 50199]), ln, lenwid); plot_route(route3);
@@ -67,14 +67,14 @@ cs6 = ConvexSet([
     State(100, 14),
 ])
 
-actor1 = Actor(route1, cs1);
-actor2 = Actor(route1, cs2);
-actor3 = Actor(route2, cs3);
-actor4 = Actor(route2, cs4);
-actor5 = Actor(route3, cs5);
-actor6 = Actor(route3, cs6);
+agent1 = Agent(route1, cs1);
+agent2 = Agent(route1, cs2);
+agent3 = Agent(route2, cs3);
+agent4 = Agent(route2, cs4);
+agent5 = Agent(route3, cs5);
+agent6 = Agent(route3, cs6);
  
-actors = ActorsDict([actor1, actor2, actor3, actor4, actor5, actor6], ln);
+agents = AgentsDict([agent1, agent2, agent3, agent4, agent5, agent6], ln);
 
 ### define formal specifications
 scene1 = Scene(
@@ -87,9 +87,9 @@ scene1 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -103,9 +103,9 @@ scene2 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -120,9 +120,9 @@ scene3 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -136,9 +136,9 @@ scene4 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -152,9 +152,9 @@ scene5 = Scene(
         BeforeConflictSection(4, 50233),
         BeforeConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -168,9 +168,9 @@ scene6 = Scene(
         BeforeConflictSection(4, 50233),
         OnConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -184,9 +184,9 @@ scene7 = Scene(
         BeforeConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -200,9 +200,9 @@ scene8 = Scene(
         BeforeConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -216,9 +216,9 @@ scene9 = Scene(
         BeforeConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -232,9 +232,9 @@ scene10 = Scene(
         OnConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -248,9 +248,9 @@ scene11 = Scene(
         BehindConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BeforeConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -264,9 +264,9 @@ scene12 = Scene(
         BehindConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         OnConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
@@ -280,16 +280,16 @@ scene13 = Scene(
         BehindConflictSection(4, 50233),
         BehindConflictSection(5, 50233),
         BehindConflictSection(6, 50233),
-        BehindActor([2, 1]),
-        BehindActor([4, 3]),
-        BehindActor([6, 5]),
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3]),
+        BehindAgent([6, 5]),
     ]
 )
 
-# scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5, scene6, scene7, scene8, scene9, scene10, scene11, scene12, scene13]) # with "idle" between succeeding actors on intersection 
-scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, scene13]); # no "idle" between succeeding actors on intersection 
+# scenes = ScenesDict([scene1, scene2, scene3, scene4, scene5, scene6, scene7, scene8, scene9, scene10, scene11, scene12, scene13]) # with "idle" between succeeding agents on intersection 
+scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, scene13]); # no "idle" between succeeding agents on intersection 
 
-scenario = Scenario(actors, scenes, ln);
+scenario = Scenario(agents, scenes, ln);
 Δt = 0.25
 @btime (optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem))
 
@@ -309,14 +309,14 @@ plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,2][1:k_max, :]); xlab
 plot(JuMP.value.(optimization_problem.obj_dict[:state][:,:,3][1:k_max, :]); xlabel="step [1]", ylabel="a [m/s²]")
 =#
 
-traj_miqp = Dict{ActorID, Trajectory}()
-for (actor_id, actor) in actors.actors
-    traj_miqp[actor_id] = Trajectory(Vector{State}(undef, k_max))
+traj_miqp = Dict{AgentID, Trajectory}()
+for (agent_id, agent) in agents.agents
+    traj_miqp[agent_id] = Trajectory(Vector{State}(undef, k_max))
     counter = 0
-    for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,actor_id,1:2])[1:k_max,:])
+    for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,agent_id,1:2])[1:k_max,:])
         counter += 1
-        traj_miqp[actor_id][counter] = State(val[1], val[2])
+        traj_miqp[agent_id][counter] = State(val[1], val[2])
     end
 end
 
-animate_scenario(ln, actors, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_tjunction")
+animate_scenario(ln, agents, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_tjunction")

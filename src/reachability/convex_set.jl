@@ -83,7 +83,7 @@ function centroid(cs::ConvexSet)
     return centroid # also return area? 
 end
 
-function centroid_and_direction(cs::ConvexSet) # returns main axis of intertia ("Hauptflächenträgheitsmoment") -- this can be unsafe, as two actors an be at the same position at the same time (just with different velocities)
+function centroid_and_direction(cs::ConvexSet) # returns main axis of intertia ("Hauptflächenträgheitsmoment") -- this can be unsafe, as two agents an be at the same position at the same time (just with different velocities)
     centr = centroid(cs)
     Iyy = 0.0
     Izz = 0.0

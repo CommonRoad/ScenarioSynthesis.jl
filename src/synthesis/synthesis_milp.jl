@@ -1,10 +1,10 @@
 import JuMP.Model, JuMP.set_attribute, JuMP.@variable, JuMP.@objective, JuMP.@constraint
 import Gurobi
 
-function synthesize_optimization_problem(actor::Actor, Δt::Real, grb_env::Gurobi.Env)
+function synthesize_optimization_problem(agent::Agent, Δt::Real, grb_env::Gurobi.Env)
     model = Model(() -> Gurobi.Optimizer(grb_env); add_bridges=false)
     set_attribute(model, "output_flag", false)
-    N = length(actor.states)
+    N = length(agent.states)
 
     @variable(model, state[1:N, 1:3])
     @objective(model, Min, sum(state[:, 3].^2))
@@ -15,9 +15,9 @@ function synthesize_optimization_problem(actor::Actor, Δt::Real, grb_env::Gurob
     end
 
     for i=1:N
-        actor.states[i].is_empty && throw(error("cannot synthesize trajectory for empty set: $i"))
-        prev_vert = actor.states[i].vertices[end]
-        for vert in actor.states[i].vertices
+        agent.states[i].is_empty && throw(error("cannot synthesize trajectory for empty set: $i"))
+        prev_vert = agent.states[i].vertices[end]
+        for vert in agent.states[i].vertices
             ref_vec = rotate_ccw90(vert - prev_vert)
 
             @constraint(model, (state[i, 1] - prev_vert[1]) * ref_vec[1] + (state[i, 2] - prev_vert[2]) * ref_vec[2] >= 0)

@@ -2,9 +2,9 @@ import LinearAlgebra.norm
 import StaticArrays.FieldVector
 
 struct LaneletInterval <: FieldVector{3, Float64}
-    lb::Float64 # longitudinal coordinate of route at first contact between actor and lanelet
-    ub::Float64 # longitudinal coordinate of route at last contact between actor and lanelet
-    offset::Float64 # longitudinal coordinate of lanelet at first contact between actor and lanelet
+    lb::Float64 # longitudinal coordinate of route at first contact between agent and lanelet
+    ub::Float64 # longitudinal coordinate of route at last contact between agent and lanelet
+    offset::Float64 # longitudinal coordinate of lanelet at first contact between agent and lanelet
 end
 
 struct Route

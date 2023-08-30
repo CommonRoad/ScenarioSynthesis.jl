@@ -5,3 +5,4 @@ foo.jl
 *.lp
 *.tikz
 output/*
+coverage/

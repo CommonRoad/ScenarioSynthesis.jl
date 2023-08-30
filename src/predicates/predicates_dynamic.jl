@@ -1,50 +1,50 @@
 abstract type DynamicPredicate <: BasicPredicate end
 
-struct BehindActor <: DynamicPredicate 
-    actors::Vector{ActorID}
+struct BehindAgent <: DynamicPredicate 
+    agents::Vector{AgentID}
 
-    function BehindActor(actors::AbstractVector{ActorID})
-        @assert length(actors) ≥ 2
-        return new(actors)        
+    function BehindAgent(agents::AbstractVector{AgentID})
+        @assert length(agents) ≥ 2
+        return new(agents)        
     end
 end
 
 function apply_predicate!(
-    predicate::BehindActor,
-    actors::ActorsDict,
+    predicate::BehindAgent,
+    agents::AgentsDict,
     k::TimeStep,
     unnecessary...
 )
 
-    offsets = [actors.offset[predicate.actors[i], predicate.actors[i+1]] for i=1:length(predicate.actors)-1] # TODO check sign!
+    offsets = [agents.offset[predicate.agents[i], predicate.agents[i+1]] for i=1:length(predicate.agents)-1] # TODO check sign!
     for i = 2:length(offsets)
         offsets[i] = offsets[i-1] + offsets[i]
     end
     pushfirst!(offsets, 0)
 
-    max_prev = max(actors.actors[predicate.actors[1]].states[k], 1) # offset 0 for first vehicle
-    min_prev = min(actors.actors[predicate.actors[1]].states[k], 1)
+    max_prev = max(agents.agents[predicate.agents[1]].states[k], 1) # offset 0 for first vehicle
+    min_prev = min(agents.agents[predicate.agents[1]].states[k], 1)
 
-    # TODO consider length of actors
-    for i in 1:length(predicate.actors)-1
-        max_this = max(actors.actors[predicate.actors[i+1]].states[k], 1) - offsets[i+1] 
-        min_this = min(actors.actors[predicate.actors[i+1]].states[k], 1) - offsets[i+1] 
+    # TODO consider length of agents
+    for i in 1:length(predicate.agents)-1
+        max_this = max(agents.agents[predicate.agents[i+1]].states[k], 1) - offsets[i+1] 
+        min_this = min(agents.agents[predicate.agents[i+1]].states[k], 1) - offsets[i+1] 
 
         min_this = max(min_prev, min_this)
         max_prev = min(max_prev, max_this)
 
         # @info min_prev, max_prev, min_this, max_this
-        if min_this + actors.actors[predicate.actors[i]].lenwid[1] / 2 < max_prev - actors.actors[predicate.actors[i+1]].lenwid[1] / 2
-            ψ = i / length(predicate.actors)
-            # TODO one should consider the length of the actors -- matters if actors' length substantially differs
-            threshold = ψ * (max_prev - actors.actors[predicate.actors[i+1]].lenwid[1] / 2) + (1-ψ) * (min_this + actors.actors[predicate.actors[i]].lenwid[1] / 2)
+        if min_this + agents.agents[predicate.agents[i]].lenwid[1] / 2 < max_prev - agents.agents[predicate.agents[i+1]].lenwid[1] / 2
+            ψ = i / length(predicate.agents)
+            # TODO one should consider the length of the agents -- matters if agents' length substantially differs
+            threshold = ψ * (max_prev - agents.agents[predicate.agents[i+1]].lenwid[1] / 2) + (1-ψ) * (min_this + agents.agents[predicate.agents[i]].lenwid[1] / 2)
             # @info threshold
         
-            bounds_prev = Bounds(-Inf, threshold + offsets[i] - actors.actors[predicate.actors[i]].lenwid[1] / 2, -Inf, Inf)
-            bounds_this = Bounds(threshold + offsets[i+1] + actors.actors[predicate.actors[i+1]].lenwid[1] / 2, Inf, -Inf, Inf)
+            bounds_prev = Bounds(-Inf, threshold + offsets[i] - agents.agents[predicate.agents[i]].lenwid[1] / 2, -Inf, Inf)
+            bounds_this = Bounds(threshold + offsets[i+1] + agents.agents[predicate.agents[i+1]].lenwid[1] / 2, Inf, -Inf, Inf)
 
-            apply_bounds!(actors.actors[predicate.actors[i]].states[k], bounds_prev)
-            apply_bounds!(actors.actors[predicate.actors[i+1]].states[k], bounds_this)
+            apply_bounds!(agents.agents[predicate.agents[i]].states[k], bounds_prev)
+            apply_bounds!(agents.agents[predicate.agents[i+1]].states[k], bounds_this)
 
             min_prev = threshold
             max_prev = max_this
@@ -59,42 +59,42 @@ function apply_predicate!(
     return nothing
 end
 
-struct SlowerActor <: DynamicPredicate
-    actors::Vector{ActorID}
-    function SlowerActor(actors::AbstractVector{ActorID})
-        @assert length(actors) ≥ 2
-        return new(actors)
+struct SlowerAgent <: DynamicPredicate
+    agents::Vector{AgentID}
+    function SlowerAgent(agents::AbstractVector{AgentID})
+        @assert length(agents) ≥ 2
+        return new(agents)
     end
 end
 
 function apply_predicate!(
-    predicate::SlowerActor,
-    actors::ActorsDict,
+    predicate::SlowerAgent,
+    agents::AgentsDict,
     k::TimeStep,
     unnecessary...
 )
-    # @assert length(predicate.actors) ≥ 2 # already checked by constructor!
-    max_prev = max(actors.actors[predicate.actors[1]].states[k], 2)
-    min_prev = min(actors.actors[predicate.actors[1]].states[k], 2)
+    # @assert length(predicate.agents) ≥ 2 # already checked by constructor!
+    max_prev = max(agents.agents[predicate.agents[1]].states[k], 2)
+    min_prev = min(agents.agents[predicate.agents[1]].states[k], 2)
     
-    for i in 1:length(predicate.actors)-1
-        max_this = max(actors.actors[predicate.actors[i+1]].states[k], 2)
-        min_this = min(actors.actors[predicate.actors[i+1]].states[k], 2)
+    for i in 1:length(predicate.agents)-1
+        max_this = max(agents.agents[predicate.agents[i+1]].states[k], 2)
+        min_this = min(agents.agents[predicate.agents[i+1]].states[k], 2)
 
         min_this = max(min_prev, min_this)
         max_prev = min(max_prev, max_this)
 
         @info min_prev, max_prev, min_this, max_this
         if min_this < max_prev
-            ψ = i / length(predicate.actors)
+            ψ = i / length(predicate.agents)
             threshold = ψ * max_prev + (1-ψ) * min_this
             @info threshold
         
             bounds_prev = Bounds(-Inf, Inf, -Inf, threshold)    
             bounds_this = Bounds(-Inf, Inf, threshold, Inf)  
 
-            apply_bounds!(actors.actors[predicate.actors[i]].states[k], bounds_prev)
-            apply_bounds!(actors.actors[predicate.actors[i+1]].states[k], bounds_this)
+            apply_bounds!(agents.agents[predicate.agents[i]].states[k], bounds_prev)
+            apply_bounds!(agents.agents[predicate.agents[i+1]].states[k], bounds_this)
 
             min_prev = threshold
             max_prev = max_this

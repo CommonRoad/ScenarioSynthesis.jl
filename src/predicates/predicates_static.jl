@@ -2,29 +2,29 @@ abstract type StaticPredicate <: BasicPredicate end
 
 function apply_predicate!(
     predicate::StaticPredicate, 
-    actors::ActorsDict, 
+    agents::AgentsDict, 
     k::TimeStep,
     unnecessary...
 )
-    bounds = Bounds(predicate, actors)
-    apply_bounds!(actors.actors[predicate.actor_ego].states[k], bounds)
+    bounds = Bounds(predicate, agents)
+    apply_bounds!(agents.agents[predicate.agent_ego].states[k], bounds)
     return nothing
 end
 
 struct OnLanelet <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
     lanelet::Set{LaneletID} # Lanelet IDs must be sequential -- TODO add specific constructor? 
 end
 
 function Bounds( # TODO might be worth memoizing, suited for @generated?
     predicate::OnLanelet,
-    actors::ActorsDict,
+    agents::AgentsDict,
     unnecessary...
 )
     s_lb = Inf
     s_ub = -Inf
 
-    route = actors.actors[predicate.actor_ego].route
+    route = agents.agents[predicate.agent_ego].route
 
     for lt in predicate.lanelet
         s_lb_temp, s_ub_temp, _ = route.lanelet_interval[lt]
@@ -36,91 +36,91 @@ function Bounds( # TODO might be worth memoizing, suited for @generated?
 end
 
 struct OnConflictSection <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
     conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::OnConflictSection,
-    actors::ActorsDict, 
+    agents::AgentsDict, 
     unnecessary...
 )
-    s_lb, s_ub = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
-    s_lb -= actors.actors[predicate.actor_ego].lenwid[1] / 2
-    s_ub += actors.actors[predicate.actor_ego].lenwid[1] / 2
+    s_lb, s_ub = agents.agents[predicate.agent_ego].route.conflict_sections[predicate.conflict_section]
+    s_lb -= agents.agents[predicate.agent_ego].lenwid[1] / 2
+    s_ub += agents.agents[predicate.agent_ego].lenwid[1] / 2
 
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
 struct BeforeConflictSection <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
     conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::BeforeConflictSection,
-    actors::ActorsDict, 
+    agents::AgentsDict, 
     unnecessary...
 )
-    s_ub, _ = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
-    s_ub -= actors.actors[predicate.actor_ego].lenwid[1] / 2
+    s_ub, _ = agents.agents[predicate.agent_ego].route.conflict_sections[predicate.conflict_section]
+    s_ub -= agents.agents[predicate.agent_ego].lenwid[1] / 2
  
     return Bounds(-Inf, s_ub, -Inf, Inf)
 end
 
 struct BehindConflictSection <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
     conflict_section::ConflictSectionID
 end
 
 function Bounds(
     predicate::BehindConflictSection,
-    actors::ActorsDict,
+    agents::AgentsDict,
     unnecessary...
 )
-    _, s_lb = actors.actors[predicate.actor_ego].route.conflict_sections[predicate.conflict_section]
-    s_lb += actors.actors[predicate.actor_ego].lenwid[1] / 2
+    _, s_lb = agents.agents[predicate.agent_ego].route.conflict_sections[predicate.conflict_section]
+    s_lb += agents.agents[predicate.agent_ego].lenwid[1] / 2
  
     return Bounds(s_lb, Inf, -Inf, Inf)
 end
 
 struct VelocityLimits <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
 end
 
 function Bounds(
     predicate::VelocityLimits,
-    actors::ActorsDict,
+    agents::AgentsDict,
     unnecessary...
 )
-    return Bounds(-Inf, Inf, actors.actors[predicate.actor_ego].v_lb, actors.actors[predicate.actor_ego].v_ub)
+    return Bounds(-Inf, Inf, agents.agents[predicate.agent_ego].v_lb, agents.agents[predicate.agent_ego].v_ub)
 end
 
 struct PositionLimits <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
 end
 
 function Bounds(
     predicate::PositionLimits,
-    actors::ActorsDict,
+    agents::AgentsDict,
     unnecessary...
 )
-    return Bounds(actors.actors[predicate.actor_ego].route.frame.cum_dst[1], actors.actors[predicate.actor_ego].route.frame.cum_dst[end], -Inf, Inf)
+    return Bounds(agents.agents[predicate.agent_ego].route.frame.cum_dst[1], agents.agents[predicate.agent_ego].route.frame.cum_dst[end], -Inf, Inf)
 end
 
 struct StateLimits <: StaticPredicate
-    actor_ego::ActorID
+    agent_ego::AgentID
 end
 
 function Bounds(
     predicate::StateLimits,
-    actors::ActorsDict,
+    agents::AgentsDict,
     unnecessary...
 )
     return Bounds(
-        actors.actors[predicate.actor_ego].route.frame.cum_dst[1], 
-        actors.actors[predicate.actor_ego].route.frame.cum_dst[end],
-        actors.actors[predicate.actor_ego].v_lb,
-        actors.actors[predicate.actor_ego].v_ub
+        agents.agents[predicate.agent_ego].route.frame.cum_dst[1], 
+        agents.agents[predicate.agent_ego].route.frame.cum_dst[end],
+        agents.agents[predicate.agent_ego].v_lb,
+        agents.agents[predicate.agent_ego].v_ub
     )
 end

@@ -9,7 +9,7 @@ Assumptions:
 function propagate(
     cs::ConvexSet, 
     A::SMatrix, # TODO add SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) as default? 
-    a_ub::Real, # TODO change order to match actor defs
+    a_ub::Real, # TODO change order to match agent defs
     a_lb::Real, 
     Δt::Real
 )

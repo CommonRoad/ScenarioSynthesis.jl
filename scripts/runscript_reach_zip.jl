@@ -4,7 +4,7 @@ using Plots; plotly()
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
-# 2. define Actors (incl. their routes)
+# 2. define Agents (incl. their routes)
 # 3. define formal specifications / sequence of Predicates
 # 4. synthesis
 
@@ -17,7 +17,7 @@ plot_lanelet_network(ln; annotate_id=true)
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
-### define Actors
+### define Agents
 route1 = Route(LaneletID.([25, 28, 24]), ln, lenwid); plot_route(route1);
 route2 = Route(LaneletID.([25, 26, 27, 24]), ln, lenwid); plot_route(route2);
 route3 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
@@ -51,15 +51,15 @@ cs4 = ConvexSet([
     State(40, 24),
 ])
 
-actor1 = Actor(route1, cs1);
-actor2 = Actor(route2, cs2);
-actor3 = Actor(route3, cs3);
-actor4 = Actor(route4, cs4);
+agent1 = Agent(route1, cs1);
+agent2 = Agent(route2, cs2);
+agent3 = Agent(route3, cs3);
+agent4 = Agent(route4, cs4);
  
-#actors = ActorsDict([actor1, actor2, actor3, actor4], ln);
-actors = ActorsDict([actor1, actor2, actor3, actor4], ln);
+#agents = AgentsDict([agent1, agent2, agent3, agent4], ln);
+agents = AgentsDict([agent1, agent2, agent3, agent4], ln);
 
-actors.offset # TODO why no offset for actors 1 & 3??
+agents.offset # TODO why no offset for agents 1 & 3??
 
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate functions? 
 
@@ -78,62 +78,62 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(2))
     push!(spec[i], VelocityLimits(3))
     push!(spec[i], VelocityLimits(4))
-    push!(spec[i], BehindActor([4, 3]))
+    push!(spec[i], BehindAgent([4, 3]))
 end
-push!(spec[1], BehindActor([2, 1]));
+push!(spec[1], BehindAgent([2, 1]));
 for i=15:k_max-10
-    push!(spec[i], BehindActor([1, 2]))
+    push!(spec[i], BehindAgent([1, 2]))
 end
 for i=k_max-10:k_max
-    push!(spec[i], BehindActor([4, 1, 3, 2]))
+    push!(spec[i], BehindAgent([4, 1, 3, 2]))
 end
 push!(spec[k_max], OnLanelet(1, Set(24)));
-push!(spec[k_max], SlowerActor([2, 1]))
+push!(spec[k_max], SlowerAgent([2, 1]))
 
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
         @info pred
-        apply_predicate!(pred, actors, i, ψ)
+        apply_predicate!(pred, agents, i, ψ)
     end
 
     # propagate convex set to get next time step
-    for (actor_id, actor) in actors.actors
-        @assert length(actor.states) == i 
-        push!(actor.states, propagate(actor.states[i], A, actor.a_ub, actor.a_lb, Δt))
+    for (agent_id, agent) in agents.agents
+        @assert length(agent.states) == i 
+        push!(agent.states, propagate(agent.states[i], A, agent.a_ub, agent.a_lb, Δt))
     end
 end
 
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
-for (actor_id, actor) in actors.actors
+for (agent_id, agent) in agents.agents
     for i in reverse(1:k_max-1)
-        # @info actor_id, i
-        backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
-        intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
-        actor.states[i] = intersect
+        # @info agent_id, i
+        backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
+        intersect = ScenarioSynthesis.intersection(agent.states[i], backward) 
+        agent.states[i] = intersect
     end
 end
 
 # synthesize trajectories using QP
 using JuMP, Gurobi
 
-traj_reach = Dict{ActorID, Trajectory}()
+traj_reach = Dict{AgentID, Trajectory}()
 grb_env = Gurobi.Env()
-for (actor_id, actor) in actors.actors
-    optim = synthesize_optimization_problem(actor, Δt, grb_env)
+for (agent_id, agent) in agents.agents
+    optim = synthesize_optimization_problem(agent, Δt, grb_env)
     optimize!(optim)
-    @info actor_id, objective_value(optim)
-    traj_reach[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
+    @info agent_id, objective_value(optim)
+    traj_reach[agent_id] = Trajectory(Vector{State}(undef, length(agent.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
         counter += 1
-        traj_reach[actor_id][counter] = State(val[1], val[2])
+        traj_reach[agent_id][counter] = State(val[1], val[2])
     end
 end
 
 # animation
-# animate_scenario(ln, actors, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
+# animate_scenario(ln, agents, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
 
 # plot reachable sets
 using LaTeXStrings
@@ -145,10 +145,10 @@ counter = 1
 for i=1:10:41
     counter+=1
     @info i
-    plot!(plot_data(actor1.states[i]); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[1], fillalpha=0.2); 
-    plot!(plot_data(actor2.states[i] + State(actors.offset[2, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[2], fillalpha=0.2); 
-    plot!(plot_data(actor3.states[i] + State(actors.offset[3, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[3], fillalpha=0.2);
-    plot!(plot_data(actor4.states[i] + State(actors.offset[4, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[4], fillalpha=0.2);
+    plot!(plot_data(agent1.states[i]); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[1], fillalpha=0.2); 
+    plot!(plot_data(agent2.states[i] + State(agents.offset[2, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[2], fillalpha=0.2); 
+    plot!(plot_data(agent3.states[i] + State(agents.offset[3, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[3], fillalpha=0.2);
+    plot!(plot_data(agent4.states[i] + State(agents.offset[4, 1], 0)); color=colors_cont[counter], linewidth=2, fill=true, fillcolor=colors_alt[4], fillalpha=0.2);
 end
 plot!(; xlabel = L"s \ [\textrm{m}]", ylabel = L"\dot{s} \ [\frac{\textrm{m}}{\textrm{s}}]", grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
 
@@ -173,35 +173,35 @@ savefig("output/tikz/zip_reachable_sets.tikz")
 plot_lanelet_network(ln; ylims=(-5, 20), xlims=(-150, 80), size=(1000, 400), draw_direction=true)
 plot!(aspect_ratio=:equal, frame=:box, yticks=false, xticks=false)
 
-traj_x_cart = Dict{ActorID, Vector{Float64}}()
-traj_y_cart = Dict{ActorID, Vector{Float64}}()
+traj_x_cart = Dict{AgentID, Vector{Float64}}()
+traj_y_cart = Dict{AgentID, Vector{Float64}}()
 
-for (actor_id, traj) in traj_reach
-    traj_x_cart[actor_id] = Vector{Float64}()
-    traj_y_cart[actor_id] = Vector{Float64}()
+for (agent_id, traj) in traj_reach
+    traj_x_cart[agent_id] = Vector{Float64}()
+    traj_y_cart[agent_id] = Vector{Float64}()
     for st in traj
-        x, y = transform(Pos(FRoute, st[1], 0), actors.actors[actor_id].route.frame)
-        push!(traj_x_cart[actor_id], x)
-        push!(traj_y_cart[actor_id], y)
+        x, y = transform(Pos(FRoute, st[1], 0), agents.agents[agent_id].route.frame)
+        push!(traj_x_cart[agent_id], x)
+        push!(traj_y_cart[agent_id], y)
     end
 end
 
-for (actor_id, traj) in traj_reach
-    plot!(traj_x_cart[actor_id], traj_y_cart[actor_id], color=colors_alt[actor_id])
+for (agent_id, traj) in traj_reach
+    plot!(traj_x_cart[agent_id], traj_y_cart[agent_id], color=colors_alt[agent_id])
 end
 
 plot!()
 
-for (actor_id, traj) in traj_reach
-    vertices = ScenarioSynthesis.state_to_vertices(traj_reach[actor_id][1], actors.actors[actor_id])
-    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=colors_alt[actor_id])
+for (agent_id, traj) in traj_reach
+    vertices = ScenarioSynthesis.state_to_vertices(traj_reach[agent_id][1], agents.agents[agent_id])
+    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=colors_alt[agent_id])
 end
 
 plot!()
 
-for (actor_id, traj) in traj_reach
-    y = (traj_y_cart[actor_id][1] > 7 ? 15.0 : -1.0)
-    annotate!(traj_x_cart[actor_id][1], y, text(actor_id))
+for (agent_id, traj) in traj_reach
+    y = (traj_y_cart[agent_id][1] > 7 ? 15.0 : -1.0)
+    annotate!(traj_x_cart[agent_id][1], y, text(agent_id))
 end
 
 plot!()

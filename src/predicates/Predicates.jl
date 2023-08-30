@@ -3,8 +3,8 @@ export TimeStep
 
 #=
 struct GenericBasePredicate <: BasicPredicate
-    actor_ego::ActorID # TODO or ::Actor ??
-    actor_other::ActorID
+    agent_ego::AgentID # TODO or ::Agent ??
+    agent_other::AgentID
     lanelet::LaneletID
     conflict_section::ConflictSectionID
 end
@@ -20,7 +20,7 @@ include("predicates_static.jl")
 export StaticPredicate, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits, PositionLimits, StateLimits
 
 include("predicates_dynamic.jl")
-export DynamicPredicate, BehindActor, InFrontOfActor, SlowerActor, FasterActor
+export DynamicPredicate, BehindAgent, InFrontOfAgent, SlowerAgent, FasterAgent
 
 include("type_ranking.jl")
 export type_ranking
