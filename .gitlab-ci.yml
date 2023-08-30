@@ -6,6 +6,7 @@ before_script:
   - chmod 700 ~/.ssh
   - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
   - chmod 644 ~/.ssh/known_hosts
+  - cat ~/.ssh/known_hosts
 
 stages:          # List of stages for jobs, and their order of execution
   - test
