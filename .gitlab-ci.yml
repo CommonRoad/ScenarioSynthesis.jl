@@ -5,7 +5,7 @@ before_script:
   - mkdir -p ~/.ssh
   - chmod 700 ~/.ssh
   - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
-  - chmod 644 ~/.ssh/knwown_hosts
+  - chmod 644 ~/.ssh/known_hosts
 
 stages:          # List of stages for jobs, and their order of execution
   - test
