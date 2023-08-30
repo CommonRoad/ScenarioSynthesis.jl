@@ -9,6 +9,7 @@ stages:          # List of stages for jobs, and their order of execution
 test-job:       # This job runs in the build stage, which runs first.
   stage: test
   script:
+    - julia -e 'using Pkg; Pkg.instantiate()'
     - julia -e 'using Pkg; Pkg.add(path=pwd()); Pkg.build("ScenarioSynthesis"); Pkg.test("ScenarioSynthesis"; coverage = true)'
     - julia -e 'using Pkg; Pkg.add("Coverage");
       import ScenarioSynthesis; cd(joinpath(dirname(pathof(ScenarioSynthesis)), ".."));
