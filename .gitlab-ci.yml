@@ -2,7 +2,8 @@ image: "julia"
 
 before_script:
   - julia --version
-  - touch ~/.ssh/known_hosts
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
   - ssh-keyscan gitlab.lrz.de >> ~/.ssh/known_hosts
   - chmod 644 ~/.ssh/knwown_hosts
 
