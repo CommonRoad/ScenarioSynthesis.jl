@@ -16,11 +16,11 @@ export Predicate, BasicPredicate, MTLPredicate, LogicOperator, And, Or, Not, Imp
 include("bounds.jl")
 export Bounds, apply_bounds!, apply_predicate!
 
-include("predicates_static.jl")
-export StaticPredicate, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits, PositionLimits, StateLimits
+include("predicates_single.jl")
+export PredicateSingle, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits, PositionLimits, StateLimits
 
-include("predicates_dynamic.jl")
-export DynamicPredicate, BehindAgent, InFrontOfAgent, SlowerAgent, FasterAgent
+include("predicates_multi.jl")
+export PredicateMulti, BehindAgent, InFrontOfAgent, SlowerAgent, FasterAgent
 
 include("type_ranking.jl")
 export type_ranking

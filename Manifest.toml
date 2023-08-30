@@ -744,7 +744,7 @@ version = "1.39.0"
 
 [[deps.Polygons]]
 deps = ["BenchmarkTools", "LinearAlgebra", "LocalCoverage", "Plots", "Revise", "StaticArrays"]
-git-tree-sha1 = "390d2ded1fcae2383644d7348f4465f66ef3e62e"
+git-tree-sha1 = "b699b9dc2cae492fac61a76036892310299bb0bb"
 repo-rev = "main"
 repo-url = "git@gitlab.lrz.de:cps/Polygons.jl.git"
 uuid = "491c33f1-5136-4972-a86f-2df82cd269f3"

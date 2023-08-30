@@ -1,6 +1,6 @@
-abstract type DynamicPredicate <: BasicPredicate end
+abstract type PredicateMulti <: BasicPredicate end
 
-struct BehindAgent <: DynamicPredicate 
+struct BehindAgent <: PredicateMulti 
     agents::Vector{AgentID}
 
     function BehindAgent(agents::AbstractVector{AgentID})
@@ -59,7 +59,7 @@ function apply_predicate!(
     return nothing
 end
 
-struct SlowerAgent <: DynamicPredicate
+struct SlowerAgent <: PredicateMulti
     agents::Vector{AgentID}
     function SlowerAgent(agents::AbstractVector{AgentID})
         @assert length(agents) ≥ 2

@@ -1,3 +1,9 @@
+using ScenarioSynthesis
+using Polygons
+using Test
+using StaticArrays
+using Plots
+
 include("runtest_reachability.jl")
 include("runtest_coordinates.jl")
 include("runtest_geometry.jl")

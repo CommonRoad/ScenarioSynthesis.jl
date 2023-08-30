@@ -1,7 +1,7 @@
-abstract type StaticPredicate <: BasicPredicate end
+abstract type PredicateSingle <: BasicPredicate end
 
 function apply_predicate!(
-    predicate::StaticPredicate, 
+    predicate::PredicateSingle, 
     agents::AgentsDict, 
     k::TimeStep,
     unnecessary...
@@ -11,7 +11,7 @@ function apply_predicate!(
     return nothing
 end
 
-struct OnLanelet <: StaticPredicate
+struct OnLanelet <: PredicateSingle
     agent_ego::AgentID
     lanelet::Set{LaneletID} # Lanelet IDs must be sequential -- TODO add specific constructor? 
 end
@@ -35,7 +35,7 @@ function Bounds( # TODO might be worth memoizing, suited for @generated?
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
-struct OnConflictSection <: StaticPredicate
+struct OnConflictSection <: PredicateSingle
     agent_ego::AgentID
     conflict_section::ConflictSectionID
 end
@@ -52,7 +52,7 @@ function Bounds(
     return Bounds(s_lb, s_ub, -Inf, Inf)
 end
 
-struct BeforeConflictSection <: StaticPredicate
+struct BeforeConflictSection <: PredicateSingle
     agent_ego::AgentID
     conflict_section::ConflictSectionID
 end
@@ -68,7 +68,7 @@ function Bounds(
     return Bounds(-Inf, s_ub, -Inf, Inf)
 end
 
-struct BehindConflictSection <: StaticPredicate
+struct BehindConflictSection <: PredicateSingle
     agent_ego::AgentID
     conflict_section::ConflictSectionID
 end
@@ -84,7 +84,7 @@ function Bounds(
     return Bounds(s_lb, Inf, -Inf, Inf)
 end
 
-struct VelocityLimits <: StaticPredicate
+struct VelocityLimits <: PredicateSingle
     agent_ego::AgentID
 end
 
@@ -96,7 +96,7 @@ function Bounds(
     return Bounds(-Inf, Inf, agents.agents[predicate.agent_ego].v_lb, agents.agents[predicate.agent_ego].v_ub)
 end
 
-struct PositionLimits <: StaticPredicate
+struct PositionLimits <: PredicateSingle
     agent_ego::AgentID
 end
 
@@ -108,7 +108,7 @@ function Bounds(
     return Bounds(agents.agents[predicate.agent_ego].route.frame.cum_dst[1], agents.agents[predicate.agent_ego].route.frame.cum_dst[end], -Inf, Inf)
 end
 
-struct StateLimits <: StaticPredicate
+struct StateLimits <: PredicateSingle
     agent_ego::AgentID
 end
 

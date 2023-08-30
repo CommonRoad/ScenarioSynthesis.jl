@@ -1,3 +1,4 @@
+#=
 import DataStructures.PriorityQueue, DataStructures.enqueue!, DataStructures.dequeue_pair!
 import Base.Iterators.product
 import Memoize.@memoize
@@ -8,9 +9,10 @@ struct SearchState
     k::TimeStep
     identifier::Int64
 end
-
+=#
 const Trajectory = Vector{State}
 
+#=
 @memoize function sampling_states(cs::ConvexSet, n_pos::Integer, n_vel::Integer)
     itr_pos = range(min(cs, 1), max(cs, 1), n_pos)
     itr_vel = range(min(cs, 2), max(cs, 2), n_vel)
@@ -90,3 +92,4 @@ function synthesize_trajectories(agents::AgentsDict, k_max::Integer, Δt::Real; 
     end
     return trajectories
 end
+=#

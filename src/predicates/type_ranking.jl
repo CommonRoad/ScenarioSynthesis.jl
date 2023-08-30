@@ -1,7 +1,7 @@
 function type_ranking(pred1::Predicate, pred2::Predicate)
     typeof(pred1) == typeof(pred2) && return true # if both predicates have the same type, their ordering does not matter
-    isa(pred1, StaticPredicate) && return true # among static predictates, the ordering does not matter
-    isa(pred2, StaticPredicate) && return false
+    isa(pred1, PredicateSingle) && return true # among static predictates, the ordering does not matter
+    isa(pred2, PredicateSingle) && return false
 
     # now, pred1 and pred2 are dynamic
     dyn_vel_predicates = (SlowerAgent, ) # TODO enhance type system?

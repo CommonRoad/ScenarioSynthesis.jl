@@ -1,6 +1,3 @@
-using ScenarioSynthesis
-using Test
-
 import Random.MersenneTwister
 
 @testset "transformation" begin

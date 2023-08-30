@@ -1,7 +1,3 @@
-using ScenarioSynthesis
-using Test
-using StaticArrays
-
 @testset "Static Predicate" begin
     ### load LaneletNetwork
     path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")

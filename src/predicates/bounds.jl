@@ -5,18 +5,6 @@ struct Bounds
     v_ub::Float64
 end
 
-#=
-function Bounds(
-    Predicate::GenericPredicate,
-    agents::AgentsDict,
-    k::TimeStep,
-    ψ::Real = 1.0, # min. degree of statisfaction
-    unnecessary...
-)
-    return Bounds(...)
-end
-=#
-
 function apply_bounds!( # TODO are there faster algorithms than sequential processing ?
     cs::ConvexSet,
     bounds::Bounds

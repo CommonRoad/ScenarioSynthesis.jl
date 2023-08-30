@@ -92,11 +92,11 @@ push!(spec[k_max], OnLanelet(1, Set(24)));
 push!(spec[k_max], SlowerAgent([2, 1]))
 
 for i = 1:k_max
-    @info i
+    # @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
-        @info pred
-        apply_predicate!(pred, agents, i, ψ)
+        # @info pred
+        apply_predicate!(pred, agents, i)
     end
 
     # propagate convex set to get next time step
@@ -109,7 +109,7 @@ end
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (agent_id, agent) in agents.agents
     for i in reverse(1:k_max-1)
-        # @info agent_id, i
+        @info agent_id, i
         backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
         intersection!(agent.states[i], backward)
         # intersect = Polygons.intersection(agent.states[i], backward) 

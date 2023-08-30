@@ -1,4 +1,5 @@
 using ScenarioSynthesis
+using Polygons
 using StaticArrays
 using Plots; plotly()
 
@@ -191,8 +192,7 @@ for (agent_id, agent) in agents.agents
     for i in reverse(1:k_max-1)
         @info agent_id, i
         backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
-        intersect = ScenarioSynthesis.intersection(agent.states[i], backward) 
-        agent.states[i] = intersect
+        intersection!(agent.states[i], backward) 
     end
 end
 
@@ -202,9 +202,10 @@ using JuMP, Gurobi
 traj = Dict{AgentID, Trajectory}()
 grb_env = Gurobi.Env()
 for (agent_id, agent) in agents.agents
+    @info agent_id
     optim = synthesize_optimization_problem(agent, Δt, grb_env)
     optimize!(optim)
-    @info objective_value(optim)
+    @info agent_id, objective_value(optim)
     traj[agent_id] = Trajectory(Vector{State}(undef, length(agent.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
@@ -214,7 +215,7 @@ for (agent_id, agent) in agents.agents
 end
 
 # animation
-# animate_scenario(ln, agents, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
+animate_scenario(ln, agents, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
 
 # plot reachable sets
 using LaTeXStrings

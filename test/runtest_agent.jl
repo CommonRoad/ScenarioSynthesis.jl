@@ -1,6 +1,3 @@
-using ScenarioSynthesis
-using Test
-using StaticArrays
 import ScenarioSynthesis.AgentID
 
 @testset "Synthesis" begin
