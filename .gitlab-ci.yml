@@ -2,7 +2,8 @@ image: "julia"
 
 before_script:
   - julia --version
-  - ssh-keyscan gitlab.lrz.de >> ~/.ssh/know_hosts
+  - touch ~/.ssh/known_hosts
+  - ssh-keyscan gitlab.lrz.de >> ~/.ssh/known_hosts
   - chmod 644 ~/.ssh/knwown_hosts
 
 stages:          # List of stages for jobs, and their order of execution
