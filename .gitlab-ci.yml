@@ -9,9 +9,15 @@ stages:          # List of stages for jobs, and their order of execution
 test-job:       # This job runs in the build stage, which runs first.
   stage: test
   script:
-    - julia -e 'using Pkg; Pkg.clone(path=pwd()); Pkg.instantiate(); Pkg.build("ScenarioSynthesis"); Pkg.test("ScenarioSynthesis"; coverage = true)'
-    - julia -e 'using Pkg; Pkg.add("Coverage");
-      import ScenarioSynthesis; cd(joinpath(dirname(pathof(ScenarioSynthesis)), ".."));
-      using Coverage; cl, tl = get_summary(process_folder()); 
-      println("Code coverage:", round(cl/tl*100; digits=2), "%")'
+    - julia --project=@. -e '
+        using Pkg; 
+        Pkg.instantiate(); 
+        Pkg.build(); 
+        Pkg.test(coverage=true)'
+    - julia --project=@. -e '
+        using Pkg; 
+        Pkg.add("Coverage");
+        import ScenarioSynthesis; cd(joinpath(dirname(pathof(ScenarioSynthesis)), ".."));
+        using Coverage; cl, tl = get_summary(process_folder()); 
+        println("Code coverage:", round(cl/tl*100; digits=2), "%")'
   coverage: '/Code coverage:\d+\.\d+/'
