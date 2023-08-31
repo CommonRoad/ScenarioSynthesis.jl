@@ -1,8 +1,6 @@
-import JuMP.Model, JuMP.@variable, JuMP.@constraint, JuMP.@objective, JuMP.optimize!, JuMP.value, JuMP.VariableRef
-import JuMP
+import JuMP: Model, @variable, @constraint, @objective, optimize!, value, VariableRef
 import Gurobi
-import Plots.plot 
-import StaticArrays.SMatrix, StaticArrays.SVector
+import Plots.plot
 
 const Jerk = Float64
 const bigM = 1e6 # TODO Inf64?

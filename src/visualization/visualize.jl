@@ -1,5 +1,4 @@
 import Plots.gr, Plots.plot!, Plots.plot, Plots.Plot, Plots.plotly, Plots.annotate!
-import StaticArrays.SMatrix
 
 # backend() = plotly() # TODO remove this? 
 

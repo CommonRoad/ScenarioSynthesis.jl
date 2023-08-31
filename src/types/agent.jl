@@ -1,5 +1,3 @@
-import StaticArrays.SMatrix, StaticArrays.SVector
-
 const AgentID = Int64
 
 abstract type AgentType end # TODO replace with RoadUser type? @enum instead of sttucts? 
@@ -44,7 +42,7 @@ struct AgentsDict
 
         for i in eachindex(agents)
             for j in i+1:length(agents)
-                ref_pos_fcart_i, ref_pos_fcart_j, does_exist = reference_pos(agents[i].route, agents[j].route, ln)
+                ref_pos_fcart_i, ref_pos_fcart_j, does_exist = reference_pos(agents[i].route, agents[j].route, ln) # TODO check collisions prior to adjacent lanelets - small deviations possible, e.g., at merge
 
                 if does_exist
                     ref_pos_i = transform(FRoute, ref_pos_fcart_i, agents[i].route.frame)

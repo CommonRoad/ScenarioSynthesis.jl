@@ -1,6 +1,3 @@
-import LinearAlgebra.norm, LinearAlgebra.dot
-import StaticArrays.SVector, StaticArrays.FieldVector, StaticArrays.SMatrix
-
 #abstract type Position end
 abstract type CoordFrame end
 struct FCart <: CoordFrame end

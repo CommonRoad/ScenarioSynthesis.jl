@@ -1,5 +1,4 @@
 import Gurobi.Env
-import StaticArrays.SMatrix
 import Base.Threads.@threads
 
 function benchmark(
