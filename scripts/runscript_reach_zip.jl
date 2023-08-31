@@ -70,8 +70,6 @@ k_max = 41 # → scene duration: Δt * (k_max - 1) = 4 sec
 
 empty_set = Set{Predicate}()
 
-ψ = 0.5
-
 spec = Vector{Set{Predicate}}(undef, k_max)
 for i=1:k_max
     spec[i] = copy(empty_set)
@@ -108,12 +106,13 @@ end
 
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
 for (agent_id, agent) in agents.agents
+#agent_id, agent = 1, agents.agents[1]
     for i in reverse(1:k_max-1)
         @info agent_id, i
         backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
-        intersection!(agent.states[i], backward)
-        # intersect = Polygons.intersection(agent.states[i], backward) 
-        # agent.states[i] = intersect
+        #intersection!(agent.states[i], backward)
+        intersect = Polygons.intersection(agent.states[i], backward) 
+        agent.states[i] = intersect
     end
 end
 

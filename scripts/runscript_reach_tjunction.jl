@@ -83,8 +83,6 @@ k_max = 49 # → scene duration: Δt * (k_max - 1) = 10 sec
 
 empty_set = Set{Predicate}()
 
-ψ = 0.5
-
 spec = Vector{Set{Predicate}}(undef, k_max);
 for i=1:k_max
     spec[i] = copy(empty_set)
@@ -177,7 +175,7 @@ for i = 1:k_max
     # restrict convex set to match specifications
     for pred in specvec[i] #sort([spec[i]...], lt=type_ranking)
         @info pred
-        apply_predicate!(pred, agents, i, ψ)
+        apply_predicate!(pred, agents, i)
     end
 
     # propagate convex set to get next time step
@@ -192,7 +190,8 @@ for (agent_id, agent) in agents.agents
     for i in reverse(1:k_max-1)
         @info agent_id, i
         backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
-        intersection!(agent.states[i], backward) 
+        intersect = Polygons.intersection(agent.states[i], backward) 
+        agent.states[i] = intersect
     end
 end
 

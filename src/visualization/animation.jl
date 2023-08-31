@@ -32,7 +32,7 @@ function animate_scenario(
                 vertices = state_to_vertices(state, agent)
             catch e
                 @warn t, agent_id
-                rethrow(e)
+                # rethrow(e)
             end
             plot!(
                 plt,
