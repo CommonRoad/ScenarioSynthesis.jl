@@ -6,3 +6,4 @@ foo.jl
 *.tikz
 output/*
 coverage/
+.vscode/

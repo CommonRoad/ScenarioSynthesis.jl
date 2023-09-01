@@ -144,8 +144,8 @@ function apply_predicate!(
             s_threshold = (s_break_min[i+1] + offsets[i]) * i/M + s_break_max[i] * (1 - i/M)
 
             # shrink reachable sets to comply with predicates
-            safe_distance_behind!(agents.agents[predicate.agents[i]].states[k], s_threshold - agents.agents[predicate.agents[i]].lenwid[1]/2 * 0, agents.agents[predicate.agents[i]].a_lb, agents.agents[predicate.agents[i]].v_ub)
-            safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2 * 0+ offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
+            safe_distance_behind!(agents.agents[predicate.agents[i]].states[k], s_threshold - agents.agents[predicate.agents[i]].lenwid[1]/2, agents.agents[predicate.agents[i]].a_lb, agents.agents[predicate.agents[i]].v_ub)
+            safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2 + offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
         end
     end
 
@@ -157,11 +157,13 @@ function s_break(
     a_lb::Real
 )
     @assert length(cs.vertices) > 0
-    _, ind_min = findmin(v -> dot(v, SVector{2, Float64}(-a_lb/v[2], 1)), cs.vertices) # slight overapproximation
-    _, ind_max = findmax(v -> dot(v, SVector{2, Float64}(-a_lb/v[2], 1)), cs.vertices)
-
-    s_break_min = cs.vertices[ind_min][1] - cs.vertices[ind_min][2]^2 / (2*a_lb)
-    s_break_max = cs.vertices[ind_max][1] - cs.vertices[ind_max][2]^2 / (2*a_lb)
+    s_break_min = Inf64
+    s_break_max = -Inf64
+    @inbounds for v in cs.vertices
+        s_break = v[1] - v[2]^2 / (2*a_lb)
+        s_break < s_break_min ? s_break_min = s_break : nothing
+        s_break > s_break_max ? s_break_max = s_break : nothing
+    end
 
     return s_break_min, s_break_max
 end
