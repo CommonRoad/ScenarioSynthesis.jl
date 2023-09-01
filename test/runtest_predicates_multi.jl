@@ -1,4 +1,4 @@
-@testset "Dynamic Predicates" begin
+@testset "Predicates multi agent" begin
     ### load LaneletNetwork
     path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")
     ln = ln_from_xml(path)
