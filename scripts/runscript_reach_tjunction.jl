@@ -86,12 +86,6 @@ empty_set = Set{Predicate}()
 spec = Vector{Set{Predicate}}(undef, k_max);
 for i=1:k_max
     spec[i] = copy(empty_set)
-    #push!(spec[i], StateLimits(1))
-    #push!(spec[i], StateLimits(2))
-    #push!(spec[i], StateLimits(3))
-    #push!(spec[i], StateLimits(4))
-    #push!(spec[i], StateLimits(5))
-    #push!(spec[i], StateLimits(6))
     push!(spec[i], VelocityLimits(1))
     push!(spec[i], VelocityLimits(2))
     push!(spec[i], VelocityLimits(3))

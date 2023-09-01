@@ -122,7 +122,7 @@ function apply_predicate!(
 )
     # assert BehindAgent
     apply_predicate!(BehindAgent(predicate.agents), agents, k)
-    
+
     M = length(predicate.agents)
 
     # offsets
@@ -137,6 +137,11 @@ function apply_predicate!(
         s_break_min[i], s_break_max[i] = s_break(agents.agents[agent_id].states[k], agents.agents[agent_id].a_lb)
     end
     
+    p = plot();
+    for agent_id in predicate.agents
+        plot!(p, plot_data(agents.agents[agent_id].states[k])); 
+    end
+
     # mediate in case of conflicts
     for i in 1:M-1
         if s_break_max[i] > s_break_min[i+1] + offsets[i] # TODO check sign!
@@ -145,9 +150,14 @@ function apply_predicate!(
 
             # shrink reachable sets to comply with predicates
             safe_distance_behind!(agents.agents[predicate.agents[i]].states[k], s_threshold - agents.agents[predicate.agents[i]].lenwid[1]/2, agents.agents[predicate.agents[i]].a_lb, agents.agents[predicate.agents[i]].v_ub)
-            safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2 + offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
+            safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2+ offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
         end
     end
+
+    for agent_id in predicate.agents
+        plot!(p, plot_data(agents.agents[agent_id].states[k])); 
+    end
+    display(p)
 
     return nothing
 end
@@ -172,9 +182,9 @@ function safe_distance_behind!(
     cs::ConvexSet,
     s_threshold::Real,
     a_lb::Real,
-    v_ub::Real
+    v_ub::Real; 
+    N::Integer=20 # number of limits
 )
-    N = 20 # number of support points
     vert_prev = State(s_threshold, 0)
     limit!(cs, Limit(vert_prev, SVector{2, Float64}(-1, 0)))
     for i in 1:N
@@ -196,12 +206,15 @@ function safe_distance_front!(
     s_max = max(cs, 1)
     s_lin = (s_min + s_max)/2
 
-    limit = Limit(State(NaN, NaN), SVector{2, Float64}(1, 1))
+    limit = Limit(State(NaN, NaN), SVector{2, Float64}(1, 0))
     if s_lin < s_threshold
         v_lin = sqrt(2*a_lb*(s_lin - s_threshold))
-        limit = Limit(State(s_lin, v_lin), SVector{2, Float64}(-sin(a_lb/v_lin), cos(a_lb/v_lin)))
+        α = atan(a_lb, v_lin)
+        limit = Limit(State(s_lin, v_lin), SVector{2, Float64}(-sin(α), cos(α)))
     else
-        limit = Limit(State(s_threshold, 0), SVector{2, Float64}(1, 0))
+        @warn "s_thres: $s_threshold \n s_lin: $s_lin"
+        # limit = Limit(State(s_threshold, 0), SVector{2, Float64}(1, 0))
+        limit = Limit(State(s_threshold, 0), rotate_90_ccw(State(s_threshold, 0) - State(s_min, sqrt(2*a_lb*(s_min - s_threshold)))))
     end
     
     limit!(cs, limit)
