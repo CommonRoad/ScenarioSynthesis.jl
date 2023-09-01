@@ -1,17 +1,21 @@
-function type_ranking(pred1::Predicate, pred2::Predicate)
-    typeof(pred1) == typeof(pred2) && return true # if both predicates have the same type, their ordering does not matter
-    isa(pred1, PredicateSingle) && return true # among static predictates, the ordering does not matter
+function type_ranking(pred1::Predicate, pred2::Predicate) 
+    # true: apply pred1 prior to pred2
+    
+    # single agent predicates
+    isa(pred1, PredicateSingle) && return true # among single agent predictates, the ordering does not matter
     isa(pred2, PredicateSingle) && return false
 
-    # now, pred1 and pred2 are dynamic
-    dyn_vel_predicates = (SlowerAgent, ) # TODO enhance type system?
-    if typeof(pred1) in dyn_vel_predicates
-        typeof(pred2) in dyn_vel_predicates || return true
-        # now, pred1 and pred2 are of type dyn_vel_predicate
-        return typeof(pred1) != SlowerAgent
-    else
-        typeof(pred2) in dyn_vel_predicates && return false
-        # now, pred1 and pred2 are of type dyn_pos_predicate
-        return typeof(pred1) != BehindAgent
-    end
+    # multi agent predicates
+    
+    # SlowerAgent
+    typeof(pred1) == SlowerAgent && return true
+    typeof(pred2) == SlowerAgent && return false
+    
+    # BehindAgent
+    typeof(pred1) == BehindAgent && return true
+    typeof(pred2) == BehindAgent && return false
+
+    # SafeDistance
+    typeof(pred1) == SafeDistance && return true
+    tyepof(pred2) == SafeDistance && return false
 end

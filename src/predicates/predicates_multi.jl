@@ -120,6 +120,9 @@ function apply_predicate!(
     k::TimeStep,
     unnecessary...
 )
+    # assert BehindAgent
+    apply_predicate!(BehindAgent(predicate.agents), agents, k)
+    
     M = length(predicate.agents)
 
     # offsets
@@ -138,11 +141,11 @@ function apply_predicate!(
     for i in 1:M-1
         if s_break_max[i] > s_break_min[i+1] + offsets[i] # TODO check sign!
             # mediate threshold
-            s_threshold = (s_break_min[i+1] + offsets[i]) * i/M + s_break_max[i] + (1 - i/M)
+            s_threshold = (s_break_min[i+1] + offsets[i]) * i/M + s_break_max[i] * (1 - i/M)
 
             # shrink reachable sets to comply with predicates
-            safe_distance_behind!(agents.agents[i].states[k], s_threshold - agents.agents[i].lenwid[1]/2, agents.agents[i].a_lb, agents.agents[i].v_ub)
-            safe_distance_front!(agents.agents[i+1].states[k], s_threshold + agents.agents[i+1].lenwid[1]/2 + offsets[i], agents.agents[i+1].a_lb)
+            safe_distance_behind!(agents.agents[predicate.agents[i]].states[k], s_threshold - agents.agents[predicate.agents[i]].lenwid[1]/2 * 0, agents.agents[predicate.agents[i]].a_lb, agents.agents[predicate.agents[i]].v_ub)
+            safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2 * 0+ offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
         end
     end
 
@@ -153,8 +156,9 @@ function s_break(
     cs::ConvexSet,
     a_lb::Real
 )
-    _, ind_min = findmin(v -> dot(v, SVector{2, Float64}(-sin(a_lb/v[2]), cos(a_lb/v[2]))), cs.vertices) # slight overapproximation
-    _, ind_max = findmax(v -> dot(v, SVector{2, Float64}(-sin(a_lb/v[2]), cos(a_lb/v[2]))), cs.vertices)
+    @assert length(cs.vertices) > 0
+    _, ind_min = findmin(v -> dot(v, SVector{2, Float64}(-a_lb/v[2], 1)), cs.vertices) # slight overapproximation
+    _, ind_max = findmax(v -> dot(v, SVector{2, Float64}(-a_lb/v[2], 1)), cs.vertices)
 
     s_break_min = cs.vertices[ind_min][1] - cs.vertices[ind_min][2]^2 / (2*a_lb)
     s_break_max = cs.vertices[ind_max][1] - cs.vertices[ind_max][2]^2 / (2*a_lb)
@@ -169,15 +173,15 @@ function safe_distance_behind!(
     v_ub::Real
 )
     N = 20 # number of support points
-    vertices = Vector{State}(undef, N+3)
-    for i in 1:N+1
-        v = (i-1)/N * v_ub
-        vertices[i] = State(s_threshold + v^2 / a_lb, v)
+    vert_prev = State(s_threshold, 0)
+    limit!(cs, Limit(vert_prev, SVector{2, Float64}(-1, 0)))
+    for i in 1:N
+        v = i/N * v_ub
+        vert = State(s_threshold + v^2 / (2*a_lb), v)
+        limit!(cs, Limit(vert_prev, rotate_90_ccw(vert - vert_prev)))
+        vert_prev = vert
     end
-    vertices[N+2] = State(-Inf64, v_ub)
-    vertices[N+3] = State(s_threshold, -Inf64)
-
-    intersection!(cs, ConvexSet(vertices))
+    
     return nothing
 end
 
@@ -190,7 +194,7 @@ function safe_distance_front!(
     s_max = max(cs, 1)
     s_lin = (s_min + s_max)/2
 
-    limit = Limit(State(NaN, Nan), SVector{2, Float64}(NaN, NaN))
+    limit = Limit(State(NaN, NaN), SVector{2, Float64}(1, 1))
     if s_lin < s_threshold
         v_lin = sqrt(2*a_lb*(s_lin - s_threshold))
         limit = Limit(State(s_lin, v_lin), SVector{2, Float64}(-sin(a_lb/v_lin), cos(a_lb/v_lin)))

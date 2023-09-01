@@ -77,23 +77,23 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(2))
     push!(spec[i], VelocityLimits(3))
     push!(spec[i], VelocityLimits(4))
-    push!(spec[i], BehindAgent([4, 3]))
+    push!(spec[i], SafeDistance([4, 3]))
 end
-push!(spec[1], BehindAgent([2, 1]));
+push!(spec[1], SafeDistance([2, 1]));
 for i=15:k_max-10
-    push!(spec[i], BehindAgent([1, 2]))
+    push!(spec[i], SafeDistance([1, 2]))
 end
 for i=k_max-10:k_max
-    push!(spec[i], BehindAgent([4, 1, 3, 2]))
+    push!(spec[i], SafeDistance([4, 1, 3, 2]))
 end
 push!(spec[k_max], OnLanelet(1, Set(24)));
 push!(spec[k_max], SlowerAgent([2, 1]))
 
 for i = 1:k_max
-    # @info i
+    @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
-        # @info pred
+        @info pred
         apply_predicate!(pred, agents, i)
     end
 

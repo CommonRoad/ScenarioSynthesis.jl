@@ -98,9 +98,9 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(4))
     push!(spec[i], VelocityLimits(5))
     push!(spec[i], VelocityLimits(6))
-    push!(spec[i], BehindAgent([2, 1]))
-    push!(spec[i], BehindAgent([4, 3]))
-    push!(spec[i], BehindAgent([6, 5]))
+    push!(spec[i], SafeDistance([2, 1]))
+    push!(spec[i], SafeDistance([4, 3]))
+    push!(spec[i], SafeDistance([6, 5]))
 end
 
 begin i=1

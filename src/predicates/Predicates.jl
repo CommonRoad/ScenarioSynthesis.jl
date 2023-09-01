@@ -20,7 +20,7 @@ include("predicates_single.jl")
 export PredicateSingle, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits, PositionLimits, StateLimits
 
 include("predicates_multi.jl")
-export PredicateMulti, BehindAgent, InFrontOfAgent, SlowerAgent, FasterAgent
+export PredicateMulti, BehindAgent, SlowerAgent, SafeDistance
 
 include("type_ranking.jl")
 export type_ranking
