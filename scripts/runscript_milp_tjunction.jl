@@ -291,7 +291,7 @@ scenes = ScenesDict([scene1, scene2, scene4, scene6, scene8, scene10, scene12, s
 
 scenario = Scenario(agents, scenes, ln);
 Δt = 0.25
-@btime (optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem))
+optimization_problem = synthesize_optimization_problem(scenario, Δt); JuMP.optimize!(optimization_problem)
 
 last_scene_activated_at = findfirst(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[:, end])
 last_scene_duration = findlast(x -> x>0, JuMP.value.(optimization_problem.obj_dict[:scene_active])[last_scene_activated_at:end, end])
@@ -319,4 +319,4 @@ for (agent_id, agent) in agents.agents
     end
 end
 
-animate_scenario(ln, agents, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_tjunction")
+animate_scenario(ln, agents, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_tjunction", xlims=(-65, 98), ylims=(-18, 95), size=(1580, 1080))

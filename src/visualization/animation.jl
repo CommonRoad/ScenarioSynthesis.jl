@@ -1,4 +1,4 @@
-import Plots.gif
+import Plots: gif, mp4
 
 function animate_scenario(
     ln::LaneletNetwork, 
@@ -8,11 +8,14 @@ function animate_scenario(
     k_max::Integer; 
     fps::Real=20,
     playback_speed::Real=1.0,
-    filename::String="animation"
+    filename::String="animation",
+    xlims::Union{Nothing, Tuple{<:Real, <:Real}}=nothing, 
+    ylims::Union{Nothing, Tuple{<:Real, <:Real}}=nothing,
+    size::Union{Nothing, Tuple{<:Integer, <:Integer}}=nothing
 ) # TODO where to store Δt?
     Plots.gr()
-    size = (600, 400)
-    plt_ln = plot_lanelet_network(ln; size=size)
+    isnothing(size) ? size = (600, 400) : nothing
+    plt_ln = plot_lanelet_network(ln; size=size, xlims=xlims, ylims=ylims, draw_direction=false)
 
     total_duration = Δt * (k_max-1)
     t_range = range(0.0, total_duration, floor(Int64, total_duration * fps / playback_speed))
@@ -50,7 +53,7 @@ function animate_scenario(
         Plots.frame(animation)
     end
     
-    gif(animation, joinpath(@__DIR__, "..", "..", "output", string(filename ,".gif")), fps=fps)
+    mp4(animation, joinpath(@__DIR__, "..", "..", "output", string(filename ,".mp4")), fps=fps)
     return nothing
 end
 

@@ -262,4 +262,4 @@ for (agent_id, agent) in agents.agents
     end
 end
 
-animate_scenario(ln, agents, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_zip")
+animate_scenario(ln, agents, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_zip", xlims=(-150, 50), ylims=(-5, 20), size=(1600, 300))

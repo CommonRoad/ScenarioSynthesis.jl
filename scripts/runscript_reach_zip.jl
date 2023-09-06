@@ -77,14 +77,14 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(2))
     push!(spec[i], VelocityLimits(3))
     push!(spec[i], VelocityLimits(4))
-    push!(spec[i], SafeDistance([4, 3]))
+    push!(spec[i], BehindAgent([4, 3]))
 end
-push!(spec[1], SafeDistance([2, 1]));
+push!(spec[1], BehindAgent([2, 1]));
 for i=15:k_max-10
-    push!(spec[i], SafeDistance([1, 2]))
+    push!(spec[i], BehindAgent([1, 2]))
 end
 for i=k_max-10:k_max
-    push!(spec[i], SafeDistance([4, 1, 3, 2]))
+    push!(spec[i], BehindAgent([4, 1, 3, 2]))
 end
 push!(spec[k_max], OnLanelet(1, Set(24)));
 push!(spec[k_max], SlowerAgent([2, 1]))
@@ -134,7 +134,7 @@ for (agent_id, agent) in agents.agents
 end
 
 # animation
-animate_scenario(ln, agents, traj_reach, Δt, k_max; playback_speed=1, filename="reach_zip")
+animate_scenario(ln, agents, traj_reach, Δt, k_max; playback_speed=1, xlims=(-150, 50), ylims=(-5, 20), size=(1600, 300), filename="reach_zip")
 
 # plot reachable sets
 using LaTeXStrings

@@ -14,7 +14,7 @@ using Plots; plotly()
 #ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
 ln = ln_from_xml("example_files/ZAM_Tjunction-edit.xml");
 process!(ln);
-plot_lanelet_network(ln; annotate_id=true);
+plot_lanelet_network(ln; annotate_id=false, xlims=(-65, 98), ylims=(-18, 95), size=(1580, 1080))
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
@@ -92,9 +92,9 @@ for i=1:k_max
     push!(spec[i], VelocityLimits(4))
     push!(spec[i], VelocityLimits(5))
     push!(spec[i], VelocityLimits(6))
-    push!(spec[i], SafeDistance([2, 1]))
-    push!(spec[i], SafeDistance([4, 3]))
-    push!(spec[i], SafeDistance([6, 5]))
+    push!(spec[i], BehindAgent([2, 1]))
+    push!(spec[i], BehindAgent([4, 3]))
+    push!(spec[i], BehindAgent([6, 5]))
 end
 
 begin i=1
@@ -208,7 +208,7 @@ for (agent_id, agent) in agents.agents
 end
 
 # animation
-animate_scenario(ln, agents, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
+animate_scenario(ln, agents, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction", xlims=(-65, 98), ylims=(-18, 95), size=(1580, 1080))
 
 # plot reachable sets
 using LaTeXStrings
