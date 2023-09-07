@@ -1,20 +1,24 @@
-using Gurobi
-using JuMP
+import Gurobi: Env, Optimizer
+import JuMP: Model, @variable, @objective, @constraint, optimize!, value, set_silent
 
 function optimize_partition(
     lower_bounds::Vector{T},
     upper_bounds::Vector{T},
-    grb_env::Gurobi.Env
+    grb_env::Env
 ) where {T<:Real}
     @assert length(lower_bounds) == length(upper_bounds)
     N = length(lower_bounds)
 
-    model = Model(() -> Gurobi.Optimizer(grb_env); add_bridges=false)
+    # any((upper_bounds - lower_bounds) .< 0) && throw(error("non feasible"))
+    ref_value = sum(upper_bounds - lower_bounds)
+
+    model = Model(() -> Optimizer(grb_env); add_bridges=false)
+    set_silent(model)
     # set_optimizer_attribute(model, "NonConvex", 2)
     @variable(model, lower[1:N])
     @variable(model, upper[1:N])
     @variable(model, root[1:N])
-    @objective(model, Max, sum(upper-lower))
+    @objective(model, Min, sum((upper.-lower.-ref_value).^2))
 
     for i=1:N
         @constraint(model, lower_bounds[i] ≤ lower[i])
@@ -29,9 +33,3 @@ function optimize_partition(
 
     return value.(lower), value.(upper)
 end
-
-lower = [1.0, 1.0, 1.0]
-upper = [8.0, 8.0, 8.0]
-grb_env = Gurobi.Env()
-
-optimize_partition(lower, upper, grb_env)
