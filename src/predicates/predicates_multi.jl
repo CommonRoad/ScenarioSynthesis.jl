@@ -60,46 +60,67 @@ function apply_predicate!(
     predicate::BehindAgent,
     agents::AgentsDict,
     k::TimeStep,
+    grb_env::Union{Env, Nothing}=nothing,
     unnecessary...
 )
     offsets = [agents.offset[predicate.agents[i], predicate.agents[i+1]] for i=1:length(predicate.agents)-1] # TODO check sign!
-    for i = 2:length(offsets)
-        offsets[i] = offsets[i-1] + offsets[i]
-    end
-    pushfirst!(offsets, 0)
+    cumsum!(offsets, offsets)
+    pushfirst!(offsets, 0.0)
 
     max_prev = max(agents.agents[predicate.agents[1]].states[k], 1) # offset 0 for first vehicle
     min_prev = min(agents.agents[predicate.agents[1]].states[k], 1)
 
-    # TODO consider length of agents before mediation?
-    for i in 1:length(predicate.agents)-1
-        max_this = max(agents.agents[predicate.agents[i+1]].states[k], 1) - offsets[i+1] 
-        min_this = min(agents.agents[predicate.agents[i+1]].states[k], 1) - offsets[i+1] 
+    if isnothing(grb_env)# TODO consider length of agents before mediation?
+        for i in 1:length(predicate.agents)-1
+            max_this = max(agents.agents[predicate.agents[i+1]].states[k], 1) - offsets[i+1] 
+            min_this = min(agents.agents[predicate.agents[i+1]].states[k], 1) - offsets[i+1] 
 
-        min_this = max(min_prev, min_this)
-        max_prev = min(max_prev, max_this)
+            min_this = max(min_prev, min_this)
+            max_prev = min(max_prev, max_this)
 
-        # @info min_prev, max_prev, min_this, max_this
-        if min_this + agents.agents[predicate.agents[i]].lenwid[1] / 2 < max_prev - agents.agents[predicate.agents[i+1]].lenwid[1] / 2
-            ϕ = i / length(predicate.agents)
-            # TODO one should consider the length of the agents -- matters if agents' length substantially differs
-            threshold = ϕ * (max_prev - agents.agents[predicate.agents[i+1]].lenwid[1] / 2) + (1-ϕ) * (min_this + agents.agents[predicate.agents[i]].lenwid[1] / 2)
-            # @info threshold
+            # @info min_prev, max_prev, min_this, max_this
+            if min_this + agents.agents[predicate.agents[i]].lenwid[1] / 2 < max_prev - agents.agents[predicate.agents[i+1]].lenwid[1] / 2
+                ϕ = i / length(predicate.agents)
+                # TODO one should consider the length of the agents -- matters if agents' length substantially differs
+                threshold = ϕ * (max_prev - agents.agents[predicate.agents[i+1]].lenwid[1] / 2) + (1-ϕ) * (min_this + agents.agents[predicate.agents[i]].lenwid[1] / 2)
+                # @info threshold
+            
+                bounds_prev = Bounds(-Inf, threshold + offsets[i] - agents.agents[predicate.agents[i]].lenwid[1] / 2, -Inf, Inf)
+                bounds_this = Bounds(threshold + offsets[i+1] + agents.agents[predicate.agents[i+1]].lenwid[1] / 2, Inf, -Inf, Inf)
+
+                apply_bounds!(agents.agents[predicate.agents[i]].states[k], bounds_prev)
+                apply_bounds!(agents.agents[predicate.agents[i+1]].states[k], bounds_this)
+
+                min_prev = threshold
+                max_prev = max_this
+            else
+                # @info "no handling necessary"
+                min_prev = min_this
+                max_prev = max_this
+            end
+        end
+    else # optimization
+        M = length(predicate.agents)
+        s_min = Vector{Float64}(undef, M)
+        s_max = Vector{Float64}(undef, M)
         
-            bounds_prev = Bounds(-Inf, threshold + offsets[i] - agents.agents[predicate.agents[i]].lenwid[1] / 2, -Inf, Inf)
-            bounds_this = Bounds(threshold + offsets[i+1] + agents.agents[predicate.agents[i+1]].lenwid[1] / 2, Inf, -Inf, Inf)
-
-            apply_bounds!(agents.agents[predicate.agents[i]].states[k], bounds_prev)
-            apply_bounds!(agents.agents[predicate.agents[i+1]].states[k], bounds_this)
-
-            min_prev = threshold
-            max_prev = max_this
-        else
-            # @info "no handling necessary"
-            min_prev = min_this
-            max_prev = max_this
+        @inbounds for i=1:M
+            s_min[i], s_max[i] = s(agents.agents[predicate.agents[i]].states[k])
         end
 
+        s_min += offsets
+        s_max += offsets
+        s_min_opt, s_max_opt = optimize_partition(s_min, s_max, grb_env)
+        
+        @inbounds for i=1:M
+            agent = agents.agents[predicate.agents[i]]
+            if s_min_opt[i] > s_min[i] + 1e-3
+                limit!(agent.states[k], Limit(State(s_min_opt[i] - agent.lenwid[1]/2 - offsets[i], 0), SVector{2, Float64}(1, 0)))
+            end
+            if s_max_opt[i] < s_max[i] - 1e-3
+                limit!(agent.states[k], Limit(State(s_max_opt[i] + agent.lenwid[1]/2 - offsets[i], 0), SVector{2, Float64}(-1, 0)))
+            end
+        end
     end
 
     return nothing
@@ -118,10 +139,11 @@ function apply_predicate!(
     predicate::SafeDistance,
     agents::AgentsDict,
     k::TimeStep,
+    grb_env::Union{Env, Nothing}=nothing,
     unnecessary...
 )
     # assert BehindAgent
-    apply_predicate!(BehindAgent(predicate.agents), agents, k)
+    apply_predicate!(BehindAgent(predicate.agents), agents, k, grb_env)
 
     M = length(predicate.agents)
 
@@ -143,14 +165,32 @@ function apply_predicate!(
     end
 
     # mediate in case of conflicts
-    for i in 1:M-1
-        if s_break_max[i] > s_break_min[i+1] + offsets[i] # TODO check sign!
-            # mediate threshold
-            s_threshold = (s_break_min[i+1] + offsets[i]) * i/M + s_break_max[i] * (1 - i/M)
+    if isnothing(grb_env)
+        for i in 1:M-1
+            if s_break_max[i] > s_break_min[i+1] + offsets[i] # TODO check sign!
+                # mediate threshold
+                s_threshold = (s_break_min[i+1] + offsets[i]) * i/M + s_break_max[i] * (1 - i/M)
 
-            # shrink reachable sets to comply with predicates
-            safe_distance_behind!(agents.agents[predicate.agents[i]].states[k], s_threshold - agents.agents[predicate.agents[i]].lenwid[1]/2, agents.agents[predicate.agents[i]].a_lb, agents.agents[predicate.agents[i]].v_ub)
-            safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2+ offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
+                # shrink reachable sets to comply with predicates
+                safe_distance_behind!(agents.agents[predicate.agents[i]].states[k], s_threshold - agents.agents[predicate.agents[i]].lenwid[1]/2, agents.agents[predicate.agents[i]].a_lb, agents.agents[predicate.agents[i]].v_ub)
+                safe_distance_front!(agents.agents[predicate.agents[i+1]].states[k], s_threshold + agents.agents[predicate.agents[i+1]].lenwid[1]/2+ offsets[i], agents.agents[predicate.agents[i+1]].a_lb)
+            end
+        end
+    else # optimization based
+        cumsum!(offsets, offsets)
+        pushfirst!(offsets, 0.0)
+        s_break_min += offsets
+        s_break_max += offsets
+        s_break_min_opt, s_break_max_opt = optimize_partition(s_break_min, s_break_max, grb_env)
+
+        for i in 1:M
+            agent = agents.agents[predicate.agents[i]]
+            if s_break_min_opt[i] > s_break_min[i] + 1e-3
+                safe_distance_front!(agent.states[k], s_break_min_opt[i] + agent.lenwid[1]/2 - offsets[i], agent.a_lb)
+            end
+            if s_break_max_opt[i] < s_break_max[i] - 1e-3
+                safe_distance_behind!(agent.states[k], s_break_max_opt[i] - agent.lenwid[1]/2 - offsets[i], agent.a_lb, agent.v_ub)
+            end
         end
     end
 
@@ -162,6 +202,23 @@ function apply_predicate!(
     return nothing
 end
 
+function s(
+    cs::ConvexSet
+)
+    @assert length(cs.vertices) > 0 
+    s_min = Inf64
+    s_max = -Inf64
+    @inbounds for v in cs.vertices
+        s = v[1]
+        s < s_min ? s_min = s : nothing
+        s > s_max ? s_max = s : nothing
+    end
+
+
+    isinf(s_min) && throw(error(cs)) # TODO remove
+    isinf(s_max) && throw(error(cs))
+    return s_min, s_max
+end
 function s_break(
     cs::ConvexSet,
     a_lb::Real
@@ -190,7 +247,7 @@ function safe_distance_behind!(
     for i in 1:N
         v = i/N * v_ub
         vert = State(s_threshold + v^2 / (2*a_lb), v)
-        limit!(cs, Limit(vert_prev, rotate_90_ccw(vert - vert_prev)))
+        limit!(cs, Limit(vert, rotate_90_ccw(vert - vert_prev)))
         vert_prev = vert
     end
     

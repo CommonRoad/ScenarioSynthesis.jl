@@ -89,12 +89,15 @@ end
 push!(spec[k_max], OnLanelet(1, Set(24)));
 push!(spec[k_max], SlowerAgent([2, 1]))
 
+import Gurobi: Env
+env = Env()
+
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in sort([spec[i]...], lt=type_ranking)
         @info pred
-        apply_predicate!(pred, agents, i)
+        apply_predicate!(pred, agents, i, env)
     end
 
     # propagate convex set to get next time step

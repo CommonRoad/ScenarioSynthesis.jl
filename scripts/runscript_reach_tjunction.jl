@@ -164,12 +164,15 @@ specvec = [sort([specs...], lt=type_ranking) for specs in spec]
 agents_input = deepcopy(agents);
 agents = deepcopy(agents_input);
 
+import Gurobi: Env
+grb_env = Env()
+
 for i = 1:k_max
     @info i
     # restrict convex set to match specifications
     for pred in specvec[i] #sort([spec[i]...], lt=type_ranking)
         @info pred
-        apply_predicate!(pred, agents, i)
+        apply_predicate!(pred, agents, i, grb_env)
     end
 
     # propagate convex set to get next time step

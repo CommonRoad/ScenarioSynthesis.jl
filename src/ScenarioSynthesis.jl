@@ -5,6 +5,7 @@ module ScenarioSynthesis
 using Polygons
 import StaticArrays: FieldVector, SVector, SMatrix
 import LinearAlgebra: norm, dot, cross
+import Gurobi: Env
 
 include("reachability/Reachability.jl")
 include("types/Types.jl") # TODO rename to CommonRoad? Map? LaneletNetwork? Environment? 

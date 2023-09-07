@@ -1,4 +1,4 @@
-import Gurobi: Env, Optimizer
+import Gurobi: Optimizer, Env
 import JuMP: Model, @variable, @objective, @constraint, optimize!, value, set_silent
 
 function optimize_partition(
