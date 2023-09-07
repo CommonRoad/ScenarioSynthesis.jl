@@ -12,39 +12,74 @@ function apply_predicate!(
     predicate::SlowerAgent,
     agents::AgentsDict,
     k::TimeStep,
+    env::Union{Env, Nothing}=nothing,
     unnecessary...
 )
-    max_prev = max(agents.agents[predicate.agents[1]].states[k], 2)
-    min_prev = min(agents.agents[predicate.agents[1]].states[k], 2)
-    
-    for i in 1:length(predicate.agents)-1
-        max_this = max(agents.agents[predicate.agents[i+1]].states[k], 2)
-        min_this = min(agents.agents[predicate.agents[i+1]].states[k], 2)
-
-        min_this = max(min_prev, min_this)
-        max_prev = min(max_prev, max_this)
-
-        @info min_prev, max_prev, min_this, max_this
-        if min_this < max_prev
-            ϕ = i / length(predicate.agents)
-            threshold = ϕ * max_prev + (1-ϕ) * min_this
+    if isnothing(env)
+        max_prev = max(agents.agents[predicate.agents[1]].states[k], 2)
+        min_prev = min(agents.agents[predicate.agents[1]].states[k], 2)
         
-            bounds_prev = Bounds(-Inf, Inf, -Inf, threshold)    
-            bounds_this = Bounds(-Inf, Inf, threshold, Inf)  
+        for i in 1:length(predicate.agents)-1
+            max_this = max(agents.agents[predicate.agents[i+1]].states[k], 2)
+            min_this = min(agents.agents[predicate.agents[i+1]].states[k], 2)
 
-            apply_bounds!(agents.agents[predicate.agents[i]].states[k], bounds_prev)
-            apply_bounds!(agents.agents[predicate.agents[i+1]].states[k], bounds_this)
+            min_this = max(min_prev, min_this)
+            max_prev = min(max_prev, max_this)
 
-            min_prev = threshold
-            max_prev = max_this
-        else
-            min_prev = min_this
-            max_prev = max_this
+            @info min_prev, max_prev, min_this, max_this
+            if min_this < max_prev
+                ϕ = i / length(predicate.agents)
+                threshold = ϕ * max_prev + (1-ϕ) * min_this
+            
+                bounds_prev = Bounds(-Inf, Inf, -Inf, threshold)    
+                bounds_this = Bounds(-Inf, Inf, threshold, Inf)  
+
+                apply_bounds!(agents.agents[predicate.agents[i]].states[k], bounds_prev)
+                apply_bounds!(agents.agents[predicate.agents[i+1]].states[k], bounds_this)
+
+                min_prev = threshold
+                max_prev = max_this
+            else
+                min_prev = min_this
+                max_prev = max_this
+            end
+        end
+    else # optimization based
+        M = length(predicate.agents)
+        v_min = Vector{Float64}(undef, M)
+        v_max = Vector{Float64}(undef, M)
+
+        @inbounds for i=1:M
+            agent = agents.agents[predicate.agents[i]]
+            v_min[i], v_max[i] = v(agent.states[k])
         end
 
+        v_min_opt, v_max_opt = optimize_partition(v_min, v_max, env)
+
+        for i=1:M
+            agent = agents.agents[predicate.agents[i]]
+            if v_min_opt[i] > v_min[i] + 1e-3
+                limit!(agent.states[k], Limit(State(0, v_min_opt[i]), SVector{2, Float64}(0, 1)))
+            end
+            if v_max_opt[i] < v_max_opt[i] - 1e-3
+                limit!(agent.states[k], Limit(State(0, v_max_opt[i]), SVector{2, Float64}(0, -1)))
+            end
+        end
     end
     
     return nothing
+end
+
+function v(cs::ConvexSet)
+    v_min = Inf64
+    v_max = -Inf64
+
+    @inbounds for v in cs.vertices
+        v[2] < v_min ? v_min = v[2] : nothing
+        v[2] > v_max ? v_max = v[2] : nothing
+    end
+    
+    return v_min, v_max
 end
 
 struct BehindAgent <: PredicateMulti 
