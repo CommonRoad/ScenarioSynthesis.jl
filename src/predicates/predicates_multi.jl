@@ -293,7 +293,7 @@ function safe_distance_front!(
     cs::ConvexSet,
     s_threshold::Real,
     a_lb::Real
-)
+) #TODO improve by means of crossing detection 
     s_min = min(cs, 1)
     s_max = max(cs, 1)
     s_lin = (s_min + s_max)/2

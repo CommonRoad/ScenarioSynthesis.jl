@@ -168,10 +168,10 @@ import Gurobi: Env
 grb_env = Env()
 
 for i = 1:k_max
-    @info i
+    #@info i
     # restrict convex set to match specifications
     for pred in specvec[i] #sort([spec[i]...], lt=type_ranking)
-        @info pred
+        #@info pred
         apply_predicate!(pred, agents, i, grb_env)
     end
 
@@ -197,11 +197,13 @@ using JuMP, Gurobi
 
 traj = Dict{AgentID, Trajectory}()
 grb_env = Gurobi.Env()
+obj_val = 0.0
 for (agent_id, agent) in agents.agents
-    @info agent_id
+    # @info agent_id
     optim = synthesize_optimization_problem(agent, Δt, grb_env)
     optimize!(optim)
     @info agent_id, objective_value(optim)
+    obj_val += objective_value(optim)
     traj[agent_id] = Trajectory(Vector{State}(undef, length(agent.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
@@ -209,6 +211,7 @@ for (agent_id, agent) in agents.agents
         traj[agent_id][counter] = State(val[1], val[2])
     end
 end
+@info obj_val
 
 # animation
 animate_scenario(ln, agents, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction", xlims=(-65, 98), ylims=(-18, 95), size=(1580, 1080))
