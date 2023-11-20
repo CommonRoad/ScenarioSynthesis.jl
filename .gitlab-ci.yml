@@ -5,9 +5,7 @@ before_script:
   - apt-get update && apt-get install git -y
   - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lrz.de/".insteadOf "git@gitlab.lrz.de:"
   - echo $(pwd)
-  - cd test
-  - echo $(pwd)
-  - cd ..
+  - export GRB_LICENSE_FILE="$(pwd)/gurobi/gurobi.lic"
 
 stages:          # List of stages for jobs, and their order of execution
   - test
