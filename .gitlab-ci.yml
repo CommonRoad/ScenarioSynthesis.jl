@@ -2,11 +2,8 @@ image: "julia"
 
 before_script:
   - julia --version
-  - mkdir -p ~/.ssh
-  - chmod 700 ~/.ssh
-  - cp "$SSH_KNOWN_HOSTS" ~/.ssh/known_hosts
-  - chmod 644 ~/.ssh/known_hosts
-  - cat ~/.ssh/known_hosts
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lrz.de/".insteadOf "git@gitlab.lrz.de:"
+  - git clone --branch develop git@gitlab.lrz.de:cps/Polygons.jl.git $HOME/Polygons.jl
 
 stages:          # List of stages for jobs, and their order of execution
   - test
