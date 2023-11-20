@@ -3,12 +3,15 @@ export TimeStep
 
 #=
 struct GenericBasePredicate <: BasicPredicate
-    actor_ego::ActorID # TODO or ::Actor ??
-    actor_other::ActorID
+    agent_ego::AgentID # TODO or ::Agent ??
+    agent_other::AgentID
     lanelet::LaneletID
     conflict_section::ConflictSectionID
 end
 =#
+
+include("optimize_partition.jl")
+export optimize_partition
 
 include("metric_temporal_logic.jl")
 export Predicate, BasicPredicate, MTLPredicate, LogicOperator, And, Or, Not, Implies, TimeOperator, Once, Future, Globally, Previously, Interval, mtl2config, explore_mtl!, jump_to_next_basic_predicate!, simplify!, Relative, Absolute
@@ -16,11 +19,11 @@ export Predicate, BasicPredicate, MTLPredicate, LogicOperator, And, Or, Not, Imp
 include("bounds.jl")
 export Bounds, apply_bounds!, apply_predicate!
 
-include("predicates_static.jl")
-export StaticPredicate, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits, PositionLimits, StateLimits
+include("predicates_single.jl")
+export PredicateSingle, OnLanelet, OnConflictSection, BeforeConflictSection, BehindConflictSection, VelocityLimits, PositionLimits, StateLimits
 
-include("predicates_dynamic.jl")
-export DynamicPredicate, BehindActor, InFrontOfActor, SlowerActor, FasterActor
+include("predicates_multi.jl")
+export PredicateMulti, BehindAgent, SlowerAgent, SafeDistance
 
 include("type_ranking.jl")
 export type_ranking

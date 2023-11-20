@@ -1,3 +1,4 @@
+#=
 # abstract type Formula end
 
 ## Logics
@@ -27,11 +28,11 @@ struct Absolute <: TimeReference end
 
 ## MTLPredicate
 const Interval = Union{UnitRange, Missing} # TODO do not allow missing (for MTL)?
-
+=#
 abstract type Predicate end
 
 abstract type BasicPredicate <: Predicate end
-
+#=
 struct MTLPredicate{T, R, L, N} <: Predicate
     interval::Interval # are Intervals relative to super MTLPredicate / activation of own MTLPredicate or absolute? 
     predicates::Vector{N}
@@ -207,15 +208,4 @@ function explore_mtl!(
     lenupper = length(config[index][])
 
 end
-
-function Base.isless(mat1::Matrix, mat2::Matrix)
-    @assert size(mat1) == size(mat2)
-    n, m = size(mat1)
-    for i = 1:n
-        for j = 1:m
-            mat1[i, j] < mat2[i, j] && return true
-            mat1[i, j] > mat2[i, j] && return false
-        end
-    end
-    return true # mat1 and mat2 are equal. ordering does not matter / can not be determined. 
-end
+=#

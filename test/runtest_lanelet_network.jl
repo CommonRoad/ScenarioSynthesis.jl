@@ -1,6 +1,3 @@
-using ScenarioSynthesis
-using Test
-
 @testset "xml import" begin
     path = joinpath(@__DIR__, "..", "example_files", "DEU_Cologne-9_6_I-1.cr.xml")
     @info "path: $path"

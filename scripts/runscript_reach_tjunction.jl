@@ -1,10 +1,11 @@
 using ScenarioSynthesis
+using Polygons
 using StaticArrays
 using Plots; plotly()
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
-# 2. define Actors (incl. their routes)
+# 2. define Agents (incl. their routes)
 # 3. define formal specifications / sequence of Predicates
 # 4. synthesis
 
@@ -13,11 +14,11 @@ using Plots; plotly()
 #ln = ln_from_xml("example_files/ZAM_Zip-1_64_T-1.xml");
 ln = ln_from_xml("example_files/ZAM_Tjunction-edit.xml");
 process!(ln);
-plot_lanelet_network(ln; annotate_id=true);
+plot_lanelet_network(ln; annotate_id=false, xlims=(-65, 98), ylims=(-18, 95), size=(1580, 1080))
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
-### define Actors
+### define Agents
 route1 = Route(LaneletID.([50195, 50209, 50203]), ln, lenwid); plot_route(route1);
 route2 = Route(LaneletID.([50201, 50213, 50197]), ln, lenwid); plot_route(route2);
 route3 = Route(LaneletID.([50205, 50217, 50199]), ln, lenwid); plot_route(route3);
@@ -65,14 +66,14 @@ cs6 = ConvexSet([
     State(100, 14),
 ])
 
-actor1 = Actor(route1, cs1);
-actor2 = Actor(route1, cs2);
-actor3 = Actor(route2, cs3);
-actor4 = Actor(route2, cs4);
-actor5 = Actor(route3, cs5);
-actor6 = Actor(route3, cs6);
+agent1 = Agent(route1, cs1);
+agent2 = Agent(route1, cs2);
+agent3 = Agent(route2, cs3);
+agent4 = Agent(route2, cs4);
+agent5 = Agent(route3, cs5);
+agent6 = Agent(route3, cs6);
  
-actors = ActorsDict([actor1, actor2, actor3, actor4, actor5, actor6], ln);
+agents = AgentsDict([agent1, agent2, agent3, agent4, agent5, agent6], ln);
 
 A = SMatrix{2, 2, Float64, 4}(0, 0, 1, 0) # add as default to propagate functions? 
 
@@ -82,26 +83,18 @@ k_max = 49 # → scene duration: Δt * (k_max - 1) = 10 sec
 
 empty_set = Set{Predicate}()
 
-ψ = 0.5
-
 spec = Vector{Set{Predicate}}(undef, k_max);
 for i=1:k_max
     spec[i] = copy(empty_set)
-    #push!(spec[i], StateLimits(1))
-    #push!(spec[i], StateLimits(2))
-    #push!(spec[i], StateLimits(3))
-    #push!(spec[i], StateLimits(4))
-    #push!(spec[i], StateLimits(5))
-    #push!(spec[i], StateLimits(6))
     push!(spec[i], VelocityLimits(1))
     push!(spec[i], VelocityLimits(2))
     push!(spec[i], VelocityLimits(3))
     push!(spec[i], VelocityLimits(4))
     push!(spec[i], VelocityLimits(5))
     push!(spec[i], VelocityLimits(6))
-    push!(spec[i], BehindActor([2, 1]))
-    push!(spec[i], BehindActor([4, 3]))
-    push!(spec[i], BehindActor([6, 5]))
+    push!(spec[i], BehindAgent([2, 1]))
+    push!(spec[i], BehindAgent([4, 3]))
+    push!(spec[i], BehindAgent([6, 5]))
 end
 
 begin i=1
@@ -168,53 +161,60 @@ begin i=49
 end
 
 specvec = [sort([specs...], lt=type_ranking) for specs in spec]
-actors_input = deepcopy(actors);
-actors = deepcopy(actors_input);
+agents_input = deepcopy(agents);
+agents = deepcopy(agents_input);
+
+import Gurobi: Env
+grb_env = Env()
 
 for i = 1:k_max
-    @info i
+    #@info i
     # restrict convex set to match specifications
     for pred in specvec[i] #sort([spec[i]...], lt=type_ranking)
-        @info pred
-        apply_predicate!(pred, actors, i, ψ)
+        #@info pred
+        apply_predicate!(pred, agents, i, grb_env)
     end
 
     # propagate convex set to get next time step
-    for (actor_id, actor) in actors.actors
-        @assert length(actor.states) == i 
-        push!(actor.states, propagate(actor.states[i], A, actor.a_ub, actor.a_lb, Δt))
+    for (agent_id, agent) in agents.agents
+        @assert length(agent.states) == i 
+        push!(agent.states, propagate(agent.states[i], A, agent.a_ub, agent.a_lb, Δt))
     end
 end
 
 # backwards propagate reachable sets and intersect with forward propagated ones to tighten convex sets
-for (actor_id, actor) in actors.actors
+for (agent_id, agent) in agents.agents
     for i in reverse(1:k_max-1)
-        @info actor_id, i
-        backward = propagate_backward(actor.states[i+1], A, actor.a_ub, actor.a_lb, Δt)
-        intersect = ScenarioSynthesis.intersection(actor.states[i], backward) 
-        actor.states[i] = intersect
+        @info agent_id, i
+        backward = propagate_backward(agent.states[i+1], A, agent.a_ub, agent.a_lb, Δt)
+        intersect = Polygons.intersection(agent.states[i], backward) 
+        agent.states[i] = intersect
     end
 end
 
 # synthesize trajectories using QP
 using JuMP, Gurobi
 
-traj = Dict{ActorID, Trajectory}()
+traj = Dict{AgentID, Trajectory}()
 grb_env = Gurobi.Env()
-for (actor_id, actor) in actors.actors
-    optim = synthesize_optimization_problem(actor, Δt, grb_env)
+obj_val = 0.0
+for (agent_id, agent) in agents.agents
+    # @info agent_id
+    optim = synthesize_optimization_problem(agent, Δt, grb_env)
     optimize!(optim)
-    @info objective_value(optim)
-    traj[actor_id] = Trajectory(Vector{State}(undef, length(actor.states)))
+    @info agent_id, objective_value(optim)
+    obj_val += objective_value(optim)
+    traj[agent_id] = Trajectory(Vector{State}(undef, length(agent.states)))
     counter = 0 
     for val in eachrow(JuMP.value.(optim.obj_dict[:state][:,1:2]))
         counter += 1
-        traj[actor_id][counter] = State(val[1], val[2])
+        traj[agent_id][counter] = State(val[1], val[2])
     end
 end
+@info obj_val
 
 # animation
-# animate_scenario(ln, actors, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction")
+animate_scenario(ln, agents, traj, Δt, k_max; playback_speed=1, filename="reach_tjunction", xlims=(-65, 98), ylims=(-18, 95), size=(1580, 1080))
 
 # plot reachable sets
 using LaTeXStrings
@@ -226,16 +226,16 @@ counter = 1
 for i=1:16:49
     counter += 1
     @info i
-    plot!(plot_data(actors.actors[1].states[i]); color=colors_cont[counter], fill=true, fillcolor=colors_alt[1], fillalpha=0.2, linewidth=2); 
-    plot!(plot_data(actors.actors[2].states[i] #+ State(actors.offset[2, 1], 0)
+    plot!(plot_data(agents.agents[1].states[i]); color=colors_cont[counter], fill=true, fillcolor=colors_alt[1], fillalpha=0.2, linewidth=2); 
+    plot!(plot_data(agents.agents[2].states[i] #+ State(agents.offset[2, 1], 0)
     ); color=colors_cont[counter], fill=true, fillcolor=colors_alt[2], fillalpha=0.2, linewidth=2); 
-    plot!(plot_data(actors.actors[3].states[i] #+ State(actors.offset[3, 1], 0)
+    plot!(plot_data(agents.agents[3].states[i] #+ State(agents.offset[3, 1], 0)
     ); color=colors_cont[counter], fill=true, fillcolor=colors_alt[3], fillalpha=0.2, linewidth=2);
-    plot!(plot_data(actors.actors[4].states[i] #+ State(actors.offset[4, 1], 0)
+    plot!(plot_data(agents.agents[4].states[i] #+ State(agents.offset[4, 1], 0)
     ); color=colors_cont[counter], fill=true, fillcolor=colors_alt[4], fillalpha=0.2, linewidth=2);
-    plot!(plot_data(actors.actors[5].states[i] #+ State(actors.offset[5, 1], 0)
+    plot!(plot_data(agents.agents[5].states[i] #+ State(agents.offset[5, 1], 0)
     ); color=colors_cont[counter], fill=true, fillcolor=colors_alt[5], fillalpha=0.2, linewidth=2);
-    plot!(plot_data(actors.actors[6].states[i] #+ State(actors.offset[6, 1], 0)
+    plot!(plot_data(agents.agents[6].states[i] #+ State(agents.offset[6, 1], 0)
     ); color=colors_cont[counter], fill=true, fillcolor=colors_alt[6], fillalpha=0.2, linewidth=2);
 end
 plot!(; xlabel = L"s \ [\textrm{m}]", ylabel = L"\dot{s}  \ [\frac{\textrm{m}}{\textrm{s}}]", grid=false, framestyle=:box, size = 2 .*(276, 276*0.61))
@@ -270,50 +270,50 @@ plot_lanelet_network(ln; draw_direction=false)
 plot!(aspect_ratio=:equal, frame=:box, yticks=false, xticks=false)
 plot!(aspect_ratio=:equal, frame=:box, xlims=(-80, 105), ylims=(-30, 100))
 
-traj_x_cart = Dict{ActorID, Vector{Float64}}()
-traj_y_cart = Dict{ActorID, Vector{Float64}}()
+traj_x_cart = Dict{AgentID, Vector{Float64}}()
+traj_y_cart = Dict{AgentID, Vector{Float64}}()
 
-for (actor_id, traj) in traj_reach
-    traj_x_cart[actor_id] = Vector{Float64}()
-    traj_y_cart[actor_id] = Vector{Float64}()
+for (agent_id, traj) in traj_reach
+    traj_x_cart[agent_id] = Vector{Float64}()
+    traj_y_cart[agent_id] = Vector{Float64}()
     for st in traj
         try
-            x, y = transform(Pos(FRoute, st[1], 0), actors.actors[actor_id].route.frame)
-            push!(traj_x_cart[actor_id], x)
-            push!(traj_y_cart[actor_id], y)
+            x, y = transform(Pos(FRoute, st[1], 0), agents.agents[agent_id].route.frame)
+            push!(traj_x_cart[agent_id], x)
+            push!(traj_y_cart[agent_id], y)
         catch e
         end
     end
 end
 
-for (actor_id, traj) in traj_reach
-    actor_id in (2, 4, 6) && continue
-    plot!(traj_x_cart[actor_id], traj_y_cart[actor_id], color=colors_alt[actor_id])
+for (agent_id, traj) in traj_reach
+    agent_id in (2, 4, 6) && continue
+    plot!(traj_x_cart[agent_id], traj_y_cart[agent_id], color=colors_alt[agent_id])
 end
 
 plot!()
 
-for (actor_id, traj) in traj_reach
-    vertices = ScenarioSynthesis.state_to_vertices(traj_reach[actor_id][1], actors.actors[actor_id])
-    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=colors_alt[actor_id])
+for (agent_id, traj) in traj_reach
+    vertices = ScenarioSynthesis.state_to_vertices(traj_reach[agent_id][1], agents.agents[agent_id])
+    plot!(vertices[:,1], vertices[:,2]; color=false, fill=true, fillcolor=colors_alt[agent_id])
 end
 
 plot!()
 
-for (actor_id, traj) in traj_reach
+for (agent_id, traj) in traj_reach
     x, y = 0, 0
     offset = 8
-    if actor_id in (1, 2)
-        x = traj_x_cart[actor_id][1]
-        y = traj_y_cart[actor_id][1] - offset
-    elseif actor_id in (3, 4)
-        x = traj_x_cart[actor_id][1]
-        y = traj_y_cart[actor_id][1] + offset
+    if agent_id in (1, 2)
+        x = traj_x_cart[agent_id][1]
+        y = traj_y_cart[agent_id][1] - offset
+    elseif agent_id in (3, 4)
+        x = traj_x_cart[agent_id][1]
+        y = traj_y_cart[agent_id][1] + offset
     else
-        x = traj_x_cart[actor_id][1] - offset
-        y = traj_y_cart[actor_id][1]
+        x = traj_x_cart[agent_id][1] - offset
+        y = traj_y_cart[agent_id][1]
     end
-    annotate!(x, y, text(actor_id))
+    annotate!(x, y, text(agent_id))
 end
 
 plot!()
@@ -327,4 +327,4 @@ using BenchmarkTools
 using Gurobi
 
 grb_env = Gurobi.Env()
-@btime benchmark(1, specvec, 49, Δt, actors_input, grb_env, 0.5; synthesize_trajectories = true)
+@btime benchmark(1, specvec, 49, Δt, agents_input, grb_env, 0.5; synthesize_trajectories = true)

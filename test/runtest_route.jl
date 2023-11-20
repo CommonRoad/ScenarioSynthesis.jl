@@ -1,7 +1,3 @@
-using ScenarioSynthesis
-using Test
-using StaticArrays
-
 @testset "Corner Cutting" begin
     ls = [Pos(FCart, 2*i, 4*sin(i)) for i=1:20]
     ls = corner_cutting(ls, 1)

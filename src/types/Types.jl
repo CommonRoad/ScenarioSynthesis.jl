@@ -22,8 +22,8 @@ export LaneletNetwork, ConflictSectionID, ConflictSectionManager, get_conflict_s
 include("route.jl")
 export Route, reference_pos, corner_cutting
 
-include("actor.jl")
-export Actor, Vehicle, ActorsDict, run_timestep, lon_distance, ActorID
+include("agent.jl")
+export Agent, Vehicle, AgentsDict, run_timestep, lon_distance, AgentID
 
 include("lane.jl")
 export Lane, expand_lane!

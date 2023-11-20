@@ -1,6 +1,3 @@
-using ScenarioSynthesis
-using Test
-using StaticArrays
 import Plots
 
 @testset "plots" begin

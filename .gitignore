@@ -1,7 +1,9 @@
-Manifest.toml
+# Manifest.toml
 __pycache__
 foo.jl
 *.log
 *.lp
 *.tikz
 output/*
+coverage/
+.vscode/

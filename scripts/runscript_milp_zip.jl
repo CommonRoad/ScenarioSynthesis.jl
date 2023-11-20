@@ -5,7 +5,7 @@ using JuMP
 
 # steps of generating scenarios: 
 # 1. load LaneletNetwork
-# 2. define Actors (incl. their routes)
+# 2. define Agents (incl. their routes)
 # 3. define formal specifications / sequence of Predicates
 # 4. synthesis
 
@@ -18,7 +18,7 @@ process!(ln)
 
 
 lenwid = SVector{2, Float64}(5.0, 2.2)
-### define Actors
+### define Agents
 route1 = Route(LaneletID.([25, 28, 24]), ln, lenwid); plot_route(route1);
 route2 = Route(LaneletID.([25, 26, 27, 24]), ln, lenwid); plot_route(route2);
 route3 = Route(LaneletID.([26, 27, 24]), ln, lenwid);
@@ -52,16 +52,16 @@ cs4 = ConvexSet([
     State(40, 24),
 ])
 
-actor1 = Actor(route1, cs1);
-actor2 = Actor(route2, cs2);
-actor3 = Actor(route3, cs3);
-actor4 = Actor(route4, cs4);
+agent1 = Agent(route1, cs1);
+agent2 = Agent(route2, cs2);
+agent3 = Agent(route3, cs3);
+agent4 = Agent(route4, cs4);
 
-actors = ActorsDict([
-    actor1,
-    actor2,
-    actor3,
-    actor4
+agents = AgentsDict([
+    agent1,
+    agent2,
+    agent3,
+    agent4
 ], ln);
 
 # define formal specifications
@@ -73,8 +73,8 @@ scene1 = Scene(
         OnLanelet(2, Set(25)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor([2, 1]),
-        BehindActor([4, 3])
+        BehindAgent([2, 1]),
+        BehindAgent([4, 3])
     ]
 )
 
@@ -86,8 +86,8 @@ scene2 = Scene(
         OnLanelet(2, Set(26)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3]),
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3]),
     ]
 )
 
@@ -99,8 +99,8 @@ scene3 = Scene(
         OnLanelet(2, Set(27)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3])
     ]
 )
 
@@ -112,8 +112,8 @@ scene4a = Scene(
         OnLanelet(2, Set(27)),
         OnLanelet(3, Set(27)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3])
     ]
 )
 
@@ -125,8 +125,8 @@ scene4b = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(26)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3])
     ]
 )
 
@@ -138,8 +138,8 @@ scene5 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(27)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3])
     ]
 )
 
@@ -151,9 +151,9 @@ scene6 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3]),
-        BehindActor([4, 1])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3]),
+        BehindAgent([4, 1])
     ]
 )
 
@@ -165,9 +165,9 @@ scene7 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3]),
-        BehindActor([4, 1])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3]),
+        BehindAgent([4, 1])
     ]
 )
 
@@ -179,9 +179,9 @@ scene8a = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(26)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3]),
-        BehindActor([4, 1])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3]),
+        BehindAgent([4, 1])
     ]
 )
 
@@ -193,9 +193,9 @@ scene8b = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(27)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3]),
-        BehindActor([4, 1])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3]),
+        BehindAgent([4, 1])
     ]
 )
 
@@ -207,12 +207,12 @@ scene9 = Scene(
         OnLanelet(2, Set(24)),
         OnLanelet(3, Set(24)),
         OnLanelet(4, Set(27)),
-        BehindActor([3, 2]),
-        BehindActor([4, 3]),
-        BehindActor([4, 1]),
-        #SlowerActor([4, 1]),
-        #SlowerActor([2, 4]),
-        SlowerActor([2, 1])
+        BehindAgent([3, 2]),
+        BehindAgent([4, 3]),
+        BehindAgent([4, 1]),
+        #SlowerAgent([4, 1]),
+        #SlowerAgent([2, 4]),
+        SlowerAgent([2, 1])
     ]
 )
 
@@ -230,7 +230,7 @@ scenes = ScenesDict([
     scene9
 ]);
 
-scenario = Scenario(actors, scenes, ln);
+scenario = Scenario(agents, scenes, ln);
 
 Δt = 0.25
 optimization_problem = synthesize_optimization_problem(scenario, Δt); 
@@ -252,14 +252,14 @@ for i=1:4
     @info sum(acc[:,i] .^2)
 end
 
-traj_miqp = Dict{ActorID, Trajectory}()
-for (actor_id, actor) in actors.actors
-    traj_miqp[actor_id] = Trajectory(Vector{State}(undef, k_max))
+traj_miqp = Dict{AgentID, Trajectory}()
+for (agent_id, agent) in agents.agents
+    traj_miqp[agent_id] = Trajectory(Vector{State}(undef, k_max))
     counter = 0
-    for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,actor_id,1:2])[1:k_max,:])
+    for val in eachrow(JuMP.value.(optimization_problem.obj_dict[:state][:,agent_id,1:2])[1:k_max,:])
         counter += 1
-        traj_miqp[actor_id][counter] = State(val[1], val[2])
+        traj_miqp[agent_id][counter] = State(val[1], val[2])
     end
 end
 
-animate_scenario(ln, actors, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_zip")
+animate_scenario(ln, agents, traj_miqp, Δt, k_max; playback_speed=1, filename="milp_zip", xlims=(-150, 50), ylims=(-5, 20), size=(1600, 300))

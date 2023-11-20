@@ -1,6 +1,3 @@
-using ScenarioSynthesis
-using Test
-
 @testset "LineSection intersection" begin
     p0 = Pos(FCart, 0, 0)
     p1 = Pos(FCart, 1, 0)

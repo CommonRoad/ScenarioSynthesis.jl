@@ -1,4 +1,4 @@
 include("synthesis.jl")
 export Trajectory, synthesize_trajectories
 
-include("synthesis_milp.jl")
+include("synthesis_qp.jl")

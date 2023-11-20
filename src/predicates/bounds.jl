@@ -5,25 +5,13 @@ struct Bounds
     v_ub::Float64
 end
 
-#=
-function Bounds(
-    Predicate::GenericPredicate,
-    actors::ActorsDict,
-    k::TimeStep,
-    ψ::Real = 1.0, # min. degree of statisfaction
-    unnecessary...
-)
-    return Bounds(...)
-end
-=#
-
 function apply_bounds!( # TODO are there faster algorithms than sequential processing ?
     cs::ConvexSet,
     bounds::Bounds
 )
-    isinf(bounds.s_lb) || lower_lim!(cs, 1, bounds.s_lb)
-    isinf(bounds.s_ub) || upper_lim!(cs, 1, bounds.s_ub)
-    isinf(bounds.v_lb) || lower_lim!(cs, 2, bounds.v_lb)
-    isinf(bounds.v_ub) || upper_lim!(cs, 2, bounds.v_ub)
+    isinf(bounds.s_lb) || limit!(cs, Limit(State(bounds.s_lb, 0), SVector{2, Float64}(1, 0)))
+    isinf(bounds.s_ub) || limit!(cs, Limit(State(bounds.s_ub, 0), SVector{2, Float64}(-1, 0)))
+    isinf(bounds.v_lb) || limit!(cs, Limit(State(0, bounds.v_lb), SVector{2, Float64}(0, 1)))
+    isinf(bounds.v_ub) || limit!(cs, Limit(State(0, bounds.v_ub), SVector{2, Float64}(0, -1)))
     return nothing
 end
