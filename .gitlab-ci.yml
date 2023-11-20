@@ -2,7 +2,7 @@ image: "julia"
 
 before_script:
   - julia --version
-  - apt-get update && apt-get install git
+  - apt-get update && apt-get install git -y
   - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lrz.de/".insteadOf "git@gitlab.lrz.de:"
   - git clone --branch develop git@gitlab.lrz.de:cps/Polygons.jl.git $HOME/Polygons.jl
 
